@@ -1,0 +1,58 @@
+name: Deploy Spec to GitHub Pages
+
+# Deployment #1: publishes ONLY PROJECT_SPEC.html as the GitHub Pages site.
+# Fully independent from the Vercel application deploy — different target,
+# different domain. This workflow touches nothing else in the repo.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'PROJECT_SPEC.html'
+      - '.github/workflows/deploy-spec-pages.yml'
+  workflow_dispatch:
+
+# Least-privilege permissions required by the Pages deploy.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two Pages deploys at once.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble site (spec as index.html)
+        run: |
+          set -euo pipefail
+          if [ ! -f PROJECT_SPEC.html ]; then
+            echo "PROJECT_SPEC.html not found — nothing to publish." >&2
+            exit 1
+          fi
+          rm -rf _site
+          mkdir -p _site
+          cp PROJECT_SPEC.html _site/index.html
+          # Do NOT copy any other file. The Pages site is the spec only.
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

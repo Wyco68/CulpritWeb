@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROJECT_SPEC — The Culprit</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#1a1d24; --muted:#5b6472;
+    --line:#e4e7ec; --accent:#0b7285; --accent-soft:#e6f4f6;
+    --code-bg:#f0f2f5; --sidebar:#0f1420; --sidebar-ink:#c7d0dd; --sidebar-active:#3fb6c9;
+    --pending:#8a6d00; --pending-bg:#fff4cc;
+    --approved:#0b6b3a; --approved-bg:#d8f3e3;
+    --declined:#8a1f1f; --declined-bg:#fadaddad;
+    --booked:#0b4f8a; --booked-bg:#d6e8fb;
+    --cancelled:#4b5563; --cancelled-bg:#e5e7eb;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0c0f16; --panel:#141924; --ink:#e6eaf0; --muted:#94a0b3;
+      --line:#232a38; --accent:#3fb6c9; --accent-soft:#12333a;
+      --code-bg:#1a2130; --sidebar:#070a10; --sidebar-ink:#aeb9c9; --sidebar-active:#3fb6c9;
+      --pending:#e6c14d; --pending-bg:#3a3208;
+      --approved:#5fd39a; --approved-bg:#0f3323;
+      --declined:#f08a8a; --declined-bg:#3a1414;
+      --booked:#6fb4f0; --booked-bg:#0d2740;
+      --cancelled:#aab4c2; --cancelled-bg:#242b38;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.65;display:flex;min-height:100vh}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Sidebar */
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:260px;height:100vh;
+    background:var(--sidebar);color:var(--sidebar-ink);overflow-y:auto;flex-shrink:0;
+    padding:22px 0;font-size:13.5px}
+  nav.toc .brand{padding:0 22px 16px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:12px}
+  nav.toc .brand b{color:#fff;font-size:16px;letter-spacing:.5px;display:block}
+  nav.toc .brand span{color:var(--sidebar-active);font-family:var(--mono);font-size:11.5px}
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+  nav.toc li a{display:block;padding:7px 22px;color:var(--sidebar-ink);border-left:3px solid transparent}
+  nav.toc li a:hover{background:rgba(255,255,255,.05);text-decoration:none;color:#fff}
+  nav.toc li a::before{counter-increment:s;content:counter(s) ".\00a0\00a0";color:var(--sidebar-active);font-family:var(--mono);font-size:11.5px}
+
+  /* Content */
+  main{flex:1;min-width:0;padding:44px 56px 120px;max-width:960px}
+  header.doc{margin-bottom:36px;padding-bottom:24px;border-bottom:2px solid var(--line)}
+  header.doc h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  header.doc .sub{color:var(--muted);font-size:14px}
+  header.doc .meta{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:11.5px;background:var(--accent-soft);color:var(--accent);
+    padding:3px 9px;border-radius:5px;border:1px solid var(--line)}
+
+  section{margin:0 0 20px;scroll-margin-top:20px}
+  section>h2{font-size:22px;margin:38px 0 14px;padding-top:10px;letter-spacing:-.3px;
+    display:flex;align-items:baseline;gap:10px}
+  section>h2 .n{font-family:var(--mono);font-size:14px;color:var(--accent)}
+  h3{font-size:16.5px;margin:22px 0 8px;color:var(--ink)}
+  h4{font-size:14px;margin:16px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:3px 0}
+  blockquote{margin:14px 0;padding:10px 16px;background:var(--accent-soft);
+    border-left:3px solid var(--accent);border-radius:0 6px 6px 0;color:var(--ink)}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1.5px 5px;border-radius:4px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin:14px 0}
+
+  /* Tables */
+  .twrap{overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--panel)}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--code-bg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+  .center{text-align:center}
+
+  /* Status pills */
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;
+    padding:2px 9px;border-radius:20px;letter-spacing:.3px}
+  .pending{color:var(--pending);background:var(--pending-bg)}
+  .approved{color:var(--approved);background:var(--approved-bg)}
+  .declined{color:var(--declined);background:var(--declined-bg)}
+  .booked{color:var(--booked);background:var(--booked-bg)}
+  .cancelled{color:var(--cancelled);background:var(--cancelled-bg)}
+
+  .yes{color:var(--approved);font-weight:700}
+  .no{color:var(--declined);font-weight:700}
+
+  /* Diagram figure */
+  figure{margin:16px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:20px;overflow-x:auto}
+  figure figcaption{color:var(--muted);font-size:12px;font-family:var(--mono);margin-top:10px;text-align:center}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .dnode{fill:var(--panel);stroke:var(--accent);stroke-width:1.5}
+  .dnode-soft{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+  .dtext{fill:var(--ink);font-family:var(--sans);font-size:13px}
+  .dtext-mono{fill:var(--ink);font-family:var(--mono);font-size:12px}
+  .dmuted{fill:var(--muted);font-family:var(--mono);font-size:11px}
+  .dline{stroke:var(--muted);stroke-width:1.4;fill:none}
+  .dfill-arrow{fill:var(--muted)}
+
+  @media (max-width:820px){
+    body{flex-direction:column}
+    nav.toc{position:static;width:100%;height:auto}
+    nav.toc ol{display:flex;flex-wrap:wrap}
+    nav.toc li a{border-left:none;padding:6px 12px}
+    main{padding:28px 20px 80px}
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="brand"><b>THE CULPRIT</b><span>PROJECT_SPEC · v1.0</span></div>
+  <ol>
+    <li><a href="#s1">Project Overview</a></li>
+    <li><a href="#s2">Goals &amp; Non-Goals</a></li>
+    <li><a href="#s3">Scope</a></li>
+    <li><a href="#s4">User Roles &amp; Personas</a></li>
+    <li><a href="#s5">Functional Requirements</a></li>
+    <li><a href="#s6">Non-Functional Requirements</a></li>
+    <li><a href="#s7">Data Model</a></li>
+    <li><a href="#s8">API Overview</a></li>
+    <li><a href="#s9">UI Overview</a></li>
+    <li><a href="#s10">Workflows</a></li>
+    <li><a href="#s11">Permissions Matrix</a></li>
+    <li><a href="#s12">Architecture</a></li>
+    <li><a href="#s13">Implementation Milestones</a></li>
+    <li><a href="#s14">Appendix</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <h1>PROJECT_SPEC — "The Culprit"</h1>
+  <div class="sub">Personal academic website + direct Calendly booking &amp; appointment-request system for an information-security professor.</div>
+  <div class="meta">
+    <span class="tag">Status: Draft v1.0</span>
+    <span class="tag">Owner: Project team</span>
+    <span class="tag">Source: raw_spec.md</span>
+    <span class="tag">Calendly: Free + direct booking</span>
+    <span class="tag">Slot: 30 min</span>
+    <span class="tag">Auth: Single admin</span>
+  </div>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <h2><span class="n">01</span> Project Overview</h2>
+  <p><strong>"The Culprit"</strong> is a personal academic website for a professor whose field is
+  <strong>information security</strong>. It presents the professor's work publicly and lets visitors
+  <strong>book directly</strong> against her live availability, or submit a request the admin reviews.</p>
+  <p>The product has <strong>two halves</strong>:</p>
+  <ul>
+    <li><strong>Public info</strong> — bio, research, publications, and research groups (incl. visiting
+    professors). Design reference: the UCL profile of Lorenzo Cavallaro.</li>
+    <li><strong>Appointment system</strong> — a visitor <strong>books directly</strong> against live
+    availability via the <strong>embedded Calendly</strong> widget (30-min default), or submits a request
+    stored as <span class="pill pending">pending</span> that the admin approves or declines. When booking,
+    the visitor names <strong>which research group they represent</strong>, so the admin sees which groups
+    are due to meet. Cancellations are kept as records, never deleted.</li>
+  </ul>
+  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic —
+  restrained palette, mono accents, clean typographic hierarchy.</p>
+  <blockquote><strong>Elevator pitch:</strong> A clean public presence for a security researcher, plus a
+  lightweight, admin-controlled meeting-request workflow that keeps a full audit trail of every request.</blockquote>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <h2><span class="n">02</span> Goals &amp; Non-Goals</h2>
+  <h3>Goals</h3>
+  <ul>
+    <li><strong>G1</strong> — Professional, minimalist public presence (bio, research, publications, groups).</li>
+    <li><strong>G2</strong> — Visitors book directly (30-min default) or request a meeting, no account (name + email only).</li>
+    <li><strong>G3</strong> — Admin fully controls: approve, decline, cancel requests; edit all content.</li>
+    <li><strong>G4</strong> — Durable record of every appointment (direct or request) + status change (cancellations soft, retained).</li>
+    <li><strong>G5</strong> — Integrate the Calendly widget for direct booking against availability.</li>
+    <li><strong>G6</strong> — Clean, <strong>modular</strong> architecture reusable across future apps.</li>
+  </ul>
+  <h3>Non-Goals</h3>
+  <ul>
+    <li><strong>NG1</strong> — Direct booking is handled by the Calendly widget itself; the app does not auto-create a Calendly event from a <span class="pill pending">pending</span> request (that path stays manual).</li>
+    <li><strong>NG2</strong> — No real-time Calendly sync / webhooks in MVP: Calendly-side changes are not pushed back (needs paid plan); admin reconciles manually.</li>
+    <li><strong>NG3</strong> — No public user accounts / logins / visitor profiles.</li>
+    <li><strong>NG4</strong> — No multi-admin, no per-researcher self-editing in MVP (single admin).</li>
+    <li><strong>NG5</strong> — No payments, chat, or extra content-approval workflows.</li>
+  </ul>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <h2><span class="n">03</span> Scope</h2>
+  <div class="card">
+    <h4>In Scope (MVP)</h4>
+    <ul>
+      <li>Public site: <strong>Bio</strong>, <strong>Researches</strong>, <strong>Upcoming Events</strong> (admin-gated), <strong>Make Appointment</strong>.</li>
+      <li>Research groups &amp; visiting professors (CV-style: works &amp; achievements).</li>
+      <li>Direct Calendly booking (→ <span class="pill booked">booked</span>) and request form (→ <span class="pill pending">pending</span>); requester names their research group.</li>
+      <li>Admin panel: <strong>Set Information</strong> + <strong>Manage Appointments</strong>.</li>
+      <li>Lifecycle: direct → booked; request pending → approved → booked, plus declined and cancelled.</li>
+      <li>Embedded free Calendly widget; single admin auth; notification emails.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Out of Scope / Future</h4>
+    <ul>
+      <li><strong>F1</strong> — Paid-Calendly auto-book + webhook sync.</li>
+      <li><strong>F2</strong> — Multiple admins / roles; researcher self-service editing.</li>
+      <li><strong>F3</strong> — Public search / tagging / filtering of publications.</li>
+      <li><strong>F4</strong> — Analytics dashboard, multi-language.</li>
+      <li><strong>F5</strong> — Native mobile apps.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <h2><span class="n">04</span> User Roles &amp; Personas</h2>
+  <div class="twrap"><table>
+    <tr><th>Role</th><th>Auth</th><th>Description</th><th>Primary needs</th></tr>
+    <tr><td><strong>Visitor</strong></td><td>Anonymous</td><td>Prospective collaborator, student, or fellow researcher.</td><td>Read content; see upcoming events (if shown); request a meeting.</td></tr>
+    <tr><td><strong>Admin</strong></td><td>Single login</td><td>The professor or a delegated assistant.</td><td>Edit all content; review/approve/decline/cancel; book approved meetings in Calendly.</td></tr>
+  </table></div>
+  <p><strong>Persona — Visitor "Dr. Rivera":</strong> wants recent security publications + a 30-min intro
+  call. Expects a fast, no-signup form and a clear "pending" confirmation.</p>
+  <p><strong>Persona — Admin "The Professor":</strong> infrequent but decisive. Wants one table of requests
+  with one-click approve/decline, and a simple form to update the bio before a conference.</p>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <h2><span class="n">05</span> Functional Requirements</h2>
+  <h3>5.1 Public content (Visitor)</h3>
+  <div class="twrap"><table>
+    <tr><th>ID</th><th>Requirement</th></tr>
+    <tr><td><code>FR-1</code></td><td>View <strong>Bio</strong>: photo, name, title, background text.</td></tr>
+    <tr><td><code>FR-2</code></td><td>View <strong>Researches</strong>: list of works (title + summary + area).</td></tr>
+    <tr><td><code>FR-3</code></td><td>View <strong>Publications</strong>: title, authors, venue, year, external link.</td></tr>
+    <tr><td><code>FR-4</code></td><td>View <strong>Research Groups</strong> &amp; visiting professors (CV-style).</td></tr>
+    <tr><td><code>FR-5</code></td><td>View <strong>Upcoming Events</strong> <strong>only if</strong> admin enabled visibility.</td></tr>
+    <tr><td><code>FR-6</code></td><td>Site fully readable without login.</td></tr>
+  </table></div>
+  <h3>5.2 Appointment request (Visitor)</h3>
+  <div class="twrap"><table>
+    <tr><th>ID</th><th>Requirement</th></tr>
+    <tr><td><code>FR-7</code></td><td>Submit request: name, email, preferred time/topic, and <strong>which research group they represent</strong>.</td></tr>
+    <tr><td><code>FR-7a</code></td><td><strong>Book directly</strong> against live availability via the embedded <strong>Calendly</strong> widget (30-min default), no admin approval.</td></tr>
+    <tr><td><code>FR-8</code></td><td>A request is stored <span class="pill pending">pending</span>; a direct Calendly booking is stored <span class="pill booked">booked</span>.</td></tr>
+    <tr><td><code>FR-9</code></td><td>Confirmation: "pending" for a request, "booked" for a direct booking.</td></tr>
+    <tr><td><code>FR-10</code></td><td>Tab shows embedded <strong>Calendly</strong> widget for live availability + direct booking.</td></tr>
+    <tr><td><code>FR-11</code></td><td>Cancel own meeting via a unique link (→ <span class="pill cancelled">cancelled</span>, record kept).</td></tr>
+    <tr><td><code>FR-12</code></td><td>Form protected against spam/bots (rate-limit + challenge).</td></tr>
+  </table></div>
+  <h3>5.3 Admin — content management</h3>
+  <div class="twrap"><table>
+    <tr><th>ID</th><th>Requirement</th></tr>
+    <tr><td><code>FR-13</code></td><td>Log in via a single admin account.</td></tr>
+    <tr><td><code>FR-14</code></td><td>Edit the structured <strong>Bio</strong> (position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks), Research, Publications, Groups via simple forms.</td></tr>
+    <tr><td><code>FR-15</code></td><td>Each form has a clear <strong>"Save changes"</strong> action + feedback.</td></tr>
+    <tr><td><code>FR-16</code></td><td>Toggle whether Upcoming Events is visible to visitors.</td></tr>
+    <tr><td><code>FR-16a</code></td><td>Set the default appointment <strong>slot duration</strong> (default 30 min) via settings.</td></tr>
+  </table></div>
+  <h3>5.4 Admin — appointment management</h3>
+  <div class="twrap"><table>
+    <tr><th>ID</th><th>Requirement</th></tr>
+    <tr><td><code>FR-17</code></td><td>See table of appointments: <strong>name, research group, time, status</strong>.</td></tr>
+    <tr><td><code>FR-18</code></td><td><strong>Approve</strong> a pending request (→ <span class="pill approved">approved</span>).</td></tr>
+    <tr><td><code>FR-19</code></td><td><strong>Decline</strong> a pending request (→ <span class="pill declined">declined</span>; nothing booked).</td></tr>
+    <tr><td><code>FR-20</code></td><td>On approval, <strong>manually</strong> create the Calendly event, then <strong>mark</strong> <span class="pill booked">booked</span> (store event ref).</td></tr>
+    <tr><td><code>FR-21</code></td><td><strong>Cancel</strong> an approved/booked meeting (→ <span class="pill cancelled">cancelled</span>, retained).</td></tr>
+    <tr><td><code>FR-22</code></td><td>No record ever hard-deleted; cancelled items kept for audit.</td></tr>
+    <tr><td><code>FR-23</code></td><td>Status changes trigger visitor emails (received / approved / declined / cancelled).</td></tr>
+  </table></div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <h2><span class="n">06</span> Non-Functional Requirements</h2>
+  <div class="twrap"><table>
+    <tr><th>Category</th><th>Requirement</th></tr>
+    <tr><td><strong>Performance</strong></td><td>Public pages &lt; 2s on broadband; cache/CDN where possible.</td></tr>
+    <tr><td><strong>Security</strong></td><td>HTTPS everywhere; server-side validation on every form; hardened admin sessions (secure, httpOnly cookies); secrets out of client; least-privilege API.</td></tr>
+    <tr><td><strong>Spam / abuse</strong></td><td>Rate-limit form (per IP + per email); bot challenge (CAPTCHA/Turnstile); email validation.</td></tr>
+    <tr><td><strong>Privacy</strong></td><td>Minimal PII (name + email); clear retention; cancelled records retained but purgeable on request; no PII in URLs.</td></tr>
+    <tr><td><strong>Accessibility</strong></td><td>WCAG 2.1 AA: semantic HTML, keyboard nav, contrast, alt text.</td></tr>
+    <tr><td><strong>Responsive</strong></td><td>Mobile-first; usable 320px → desktop.</td></tr>
+    <tr><td><strong>Availability</strong></td><td>Target 99.5% uptime for public site.</td></tr>
+    <tr><td><strong>Maintainability</strong></td><td>Modular layers, clear boundaries, documented API, typed model.</td></tr>
+    <tr><td><strong>Observability</strong></td><td>Audit log of admin actions + status transitions.</td></tr>
+    <tr><td><strong>Compatibility</strong></td><td>Latest 2 versions of Chrome, Firefox, Safari, Edge.</td></tr>
+  </table></div>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <h2><span class="n">07</span> Data Model</h2>
+
+  <h3>7.1 Entities</h3>
+  <h4>Profile (singleton)</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>full_name</td><td><code>string</code></td><td></td></tr>
+    <tr><td>title</td><td><code>string</code></td><td>e.g. "Professor of Information Security"</td></tr>
+    <tr><td>photo_url</td><td><code>string</code></td><td>object-storage ref</td></tr>
+    <tr><td>bio</td><td><code>text</code></td><td>short overview / about</td></tr>
+    <tr><td>position_affiliation</td><td><code>text</code></td><td>current position &amp; institution</td></tr>
+    <tr><td>education</td><td><code>text/json</code></td><td>degrees &amp; institutions</td></tr>
+    <tr><td>fellowships_visiting</td><td><code>text/json</code></td><td>research fellowships &amp; visiting appointments</td></tr>
+    <tr><td>teaching_roles</td><td><code>text/json</code></td><td>teaching roles</td></tr>
+    <tr><td>teaching_awards</td><td><code>text/json</code></td><td>teaching awards</td></tr>
+    <tr><td>scholarships_travel_awards</td><td><code>text/json</code></td><td>scholarships &amp; travel awards</td></tr>
+    <tr><td>research_interests</td><td><code>text/json</code></td><td>research interests</td></tr>
+    <tr><td>research_statement</td><td><code>text</code></td><td>research statement</td></tr>
+    <tr><td>invited_talks</td><td><code>text/json</code></td><td>invited talks</td></tr>
+    <tr><td>updated_at</td><td><code>timestamp</code></td><td></td></tr>
+  </table></div>
+  <h4>Research</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>title</td><td><code>string</code></td><td></td></tr>
+    <tr><td>summary</td><td><code>text</code></td><td></td></tr>
+    <tr><td>area</td><td><code>string</code></td><td>e.g. "malware analysis"</td></tr>
+    <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
+  </table></div>
+  <h4>Publication</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>title</td><td><code>string</code></td><td></td></tr>
+    <tr><td>authors</td><td><code>string</code></td><td></td></tr>
+    <tr><td>venue</td><td><code>string</code></td><td>journal / conference</td></tr>
+    <tr><td>year</td><td><code>int</code></td><td></td></tr>
+    <tr><td>link</td><td><code>string</code></td><td>external URL (DOI, etc.)</td></tr>
+  </table></div>
+  <h4>ResearchGroup</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>name</td><td><code>string</code></td><td></td></tr>
+    <tr><td>description</td><td><code>text</code></td><td></td></tr>
+    <tr><td>members</td><td><code>text/json</code></td><td>researchers &amp; visiting professors (CV-style)</td></tr>
+  </table></div>
+  <h4>Appointment</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>requester_name</td><td><code>string</code></td><td></td></tr>
+    <tr><td>requester_email</td><td><code>string</code></td><td></td></tr>
+    <tr><td>research_group</td><td><code>string</code></td><td>group the requester represents (nullable)</td></tr>
+    <tr><td>requested_time</td><td><code>timestamp</code></td><td>preferred slot</td></tr>
+    <tr><td>topic</td><td><code>text</code></td><td>purpose</td></tr>
+    <tr><td>source</td><td><code>enum</code></td><td><code>direct</code> (Calendly) · <code>request</code> (admin-reviewed)</td></tr>
+    <tr><td>status</td><td><code>enum</code></td><td><span class="pill pending">pending</span> <span class="pill approved">approved</span> <span class="pill declined">declined</span> <span class="pill booked">booked</span> <span class="pill cancelled">cancelled</span></td></tr>
+    <tr><td>calendly_event_ref</td><td><code>string</code></td><td>set on direct or manual booking (nullable)</td></tr>
+    <tr><td>cancel_reason</td><td><code>text</code></td><td>nullable</td></tr>
+    <tr><td>cancel_token</td><td><code>string</code></td><td>unique link for visitor self-cancel</td></tr>
+    <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
+  </table></div>
+  <h4>Admin</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>email</td><td><code>string</code></td><td>unique</td></tr>
+    <tr><td>password_hash</td><td><code>string</code></td><td>hashed, never plaintext</td></tr>
+  </table></div>
+  <h4>Setting (key/value)</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>key</td><td><code>string</code></td><td>PK · e.g. <code>upcoming_events_visible</code>, <code>appointment_duration_minutes</code> (default 30)</td></tr>
+    <tr><td>value</td><td><code>string/json</code></td><td></td></tr>
+  </table></div>
+
+  <h3>7.2 Relationships (ER)</h3>
+  <figure>
+    <svg viewBox="0 0 720 260" role="img" aria-label="Entity relationship diagram">
+      <rect class="dnode-soft" x="290" y="18" width="140" height="40" rx="8"/>
+      <text class="dtext-mono" x="360" y="43" text-anchor="middle">PROFILE</text>
+
+      <rect class="dnode" x="40" y="120" width="130" height="40" rx="8"/>
+      <text class="dtext-mono" x="105" y="145" text-anchor="middle">RESEARCH</text>
+      <rect class="dnode" x="200" y="120" width="130" height="40" rx="8"/>
+      <text class="dtext-mono" x="265" y="145" text-anchor="middle">PUBLICATION</text>
+      <rect class="dnode" x="360" y="120" width="150" height="40" rx="8"/>
+      <text class="dtext-mono" x="435" y="145" text-anchor="middle">RESEARCHGROUP</text>
+
+      <rect class="dnode-soft" x="540" y="18" width="150" height="40" rx="8"/>
+      <text class="dtext-mono" x="615" y="43" text-anchor="middle">ADMIN</text>
+      <rect class="dnode" x="540" y="120" width="150" height="40" rx="8"/>
+      <text class="dtext-mono" x="615" y="145" text-anchor="middle">APPOINTMENT</text>
+      <rect class="dnode" x="540" y="200" width="150" height="40" rx="8"/>
+      <text class="dtext-mono" x="615" y="225" text-anchor="middle">SETTING</text>
+
+      <path class="dline" d="M330 50 C 200 80, 130 90, 105 118"/>
+      <path class="dline" d="M340 55 C 300 80, 275 95, 265 118"/>
+      <path class="dline" d="M380 58 C 410 85, 430 100, 435 118"/>
+      <text class="dmuted" x="150" y="95">has 1..N</text>
+
+      <path class="dline" d="M615 58 L 615 118"/>
+      <text class="dmuted" x="622" y="92">manages</text>
+      <path class="dline" d="M615 160 L 615 198"/>
+      <text class="dmuted" x="622" y="182">gated by</text>
+    </svg>
+    <figcaption>Profile owns content entities · Admin manages Appointments · Settings gate visibility</figcaption>
+  </figure>
+
+  <h3>7.3 Appointment status transitions</h3>
+  <figure>
+    <svg viewBox="0 0 760 220" role="img" aria-label="Appointment status state machine">
+      <circle cx="40" cy="100" r="9" class="dnode"/>
+      <rect x="90" y="80" width="110" height="40" rx="20" class="dnode-soft"/>
+      <text class="dtext-mono" x="145" y="105" text-anchor="middle">pending</text>
+      <rect x="290" y="30" width="120" height="40" rx="20" class="dnode-soft"/>
+      <text class="dtext-mono" x="350" y="55" text-anchor="middle">approved</text>
+      <rect x="290" y="150" width="120" height="40" rx="20" class="dnode"/>
+      <text class="dtext-mono" x="350" y="175" text-anchor="middle">declined</text>
+      <rect x="500" y="30" width="120" height="40" rx="20" class="dnode-soft"/>
+      <text class="dtext-mono" x="560" y="55" text-anchor="middle">booked</text>
+      <rect x="500" y="150" width="150" height="40" rx="20" class="dnode"/>
+      <text class="dtext-mono" x="575" y="175" text-anchor="middle">cancelled</text>
+
+      <path class="dline" d="M49 100 L 88 100" marker-end="url(#ar)"/>
+      <path class="dline" d="M45 91 C 120 20, 400 8, 545 26" marker-end="url(#ar)" stroke-dasharray="5 4"/>
+      <text class="dmuted" x="250" y="18">book direct (Calendly)</text>
+      <path class="dline" d="M200 92 C 245 75, 265 60, 288 55" marker-end="url(#ar)"/>
+      <text class="dmuted" x="210" y="66">approve</text>
+      <path class="dline" d="M200 108 C 245 128, 265 150, 288 165" marker-end="url(#ar)"/>
+      <text class="dmuted" x="205" y="150">decline</text>
+      <path class="dline" d="M410 50 L 498 50" marker-end="url(#ar)"/>
+      <text class="dmuted" x="425" y="42">book</text>
+      <path class="dline" d="M410 62 C 450 100, 470 140, 505 158" marker-end="url(#ar)"/>
+      <path class="dline" d="M560 70 C 560 100, 575 130, 575 148" marker-end="url(#ar)"/>
+      <text class="dmuted" x="583" y="120">cancel</text>
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" class="dfill-arrow"/>
+        </marker>
+      </defs>
+    </svg>
+    <figcaption><span class="pill declined">declined</span> and <span class="pill cancelled">cancelled</span> are terminal but retained — never deleted</figcaption>
+  </figure>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <h2><span class="n">08</span> API Overview</h2>
+  <p>REST/JSON. <strong>Auth</strong>: <em>Public</em> = no auth · <em>Admin</em> = admin session required.</p>
+  <h3>8.1 Public content</h3>
+  <div class="twrap"><table>
+    <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+    <tr><td><code>GET</code></td><td><code>/api/profile</code></td><td>Public</td><td>Get bio/profile.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/research</code></td><td>Public</td><td>List research works.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/publications</code></td><td>Public</td><td>List publications.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/groups</code></td><td>Public</td><td>List groups &amp; members.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/events/upcoming</code></td><td>Public</td><td>Upcoming events (empty/403 if hidden).</td></tr>
+  </table></div>
+  <h3>8.2 Appointments</h3>
+  <div class="twrap"><table>
+    <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+    <tr><td><code>POST</code></td><td><code>/api/appointments</code></td><td>Public</td><td>Create request → <span class="pill pending">pending</span>. Body incl. <code>research_group</code>.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/appointments/direct</code></td><td>Public</td><td>Record direct Calendly booking → <span class="pill booked">booked</span> (source <code>direct</code>).</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/appointments/{id}/cancel</code></td><td>Public (token)</td><td>Visitor cancels via <code>cancel_token</code>.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>List all (filter by status).</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/approve</code></td><td>Admin</td><td>pending → approved.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/decline</code></td><td>Admin</td><td>pending → declined.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/book</code></td><td>Admin</td><td>approved → booked + set event ref.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/cancel</code></td><td>Admin</td><td>approved/booked → cancelled + reason.</td></tr>
+  </table></div>
+  <h3>8.3 Admin content &amp; auth</h3>
+  <div class="twrap"><table>
+    <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/login</code></td><td>Public</td><td>Admin login → session.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/logout</code></td><td>Admin</td><td>End session.</td></tr>
+    <tr><td><code>PUT</code></td><td><code>/api/admin/profile</code></td><td>Admin</td><td>Update bio/profile.</td></tr>
+    <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/research</code></td><td>Admin</td><td>CRUD research.</td></tr>
+    <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/publications</code></td><td>Admin</td><td>CRUD publications.</td></tr>
+    <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/groups</code></td><td>Admin</td><td>CRUD groups.</td></tr>
+    <tr><td><code>PUT</code></td><td><code>/api/admin/settings</code></td><td>Admin</td><td>Toggle event visibility, etc.</td></tr>
+  </table></div>
+  <blockquote>Admin endpoints validate the session (<code>401</code> if not). Invalid status moves are
+  rejected (e.g. booking a declined request → <code>409</code>).</blockquote>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <h2><span class="n">09</span> UI Overview</h2>
+  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic — restrained
+  neutral palette, a single accent, mono/technical touches, generous whitespace, strong hierarchy.</p>
+  <h3>9.1 Public side — 4 tabs</h3>
+  <div class="twrap"><table>
+    <tr><th>Tab</th><th>Contents</th></tr>
+    <tr><td><strong>Bio</strong></td><td>Photo, name, title; structured background — position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks.</td></tr>
+    <tr><td><strong>Researches</strong></td><td>Simple list of works (+ publications, groups).</td></tr>
+    <tr><td><strong>Upcoming Events</strong></td><td>Next meetings + <strong>which research groups are due to meet</strong> — <strong>shown only if admin enabled visibility</strong>.</td></tr>
+    <tr><td><strong>Make Appointment</strong></td><td>Embedded <strong>Calendly</strong> widget for direct booking (30-min default). Also a request form (name, email, research group, time, topic) → shows <span class="pill pending">pending</span>.</td></tr>
+  </table></div>
+  <h3>9.2 Admin side — 2 tabs</h3>
+  <div class="twrap"><table>
+    <tr><th>Tab</th><th>Contents</th></tr>
+    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio, research, publications, groups. Clear <strong>"Save changes"</strong>. Event-visibility toggle; default slot duration (30 min).</td></tr>
+    <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. Buttons: Approve / Decline (requests); Cancel (approved/booked); Mark booked. Direct bookings arrive already <span class="pill booked">booked</span>.</td></tr>
+  </table></div>
+  <h3>9.3 Shared UI notes</h3>
+  <ul>
+    <li>Status pills: <span class="pill pending">pending</span> <span class="pill approved">approved</span> <span class="pill declined">declined</span> <span class="pill booked">booked</span> <span class="pill cancelled">cancelled</span>.</li>
+    <li>Consistent header/nav; sticky tab bar; responsive to mobile.</li>
+    <li>Empty states for "no requests" / "no upcoming events".</li>
+  </ul>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <h2><span class="n">10</span> Workflows</h2>
+  <h3>10.1 Appointment lifecycle</h3>
+  <ol>
+    <li><strong>Direct path:</strong> Visitor picks a slot in the embedded Calendly widget (30-min default), names their research group → recorded as <span class="pill booked">booked</span> (<code>source=direct</code>), visitor emailed. <em>(Steps below are the request path.)</em></li>
+    <li>Visitor opens <strong>Make Appointment</strong>, fills the request form (incl. research group), submits.</li>
+    <li>System stores <span class="pill pending">pending</span>, emails "request received", shows "pending".</li>
+    <li>Admin opens <strong>Manage Appointments</strong>, reviews.</li>
+    <li><strong>Approve</strong> → <span class="pill approved">approved</span>, visitor emailed. <em>or</em> <strong>Decline</strong> → <span class="pill declined">declined</span>, emailed, nothing booked.</li>
+    <li>For approved: admin <strong>manually creates the Calendly event</strong>, then <strong>Mark booked</strong> → <span class="pill booked">booked</span>, event ref saved, visitor emailed.</li>
+    <li><strong>Cancellation:</strong> admin or visitor (unique link) cancels → <span class="pill cancelled">cancelled</span>, reason recorded, emailed. Record retained.</li>
+  </ol>
+  <h3>10.2 Content edit</h3>
+  <ol>
+    <li>Admin opens <strong>Set Information</strong>, edits a form.</li>
+    <li>Clicks <strong>Save changes</strong> → API validates and persists → success feedback.</li>
+  </ol>
+  <h3>10.3 Upcoming-events visibility toggle</h3>
+  <ol>
+    <li>Admin toggles visibility in <strong>Set Information</strong>.</li>
+    <li>Public <strong>Upcoming Events</strong> tab shows or hides accordingly.</li>
+  </ol>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+  <h2><span class="n">11</span> Permissions Matrix</h2>
+  <div class="twrap"><table>
+    <tr><th>Action</th><th class="center">Visitor</th><th class="center">Admin</th></tr>
+    <tr><td>View bio / research / publications / groups</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>View upcoming events</td><td class="center yes">✅ (if enabled)</td><td class="center yes">✅</td></tr>
+    <tr><td>Book directly via embedded Calendly</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>Submit appointment request</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>Cancel own appointment (via token)</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>Log in to admin panel</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Edit public content</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Approve / decline requests</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Mark booked / cancel any appointment</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Toggle upcoming-events visibility</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+  </table></div>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+  <h2><span class="n">12</span> Architecture</h2>
+  <p><strong>Principle:</strong> clean, <strong>modular, layered</strong> architecture with clear
+  boundaries, reusable consistently across future apps.</p>
+  <h3>12.1 Layers</h3>
+  <figure>
+    <svg viewBox="0 0 620 380" role="img" aria-label="Layered architecture diagram">
+      <rect class="dnode-soft" x="60" y="20" width="500" height="48" rx="8"/>
+      <text class="dtext" x="310" y="42" text-anchor="middle">Presentation (SPA)</text>
+      <text class="dmuted" x="310" y="59" text-anchor="middle">Public tabs · Admin tabs · Calendly embed</text>
+
+      <rect class="dnode" x="60" y="92" width="500" height="44" rx="8"/>
+      <text class="dtext" x="310" y="119" text-anchor="middle">API Layer — routing · auth · validation</text>
+
+      <rect class="dnode" x="60" y="160" width="500" height="52" rx="8"/>
+      <text class="dtext" x="310" y="182" text-anchor="middle">Service / Domain</text>
+      <text class="dmuted" x="310" y="199" text-anchor="middle">appointment lifecycle · content · settings · notifications</text>
+
+      <rect class="dnode" x="60" y="236" width="500" height="44" rx="8"/>
+      <text class="dtext" x="310" y="263" text-anchor="middle">Data / Repository — relational DB access</text>
+
+      <rect class="dnode" x="60" y="304" width="150" height="52" rx="8"/>
+      <text class="dtext" x="135" y="335" text-anchor="middle">Relational DB</text>
+      <rect class="dnode" x="235" y="304" width="150" height="52" rx="8"/>
+      <text class="dtext" x="310" y="330" text-anchor="middle">Object store</text>
+      <text class="dmuted" x="310" y="346" text-anchor="middle">photos</text>
+      <rect class="dnode" x="410" y="304" width="150" height="52" rx="8"/>
+      <text class="dtext" x="485" y="330" text-anchor="middle">Integrations</text>
+      <text class="dmuted" x="485" y="346" text-anchor="middle">Calendly · Mail</text>
+
+      <path class="dline" d="M310 68 L 310 90" marker-end="url(#ar2)"/>
+      <path class="dline" d="M310 136 L 310 158" marker-end="url(#ar2)"/>
+      <path class="dline" d="M310 212 L 310 234" marker-end="url(#ar2)"/>
+      <path class="dline" d="M310 280 L 135 302" marker-end="url(#ar2)"/>
+      <path class="dline" d="M310 280 L 310 302" marker-end="url(#ar2)"/>
+      <path class="dline" d="M310 280 L 485 302" marker-end="url(#ar2)"/>
+      <defs>
+        <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" class="dfill-arrow"/>
+        </marker>
+      </defs>
+    </svg>
+    <figcaption>Stack-agnostic: SPA · REST/JSON API · relational DB + object store · external integrations</figcaption>
+  </figure>
+  <h3>12.2 Module boundaries</h3>
+  <ul>
+    <li><strong>content</strong> — profile, research, publications, groups (read public, write admin).</li>
+    <li><strong>appointments</strong> — request intake, status machine, audit trail.</li>
+    <li><strong>auth</strong> — single-admin session management.</li>
+    <li><strong>settings</strong> — feature flags (e.g. upcoming-events visibility).</li>
+    <li><strong>notifications</strong> — email on status transitions.</li>
+    <li><strong>integrations</strong> — Calendly embed (client widget), email provider.</li>
+  </ul>
+  <h3>12.3 Cross-cutting</h3>
+  <ul>
+    <li>Validation + rate-limiting at the API edge.</li>
+    <li>Audit logging in the service layer.</li>
+    <li>Stack-agnostic — concrete vendors chosen later (see Appendix).</li>
+  </ul>
+</section>
+
+<!-- 13 -->
+<section id="s13">
+  <h2><span class="n">13</span> Implementation Milestones</h2>
+  <div class="twrap"><table>
+    <tr><th>Milestone</th><th>Deliverables</th><th>Acceptance criteria</th></tr>
+    <tr><td><strong>M0 — Scaffolding</strong></td><td>Repo, modular layout, CI, env config, DB schema migration.</td><td>App builds &amp; deploys a "hello" page; schema applies.</td></tr>
+    <tr><td><strong>M1 — Public content</strong></td><td>Content entities + public GET APIs + Bio / Researches tabs.</td><td>Visitor views seeded content; responsive; a11y passes.</td></tr>
+    <tr><td><strong>M2 — Appointments + admin</strong></td><td>Appointment model + status machine; admin login; Manage Appointments table; Set Information forms.</td><td>Full lifecycle end-to-end; records never deleted; audit log written.</td></tr>
+    <tr><td><strong>M3 — Calendly + events</strong></td><td>Embedded Calendly widget; Upcoming Events tab + visibility toggle.</td><td>Admin can manually book &amp; mark booked; events show/hide per setting.</td></tr>
+    <tr><td><strong>M4 — Hardening</strong></td><td>Rate-limit + bot challenge; email notifications; validation; a11y + perf.</td><td>Spam-protected; emails fire on each transition; Lighthouse green.</td></tr>
+    <tr><td><strong>M5 — Launch</strong></td><td>Production deploy, backups, monitoring, docs.</td><td>Live on HTTPS; backups verified; runbook written.</td></tr>
+  </table></div>
+</section>
+
+<!-- 14 -->
+<section id="s14">
+  <h2><span class="n">14</span> Appendix</h2>
+  <h3>14.1 Candidate stacks (choose later)</h3>
+  <div class="twrap"><table>
+    <tr><th>Option</th><th>Frontend</th><th>Backend / API</th><th>Database</th><th>Storage</th><th>Notes</th></tr>
+    <tr><td>A</td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td>Supabase Storage</td><td>Supabase Auth; fast to build.</td></tr>
+    <tr><td>B</td><td>Cloudflare Pages</td><td>CF Workers (Hono)</td><td>D1 (SQLite)</td><td>R2</td><td>Edge-native, low cost.</td></tr>
+    <tr><td>C</td><td>Any SPA</td><td>Any REST service</td><td>Any relational DB</td><td>Any object store</td><td>Fully generic; matches this spec.</td></tr>
+  </table></div>
+  <h3>14.2 Calendly capability (free vs paid)</h3>
+  <div class="twrap"><table>
+    <tr><th>Capability</th><th class="center">Free plan</th></tr>
+    <tr><td>See upcoming meetings</td><td class="center yes">✅</td></tr>
+    <tr><td>Cancel a meeting</td><td class="center yes">✅</td></tr>
+    <tr><td>Simple booking widget (embed)</td><td class="center yes">✅</td></tr>
+    <tr><td>Auto-book after admin approves</td><td class="center no">❌ needs paid</td></tr>
+    <tr><td>Instant sync updates (webhooks)</td><td class="center no">❌ needs paid</td></tr>
+  </table></div>
+  <blockquote><strong>Takeaway:</strong> direct visitor booking uses the free embedded widget. Still needs
+  a <strong>paid</strong> plan: (a) auto-creating a Calendly event from an approved in-app request, and
+  (b) webhook sync so Calendly-side reschedules/cancellations flow back into the app. MVP: direct booking
+  via the free widget; the in-app request path is booked <strong>manually</strong>, Calendly-side changes
+  reconciled manually.</blockquote>
+  <h3>14.3 Open questions</h3>
+  <ul>
+    <li><strong>OQ1</strong> — Delegated assistant admin at launch, or later?</li>
+    <li><strong>OQ2</strong> — Email provider / templates.</li>
+    <li><strong>OQ3</strong> — Publications: import (BibTeX/ORCID) or manual only?</li>
+    <li><strong>OQ4</strong> — Upgrade path to paid Calendly for auto-book — when, if ever?</li>
+  </ul>
+  <h3>14.4 References</h3>
+  <ul>
+    <li>UCL profile (design reference): <a href="https://profiles.ucl.ac.uk/84211-lorenzo-cavallaro">profiles.ucl.ac.uk/84211-lorenzo-cavallaro</a></li>
+    <li>Calendly: <a href="https://calendly.com">calendly.com</a></li>
+    <li>Source notes: <code>raw_spec.md</code></li>
+  </ul>
+</section>
+
+</main>
+</body>
+</html>

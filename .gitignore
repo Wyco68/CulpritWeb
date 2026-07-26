@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────
+#  Claude Code / AI tooling — NEVER COMMIT, under any condition
+# ─────────────────────────────────────────────────────────────
+.claude/
+.claude*/
+CLAUDE.md
+**/CLAUDE.md
+.mcp.json
+.cursor/
+.aider*
+.impeccable/
+
+# ─────────────────────────────────────────────────────────────
+#  Internal documents — keep private (NOT for deployment)
+#  These stay on your machine unless you explicitly decide to push.
+# ─────────────────────────────────────────────────────────────
+PROJECT_SPEC.md
+raw_spec.md
+docs/internal/
+NOTES.md
+TODO.md
+#
+# NOTE: PROJECT_SPEC.html is intentionally NOT ignored.
+#       It is the source for the GitHub Pages "spec" site (deployment #1).
+#       It is kept OUT of the Vercel app build via .vercelignore.
+
+# ─────────────────────────────────────────────────────────────
+#  Node / Next.js / tooling
+# ─────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env & secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+
+# Prisma local artifacts
+prisma/*.db
+prisma/*.db-journal
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
