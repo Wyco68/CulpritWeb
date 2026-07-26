@@ -1,0 +1,19 @@
+{
+  "common": {
+    "appName": "The Culprit",
+    "tagline": "Information Security Research"
+  },
+  "nav": {
+    "bio": "Bio",
+    "research": "Research",
+    "publications": "Publications",
+    "researchGroups": "Research Groups",
+    "events": "Upcoming Events",
+    "appointment": "Make Appointment"
+  },
+  "home": {
+    "title": "The Culprit",
+    "subtitle": "A clean public presence for a security researcher, plus a lightweight, admin-controlled meeting workflow.",
+    "cta": "Request a meeting"
+  }
+}

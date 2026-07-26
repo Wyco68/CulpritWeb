@@ -1,0 +1,122 @@
+// Prisma schema for "The Culprit". See PROJECT_SPEC.md §7 (internal) for the authoritative model.
+// Structured profile fields are Json (list-shaped, admin-edited as a whole).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (app runtime)
+  directUrl = env("DIRECT_URL") // direct (migrations)
+}
+
+model Profile {
+  id                       String   @id @default(cuid())
+  fullName                 String   @map("full_name")
+  title                    String
+  photoUrl                 String?  @map("photo_url")
+  bio                      String?  @db.Text
+  positionAffiliation      String?  @map("position_affiliation") @db.Text
+  education                Json?
+  fellowshipsVisiting      Json?    @map("fellowships_visiting")
+  teachingRoles            Json?    @map("teaching_roles")
+  teachingAwards           Json?    @map("teaching_awards")
+  scholarshipsTravelAwards Json?    @map("scholarships_travel_awards")
+  researchInterests        Json?    @map("research_interests")
+  researchStatement        String?  @map("research_statement") @db.Text
+  invitedTalks             Json?    @map("invited_talks")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@map("profile")
+}
+
+model Research {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String   @db.Text
+  area      String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("research")
+}
+
+model Publication {
+  id        String   @id @default(cuid())
+  title     String
+  authors   String
+  venue     String
+  year      Int
+  link      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("publication")
+}
+
+model ResearchGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  members     Json // CV-style researchers & visiting professors
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("research_group")
+}
+
+enum AppointmentStatus {
+  pending
+  approved
+  declined
+  booked
+  cancelled
+}
+
+enum AppointmentSource {
+  direct
+  request
+}
+
+model Appointment {
+  id               String            @id @default(cuid())
+  requesterName    String            @map("requester_name")
+  requesterEmail   String            @map("requester_email")
+  researchGroup    String?           @map("research_group")
+  requestedTime    DateTime?         @map("requested_time")
+  topic            String?           @db.Text
+  source           AppointmentSource @default(request)
+  status           AppointmentStatus @default(pending)
+  calendlyEventRef String?           @map("calendly_event_ref")
+  cancelReason     String?           @map("cancel_reason") @db.Text
+  cancelToken      String            @unique @map("cancel_token")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("appointment")
+}
+
+model Setting {
+  key   String @id
+  value Json
+
+  @@map("setting")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
