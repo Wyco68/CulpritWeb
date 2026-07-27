@@ -1,3 +1,6 @@
-// auth module — Better Auth single-admin config, session guards (requireAdmin), login/logout.
-// Cookie sessions (httpOnly, secure), NOT JWT. Public surface re-exported here.
-export {};
+// auth module — Better Auth single-admin config (cookie sessions, httpOnly + secure, NOT JWT) and
+// the requireAdmin() guard re-checked at every admin boundary. Login/logout are served by Better
+// Auth's own handler at /api/auth/[...all].
+
+export { auth, type Auth } from './auth';
+export { requireAdmin, type AdminSession } from './require-admin';
