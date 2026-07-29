@@ -90,6 +90,13 @@ model Appointment {
   source           AppointmentSource @default(request)
   status           AppointmentStatus @default(pending)
   calendlyEventRef String?           @map("calendly_event_ref")
+  // Calendly REST integration metadata (association only; the app never mutates Calendly-side data).
+  calendlyEventUri     String?  @map("calendly_event_uri")
+  calendlyInviteeUri   String?  @unique @map("calendly_invitee_uri")
+  calendlyEventTypeUri String?  @map("calendly_event_type_uri")
+  meetingUrl           String?  @map("meeting_url")
+  scheduledAt          DateTime? @map("scheduled_at")
+  cancelledAt          DateTime? @map("cancelled_at")
   cancelReason     String?           @map("cancel_reason") @db.Text
   cancelToken      String            @unique @map("cancel_token")
   createdAt        DateTime          @default(now()) @map("created_at")
