@@ -15,5 +15,20 @@
     "title": "The Culprit",
     "subtitle": "A clean public presence for a security researcher, plus a lightweight, admin-controlled meeting workflow.",
     "cta": "Request a meeting"
+  },
+  "appointment": {
+    "metaTitle": "Make Appointment",
+    "metaDescription": "Book a 30-minute meeting directly against live availability, or send a meeting request for review.",
+    "eyebrow": "Make Appointment",
+    "title": "Schedule a meeting",
+    "subtitle": "Book a 30-minute slot directly against live availability, or send a request for review.",
+    "bookDirectlyTitle": "Book directly",
+    "bookDirectlyBody": "Pick an open 30-minute slot below. Your booking is confirmed instantly — no approval needed.",
+    "calendly": {
+      "regionLabel": "Calendly scheduling widget",
+      "loading": "Loading available times…",
+      "unavailableTitle": "Scheduling is temporarily unavailable",
+      "unavailableBody": "Direct booking isn't configured right now. Please check back soon or send a meeting request instead."
+    }
   }
 }
