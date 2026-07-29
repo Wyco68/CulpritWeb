@@ -29,6 +29,11 @@ const serverSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
   R2_PUBLIC_BASE_URL: z.string().url().optional(),
+  // Calendly REST integration (Personal Access Token, single professor account). All optional so
+  // dev/test boots unconfigured; when unset the integration reports "not configured" and never crashes.
+  CALENDLY_ACCESS_TOKEN: z.string().min(1).optional(),
+  CALENDLY_USER_URI: z.string().url().optional(),
+  CALENDLY_WEBHOOK_SIGNING_KEY: z.string().min(1).optional(),
 });
 
 export const env = serverSchema.parse(process.env);
