@@ -50,4 +50,4 @@ export {
   type AppointmentOwnerView,
 } from './appointment.serializer';
 
-export { getAppointmentService } from './container';
+export { getAppointmentService, getCalendlyLinkStore } from './container';

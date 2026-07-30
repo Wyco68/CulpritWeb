@@ -5,6 +5,40 @@
 
 export { CalendlyEmbed, type CalendlyEmbedProps } from './calendly/calendly-embed';
 
+// Calendly REST integration (embed is separate). Service is the sole entry point for callers.
+export { getCalendlyService } from './calendly/calendly.container';
+export {
+  createCalendlyService,
+  type CalendlyService,
+  type CalendlyServiceDeps,
+  type CalendlyLinkStore,
+  type CalendlyBookingLink,
+  type LinkCreatedResult,
+  type LinkCancelledResult,
+} from './calendly/calendly.service';
+export { HttpCalendlyClient, type CalendlyClient } from './calendly/calendly.client';
+export {
+  listScheduledEventsQuerySchema,
+  availabilityQuerySchema,
+  cancelEventSchema,
+  type ListScheduledEventsQuery,
+  type AvailabilityQuery,
+  type CancelEventInput,
+} from './calendly/calendly.schema';
+export { verifyWebhookSignature } from './calendly/calendly.webhook';
+export type {
+  CalendlyUser,
+  CalendlyEventType,
+  CalendlyScheduledEvent,
+  CalendlyInvitee,
+  CalendlyAvailabilitySlot,
+  CalendlyEventStatus,
+  CalendlyWebhookResult,
+  CalendlyBookingUnsupported,
+  ListScheduledEventsParams,
+  AvailabilityParams,
+} from './calendly/calendly.types';
+
 export {
   type EmailClient,
   type SendEmailInput,
