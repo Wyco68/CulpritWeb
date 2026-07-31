@@ -34,9 +34,19 @@ export function apiError(error: AppError): NextResponse<ApiError> {
   if (error instanceof RateLimitError && error.retryAfterSeconds != null) {
     headers['Retry-After'] = String(error.retryAfterSeconds);
   }
-  // Log server-side detail; only the safe code/message reaches the client.
+  // Log server-side detail; only the safe code/message reaches the client (never `cause`/stack).
   if (error.httpStatus >= 500) {
-    logger.error('request_failed', { code: error.code, kind: error.kind });
+    const cause = error.cause;
+    logger.error('request_failed', {
+      code: error.code,
+      kind: error.kind,
+      stack: error.stack,
+      ...(cause instanceof Error
+        ? { causeMessage: cause.message, causeStack: cause.stack, causeName: cause.name }
+        : cause !== undefined
+          ? { cause: String(cause) }
+          : {}),
+    });
   }
   return NextResponse.json(body, { status: error.httpStatus, headers });
 }
