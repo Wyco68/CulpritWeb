@@ -187,8 +187,8 @@
   </ul>
   <h3>Non-Goals</h3>
   <ul>
-    <li><strong>NG1</strong> — Direct booking is handled by the Calendly widget itself; the app does not auto-create a Calendly event from a <span class="pill pending">pending</span> request (that path stays manual).</li>
-    <li><strong>NG2</strong> — No real-time Calendly sync / webhooks in MVP: Calendly-side changes are not pushed back (needs paid plan); admin reconciles manually.</li>
+    <li><strong>NG1</strong> — Direct booking is handled by the Calendly widget itself; the app does not auto-create a Calendly event from a <span class="pill pending">pending</span> request (that path stays manual). No Calendly API supports programmatic booking creation on any plan, so this remains true even after the REST integration below.</li>
+    <li><strong>NG2</strong> — <s>No real-time Calendly sync / webhooks in the MVP</s> <strong>Superseded (2026-08-02):</strong> a server-side Calendly REST integration was built ahead of schedule (read event-types/scheduled events/availability, admin-triggered cancel that drives the local status machine, and a signature-verified idempotent webhook receiver for <code>invitee.created</code>/<code>invitee.canceled</code>) — see §14.2. Scoped to <strong>read + cancel + webhook-receive</strong>; does not include auto-book/create-booking, which stays out of scope since Calendly has no public API for it on any plan. Webhook <em>subscription</em> itself may still require a paid Calendly plan; the receiver is built and ready regardless.</li>
     <li><strong>NG3</strong> — No public user accounts / logins / visitor profiles.</li>
     <li><strong>NG4</strong> — No multi-admin, no per-researcher self-editing in MVP (single admin).</li>
     <li><strong>NG5</strong> — No payments, chat, or extra content-approval workflows.</li>
@@ -362,6 +362,12 @@
     <tr><td>source</td><td><code>enum</code></td><td><code>direct</code> (Calendly) · <code>request</code> (admin-reviewed)</td></tr>
     <tr><td>status</td><td><code>enum</code></td><td><span class="pill pending">pending</span> <span class="pill approved">approved</span> <span class="pill declined">declined</span> <span class="pill booked">booked</span> <span class="pill cancelled">cancelled</span></td></tr>
     <tr><td>calendly_event_ref</td><td><code>string</code></td><td>set on direct or manual booking (nullable)</td></tr>
+    <tr><td>calendlyEventUri</td><td><code>string</code></td><td>Calendly scheduled-event URI, from REST integration / webhook (nullable)</td></tr>
+    <tr><td>calendlyInviteeUri</td><td><code>string</code></td><td>Calendly invitee URI, unique, drives webhook idempotency (nullable)</td></tr>
+    <tr><td>calendlyEventTypeUri</td><td><code>string</code></td><td>Calendly event-type URI (nullable)</td></tr>
+    <tr><td>meetingUrl</td><td><code>string</code></td><td>meeting location/join URL from Calendly (nullable)</td></tr>
+    <tr><td>scheduledAt</td><td><code>timestamp</code></td><td>Calendly-reported scheduled start time (nullable)</td></tr>
+    <tr><td>cancelledAt</td><td><code>timestamp</code></td><td>Calendly-reported cancellation time (nullable)</td></tr>
     <tr><td>cancel_reason</td><td><code>text</code></td><td>nullable</td></tr>
     <tr><td>cancel_token</td><td><code>string</code></td><td>unique link for visitor self-cancel</td></tr>
     <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
@@ -474,6 +480,18 @@
     <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/decline</code></td><td>Admin</td><td>pending → declined.</td></tr>
     <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/book</code></td><td>Admin</td><td>approved → booked + set event ref.</td></tr>
     <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/cancel</code></td><td>Admin</td><td>approved/booked → cancelled + reason.</td></tr>
+  </table></div>
+  <h3>8.2a Calendly REST integration</h3>
+  <blockquote>Adopted ahead of schedule (2026-08-02) as an intentional deviation from NG2 — see §14.2.
+  Server-only, PAT-authenticated; read + admin-cancel + webhook-receive only, not booking creation.</blockquote>
+  <div class="twrap"><table>
+    <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/event-types</code></td><td>Admin</td><td>List the professor's bookable Calendly event types.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/events</code></td><td>Admin</td><td>List scheduled Calendly events (filter by status, time window).</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/availability</code></td><td>Admin</td><td>Open slots for one event type/window.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/cancel</code></td><td>Admin</td><td>Cancels a scheduled Calendly event and syncs the local appointment's status.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/book</code></td><td>Admin</td><td>Always returns <code>{ supported: false, reason, schedulingUrl }</code> — no public booking-creation API on any Calendly plan; not a real booking action.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/webhook</code></td><td>Public (signature-verified)</td><td>Receives <code>invitee.created</code>/<code>invitee.canceled</code>, idempotent via unique <code>calendlyInviteeUri</code>.</td></tr>
   </table></div>
   <h3>8.3 Admin content &amp; auth</h3>
   <div class="twrap"><table>
@@ -652,14 +670,25 @@
     <tr><td>See upcoming meetings</td><td class="center yes">✅</td></tr>
     <tr><td>Cancel a meeting</td><td class="center yes">✅</td></tr>
     <tr><td>Simple booking widget (embed)</td><td class="center yes">✅</td></tr>
-    <tr><td>Auto-book after admin approves</td><td class="center no">❌ needs paid</td></tr>
-    <tr><td>Instant sync updates (webhooks)</td><td class="center no">❌ needs paid</td></tr>
+    <tr><td>Read event types / availability via REST API</td><td class="center yes">✅</td></tr>
+    <tr><td>Cancel a meeting via REST API (syncs local status)</td><td class="center yes">✅</td></tr>
+    <tr><td>Receive webhooks (invitee.created / invitee.canceled)</td><td class="center yes">✅ built, ⚠️ subscribing may need paid</td></tr>
+    <tr><td>Auto-book / create a booking via API</td><td class="center no">❌ no public API on any plan</td></tr>
   </table></div>
-  <blockquote><strong>Takeaway:</strong> direct visitor booking uses the free embedded widget. Still needs
-  a <strong>paid</strong> plan: (a) auto-creating a Calendly event from an approved in-app request, and
-  (b) webhook sync so Calendly-side reschedules/cancellations flow back into the app. MVP: direct booking
-  via the free widget; the in-app request path is booked <strong>manually</strong>, Calendly-side changes
-  reconciled manually.</blockquote>
+  <blockquote><strong>Takeaway:</strong> direct visitor booking still uses the free embedded widget.
+  <strong>Adopted deviation (2026-08-02):</strong> a full server-side Calendly REST integration was built:
+  a PAT-authenticated client reading event types, scheduled events, and availability; an admin
+  <code>cancel</code> endpoint that also drives the local appointment state machine; and a
+  signature-verified, idempotent webhook receiver for <code>invitee.created</code>/<code>invitee.canceled</code>
+  (unique on <code>calendlyInviteeUri</code>). This supersedes NG2's "no webhooks/sync in MVP" ahead of
+  schedule, scoped to <strong>read + cancel + webhook-receive</strong>. What remains genuinely unavailable,
+  and does not change even on a paid plan, is programmatic <strong>booking creation</strong>: Calendly does
+  not expose that endpoint on any plan, so <code>createBooking()</code> honestly reports
+  <code>{ supported: false, reason, schedulingUrl }</code> instead of faking it. The in-app request path
+  (pending → approved) still requires the admin to manually book the meeting in the embedded widget and
+  mark it booked. Webhook <em>subscription</em> itself may still require a paid Calendly plan per Calendly's
+  plan matrix; the receiver is implemented and ready regardless. See
+  <code>src/modules/integrations/calendly/README.md</code> for the full capability list and rationale.</blockquote>
   <h3>14.3 Open questions</h3>
   <ul>
     <li><strong>OQ1</strong> — Delegated assistant admin at launch, or later?</li>
