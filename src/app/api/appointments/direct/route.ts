@@ -7,11 +7,12 @@ import {
 import { guardPublicWrite } from '@/modules/integrations';
 import { mapResult } from '@/modules/shared/lib/result';
 import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import { readJsonBody } from '@/modules/shared/lib/request';
 
 // Public: record a direct Calendly booking → booked (source=direct). Turnstile + rate-limit protected.
 export async function POST(request: NextRequest) {
   try {
-    const parsed = createDirectBookingSchema.safeParse(await request.json());
+    const parsed = createDirectBookingSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const guard = await guardPublicWrite({

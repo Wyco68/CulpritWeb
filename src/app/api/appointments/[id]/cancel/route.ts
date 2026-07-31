@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getAppointmentService, cancelByTokenSchema, toAppointmentView } from '@/modules/appointments';
 import { getRateLimiter } from '@/modules/integrations';
-import { getClientIp } from '@/modules/shared/lib/request';
+import { getClientIp, readJsonBody } from '@/modules/shared/lib/request';
 import { RateLimitError } from '@/modules/shared/lib/errors';
 import { mapResult } from '@/modules/shared/lib/result';
 import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
@@ -11,7 +11,7 @@ import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/
 export async function POST(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
-    const parsed = cancelByTokenSchema.safeParse(await request.json());
+    const parsed = cancelByTokenSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const ip = getClientIp(request.headers);
