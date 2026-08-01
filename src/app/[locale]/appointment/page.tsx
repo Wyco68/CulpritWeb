@@ -1,6 +1,24 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendlyEmbed } from '@/modules/integrations';
+import { CalendlyEmbed, getCalendlyService } from '@/modules/integrations';
+import { publicEnv } from '@/modules/shared/lib/env';
+
+// Per Calendly's "display the scheduling page for users of your app" guide: prefer the live
+// `scheduling_url` from GET /event_types (the specific 30-min event, step 3 of the guide) over the
+// bare user landing page from GET /users/me (step 1) — the landing page lists every event type and
+// is more prone to widget-init issues for a single-event inline embed. Falls back to the configured
+// env URL when the API isn't reachable/configured (dev, missing token, rate limit) so the page never breaks.
+async function resolveSchedulingUrl(): Promise<string | undefined> {
+  const service = getCalendlyService();
+
+  const eventTypes = await service.getEventTypes();
+  if (eventTypes.ok && eventTypes.data[0]?.schedulingUrl) return eventTypes.data[0].schedulingUrl;
+
+  const currentUser = await service.getCurrentUser();
+  if (currentUser.ok && currentUser.data.schedulingUrl) return currentUser.data.schedulingUrl;
+
+  return publicEnv.calendlyUrl || undefined;
+}
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -17,6 +35,7 @@ export default async function AppointmentPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: 'appointment' });
+  const schedulingUrl = await resolveSchedulingUrl();
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
@@ -30,7 +49,7 @@ export default async function AppointmentPage({ params }: PageProps) {
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{t('bookDirectlyBody')}</p>
         <div className="mt-6">
-          <CalendlyEmbed />
+          <CalendlyEmbed url={schedulingUrl} />
         </div>
       </section>
 
