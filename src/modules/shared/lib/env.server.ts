@@ -36,4 +36,12 @@ const serverSchema = z.object({
   CALENDLY_WEBHOOK_SIGNING_KEY: z.string().min(1).optional(),
 });
 
-export const env = serverSchema.parse(process.env);
+// dotenv loads an unset-but-present `KEY=` line as `""`, not `undefined` — Zod's `.optional()`
+// only skips validation for `undefined`, so a blank optional secret (e.g. a not-yet-configured
+// Calendly/Resend/Turnstile key) would otherwise fail `.min(1)`/`.url()` and crash boot. Treat
+// blank env values as unset before validating.
+const rawEnv = Object.fromEntries(
+  Object.entries(process.env).map(([key, value]) => [key, value === '' ? undefined : value]),
+);
+
+export const env = serverSchema.parse(rawEnv);
