@@ -60,6 +60,7 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [initialised, setInitialised] = useState(false);
+  const [initError, setInitError] = useState(false);
   const regionLabelId = useId();
 
   const baseUrl = url ?? publicEnv.calendlyUrl;
@@ -71,13 +72,19 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
     const container = containerRef.current;
     if (!scriptReady || !widgetUrl || !container || !window.Calendly) return;
 
-    // Re-initialise on theme change: clear any prior iframe, then mount fresh.
-    container.replaceChildren();
-    window.Calendly.initInlineWidget({ url: widgetUrl, parentElement: container });
-    setInitialised(true);
+    try {
+      // Re-initialise on theme change: clear any prior iframe, then mount fresh.
+      container.replaceChildren();
+      window.Calendly.initInlineWidget({ url: widgetUrl, parentElement: container });
+      setInitialised(true);
+    } catch {
+      // Third-party widget script failed to initialise (bad URL, Calendly-side outage, etc.) — show
+      // the empty state instead of leaving the loading spinner spinning forever.
+      setInitError(true);
+    }
   }, [scriptReady, widgetUrl]);
 
-  if (!widgetUrl) {
+  if (!widgetUrl || initError) {
     return (
       <div
         role="status"
@@ -111,9 +118,16 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
         </div>
       )}
 
+      {/*
+        NOT the `calendly-inline-widget` class: that class name is Calendly's auto-scan hook for the
+        declarative (data-url attribute) embed method. We use the imperative `initInlineWidget` JS
+        API instead, but widget.js still auto-scans the DOM for that class at script-load time and
+        crashes in its internal `parseOptions` (reads a `data-url` it expects to find) when the class
+        is present without the attribute. Keeping this container un-matched avoids that crash.
+      */}
       <div
         ref={containerRef}
-        className="calendly-inline-widget w-full overflow-hidden rounded-lg"
+        className="calendly-embed-container w-full overflow-hidden rounded-lg"
         style={{ minWidth: 320, minHeight }}
         data-testid="calendly-inline-widget"
       />
