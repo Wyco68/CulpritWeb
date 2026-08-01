@@ -10,6 +10,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
+    // Explicit default avoids next-intl's ENVIRONMENT_FALLBACK "no timeZone configured" warning
+    // (it otherwise falls back to the server's local TZ, which is also non-deterministic across
+    // hosts). Appointment times are already rendered/communicated in absolute form elsewhere.
+    timeZone: 'UTC',
     messages: (await import(`../../messages/${locale}.json`)).default,
   };
 });
