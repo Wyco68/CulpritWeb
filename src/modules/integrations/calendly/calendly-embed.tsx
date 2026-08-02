@@ -61,7 +61,23 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
   const [scriptReady, setScriptReady] = useState(false);
   const [initialised, setInitialised] = useState(false);
   const [initError, setInitError] = useState(false);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const regionLabelId = useId();
+
+  // Calendly's iframe reports its real content height via postMessage (its own inline embed API);
+  // without this the container height stays whatever we guessed and Calendly's iframe scrolls
+  // internally instead of the page growing to fit it.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (!event.origin.endsWith('calendly.com')) return;
+      const data = event.data as { event?: string; payload?: { height?: number } };
+      if (data?.event === 'calendly.page_height' && typeof data.payload?.height === 'number') {
+        setContentHeight(data.payload.height);
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   const baseUrl = url ?? publicEnv.calendlyUrl;
   // `resolvedTheme` is undefined until next-themes hydrates; default to light to avoid a flash.
@@ -127,8 +143,8 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
       */}
       <div
         ref={containerRef}
-        className="calendly-embed-container w-full overflow-hidden rounded-lg"
-        style={{ minWidth: 320, minHeight }}
+        className="calendly-embed-container w-full rounded-lg"
+        style={{ minWidth: 320, height: contentHeight ?? minHeight }}
         data-testid="calendly-inline-widget"
       />
 
