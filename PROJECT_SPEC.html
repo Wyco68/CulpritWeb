@@ -47,6 +47,8 @@
   nav.toc li a{display:block;padding:7px 22px;color:var(--sidebar-ink);border-left:3px solid transparent}
   nav.toc li a:hover{background:rgba(255,255,255,.05);text-decoration:none;color:#fff}
   nav.toc li a::before{counter-increment:s;content:counter(s) ".\00a0\00a0";color:var(--sidebar-active);font-family:var(--mono);font-size:11.5px}
+  nav.toc .back{display:block;padding:0 22px 16px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08);
+    color:var(--sidebar-active);font-family:var(--mono);font-size:12px}
 
   /* Content */
   main{flex:1;min-width:0;padding:44px 56px 120px;max-width:960px}
@@ -119,6 +121,7 @@
 
 <nav class="toc">
   <div class="brand"><b>THE CULPRIT</b><span>PROJECT_SPEC · v1.0</span></div>
+  <a class="back" href="./progress.html">Development Progress &rarr;</a>
   <ol>
     <li><a href="#s1">Project Overview</a></li>
     <li><a href="#s2">Goals &amp; Non-Goals</a></li>
@@ -142,9 +145,8 @@
   <h1>PROJECT_SPEC — "The Culprit"</h1>
   <div class="sub">Personal academic website + direct Calendly booking &amp; appointment-request system for an information-security professor.</div>
   <div class="meta">
-    <span class="tag">Status: Draft v1.0</span>
+    <span class="tag">Status: v1.0 — In development</span>
     <span class="tag">Owner: Project team</span>
-    <span class="tag">Source: raw_spec.md</span>
     <span class="tag">Calendly: Free + direct booking</span>
     <span class="tag">Slot: 30 min</span>
     <span class="tag">Auth: Single admin</span>
@@ -700,7 +702,6 @@
   <ul>
     <li>UCL profile (design reference): <a href="https://profiles.ucl.ac.uk/84211-lorenzo-cavallaro">profiles.ucl.ac.uk/84211-lorenzo-cavallaro</a></li>
     <li>Calendly: <a href="https://calendly.com">calendly.com</a></li>
-    <li>Source notes: <code>raw_spec.md</code></li>
   </ul>
 </section>
 
