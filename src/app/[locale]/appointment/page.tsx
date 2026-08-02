@@ -48,8 +48,11 @@ export default async function AppointmentPage({ params }: PageProps) {
           {t('bookDirectlyTitle')}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{t('bookDirectlyBody')}</p>
-        <div className="mt-6">
-          <CalendlyEmbed url={schedulingUrl} />
+        {/* Widen past the article column: Calendly's calendar grid is cramped in a narrow column. */}
+        <div className="-mx-6 mt-6 sm:mx-0">
+          <div className="mx-auto max-w-5xl px-6 sm:px-0">
+            <CalendlyEmbed url={schedulingUrl} minHeight={900} />
+          </div>
         </div>
       </section>
 
