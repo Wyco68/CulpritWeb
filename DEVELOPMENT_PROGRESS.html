@@ -46,8 +46,10 @@
   nav.toc li a{display:block;padding:7px 22px;color:var(--sidebar-ink);border-left:3px solid transparent}
   nav.toc li a:hover{background:rgba(255,255,255,.05);text-decoration:none;color:#fff}
   nav.toc li a::before{counter-increment:s;content:counter(s) ".\00a0\00a0";color:var(--sidebar-active);font-family:var(--mono);font-size:11.5px}
-  nav.toc .back{display:block;padding:10px 22px;margin-top:12px;border-top:1px solid rgba(255,255,255,.08);
-    color:var(--sidebar-active);font-family:var(--mono);font-size:12px}
+  nav.toc .site-tabs{padding:0 22px 14px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+  nav.toc .site-tabs a{display:block;padding:5px 0;color:var(--sidebar-ink);font-family:var(--mono);font-size:12px}
+  nav.toc .site-tabs a:hover{color:#fff;text-decoration:none}
+  nav.toc .site-tabs a.active{color:var(--sidebar-active);font-weight:600}
 
   main{flex:1;min-width:0;padding:44px 56px 120px;max-width:960px}
   header.doc{margin-bottom:36px;padding-bottom:24px;border-bottom:2px solid var(--line)}
@@ -99,13 +101,19 @@
 
 <nav class="toc">
   <div class="brand"><b>THE CULPRIT</b><span>Development Progress</span></div>
+  <div class="site-tabs">
+    <a href="./index.html">Project Spec</a>
+    <a href="./progress.html" class="active">Progress</a>
+    <a href="./frontend.html">Front-end</a>
+    <a href="./backend.html">Back-end</a>
+    <a href="./deployment.html">Deployment</a>
+  </div>
   <ol>
     <li><a href="#overview">Overview</a></li>
     <li><a href="#delivered">Delivered</a></li>
     <li><a href="#next">Up Next</a></li>
     <li><a href="#decisions">Decisions Needed</a></li>
   </ol>
-  <a class="back" href="./index.html">&larr; Back to Project Spec</a>
 </nav>
 
 <main>
