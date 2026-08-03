@@ -9,6 +9,12 @@ professor, built on Next.js 15.
   surface, and architecture.
 - **[Development Progress](https://wyco68.github.io/CulpritWeb/progress.html)** — current status,
   what's shipped, what's next.
+- **[Front-end](https://wyco68.github.io/CulpritWeb/frontend.html)** — what's live on the client
+  side today.
+- **[Back-end](https://wyco68.github.io/CulpritWeb/backend.html)** — server systems currently
+  running.
+- **[Deployment](https://wyco68.github.io/CulpritWeb/deployment.html)** — where it's hosted and how
+  updates ship.
 
 ## Development
 
