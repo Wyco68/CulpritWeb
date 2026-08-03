@@ -1,8 +1,13 @@
 name: Deploy Docs to GitHub Pages
 
-# Publishes the client-facing docs as the GitHub Pages site: PROJECT_SPEC.html (as index.html) and
-# DEVELOPMENT_PROGRESS.html (as progress.html). Fully independent from the Vercel application
-# deploy — different target, different domain. This workflow touches nothing else in the repo.
+# Publishes the client-facing docs as the GitHub Pages site:
+#   PROJECT_SPEC.html          -> index.html
+#   DEVELOPMENT_PROGRESS.html  -> progress.html
+#   FRONTEND.html              -> frontend.html
+#   BACKEND.html               -> backend.html
+#   DEPLOYMENT.html            -> deployment.html
+# Fully independent from the Vercel application deploy — different target, different domain.
+# This workflow touches nothing else in the repo.
 
 on:
   push:
@@ -10,6 +15,9 @@ on:
     paths:
       - 'PROJECT_SPEC.html'
       - 'DEVELOPMENT_PROGRESS.html'
+      - 'FRONTEND.html'
+      - 'BACKEND.html'
+      - 'DEPLOYMENT.html'
       - '.github/workflows/deploy-spec-pages.yml'
   workflow_dispatch:
 
@@ -34,7 +42,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Assemble site (spec as index.html, progress as progress.html)
+      - name: Assemble site
         run: |
           set -euo pipefail
           if [ ! -f PROJECT_SPEC.html ]; then
@@ -44,10 +52,14 @@ jobs:
           rm -rf _site
           mkdir -p _site
           cp PROJECT_SPEC.html _site/index.html
-          if [ -f DEVELOPMENT_PROGRESS.html ]; then
-            cp DEVELOPMENT_PROGRESS.html _site/progress.html
-          fi
-          # Do NOT copy any other file. The Pages site is these two docs only.
+          for pair in "DEVELOPMENT_PROGRESS.html:progress.html" "FRONTEND.html:frontend.html" "BACKEND.html:backend.html" "DEPLOYMENT.html:deployment.html"; do
+            src="${pair%%:*}"
+            dest="${pair##*:}"
+            if [ -f "$src" ]; then
+              cp "$src" "_site/$dest"
+            fi
+          done
+          # Do NOT copy any other file. The Pages site is these docs only.
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
