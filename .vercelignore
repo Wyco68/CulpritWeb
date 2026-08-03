@@ -4,6 +4,7 @@
 # never reach Vercel anyway — listed here as defense in depth.)
 
 PROJECT_SPEC.html
+DEVELOPMENT_PROGRESS.html
 PROJECT_SPEC.md
 raw_spec.md
 docs/internal/
