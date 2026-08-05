@@ -4,3 +4,7 @@
 
 export { auth, type Auth } from './auth';
 export { requireAdmin, type AdminSession } from './require-admin';
+export { authClient, signIn, signOut, useSession } from './auth-client';
+export { loginSchema, type LoginInput } from './login.schema';
+export { LoginForm } from './ui/login-form';
+export { LogoutButton } from './ui/logout-button';
