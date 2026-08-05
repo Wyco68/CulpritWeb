@@ -1,9 +1,8 @@
 @import 'tailwindcss';
 
 /* Tailwind v4 CSS-first config. Design tokens live here — retune the palette in one place.
-   Aesthetic: professional, minimalist, information-security — restrained neutrals + one accent. */
-
-@custom-variant dark (&:is(.dark *));
+   Aesthetic: professional, minimalist, information-security — restrained neutrals + one accent.
+   One fixed look, matching the Figma prototype exactly — no light/dark theme switching. */
 
 :root {
   --background: hsl(0 0% 100%);
@@ -13,17 +12,15 @@
   --border: hsl(220 13% 91%);
   --accent: hsl(190 90% 30%);
   --accent-foreground: hsl(0 0% 100%);
+  /* Fixed brand band (site header/hero + active-tab underline surface), matching the Figma
+     prototype's #0c1a2e/#112240 header — a constant navy identity element distinct from the
+     light page background used everywhere else. */
+  --navy: hsl(215 59% 11%);
+  --navy-foreground: hsl(210 20% 92%);
+  --destructive: hsl(3 72% 42%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --ring: hsl(190 90% 30%);
   --radius: 0.5rem;
-}
-
-.dark {
-  --background: hsl(222 22% 7%);
-  --foreground: hsl(210 20% 92%);
-  --muted: hsl(222 16% 14%);
-  --muted-foreground: hsl(215 14% 62%);
-  --border: hsl(220 14% 18%);
-  --accent: hsl(187 72% 50%);
-  --accent-foreground: hsl(222 22% 7%);
 }
 
 @theme inline {
@@ -34,7 +31,14 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-navy: var(--navy);
+  --color-navy-foreground: var(--navy-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
   --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -53,4 +57,16 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* For horizontally-scrollable strips (tab bars, data tables on narrow viewports) where the
+   content still needs to scroll — via touch, trackpad, or keyboard — but a visible scrollbar
+   track/thumb would be visual clutter against the restrained design. Scrolling stays fully
+   functional; only the bar itself is hidden. */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, modern Edge */
 }

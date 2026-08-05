@@ -44,10 +44,20 @@ export type {
 } from './appointment.repository';
 
 export {
+  createUpcomingEventsService,
+  type UpcomingEventsService,
+  type UpcomingEventsServiceDeps,
+  type UpcomingEventsResult,
+} from './upcoming-events.service';
+
+export {
   toAppointmentView,
   toAppointmentOwnerView,
   type AppointmentView,
   type AppointmentOwnerView,
 } from './appointment.serializer';
 
-export { getAppointmentService, getCalendlyLinkStore } from './container';
+export { getAppointmentService, getCalendlyLinkStore, getUpcomingEventsService } from './container';
+
+export { UpcomingEventsList } from './ui/upcoming-events-list';
+export { AppointmentsTable } from './ui/appointments-table';

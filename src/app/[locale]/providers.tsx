@@ -2,13 +2,13 @@
 
 import { type ReactNode } from 'react';
 import { NextIntlClientProvider, type Messages } from 'next-intl';
-import { ThemeProvider } from 'next-themes';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { getQueryClient } from '@/modules/shared/lib/query-client';
 
-// Composed provider tree (outer → inner): i18n → theme → query → (auth, added later).
-// Order matters: inner providers may read translations/theme.
+// Composed provider tree (outer → inner): i18n → query → (auth, added later).
+// No theme provider — the site has one fixed look (navy chrome + light content), matching the
+// Figma prototype exactly; light/dark switching is explicitly out of scope.
 export function Providers({
   locale,
   messages,
@@ -22,12 +22,10 @@ export function Providers({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <Toaster richColors closeButton />
-        </QueryClientProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <Toaster richColors closeButton />
+      </QueryClientProvider>
     </NextIntlClientProvider>
   );
 }

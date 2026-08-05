@@ -1,26 +1,19 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaNeon } from '@prisma/adapter-neon';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { logger } from './logger';
 
 // Prisma is imported ONLY here and in repositories. Singleton to survive HMR / serverless reuse.
-// Prisma 7 requires a driver adapter; Neon's serverless driver works over HTTP/WebSocket,
-// which is what makes this viable on Vercel's serverless/edge runtimes.
+// Prisma 7 requires a driver adapter; `@prisma/adapter-pg` wraps a standard `pg` Pool, which is
+// what Supabase Postgres (or any plain Postgres host) expects — DATABASE_URL should point at
+// Supabase's pooled connection (port 6543, pgbouncer) so serverless/edge invocations on Vercel
+// don't exhaust the DB's direct connection limit.
 //
-// Neon suspends its compute after ~5 minutes of inactivity, and the WebSocket-based `Pool` the
-// adapter holds internally is a long-lived object tied to this module-level singleton. When the
-// underlying socket drops during an idle period, the *next* query grabbed from the pool fails
-// immediately — before any SQL reaches the wire, hence no `prisma:query` log line — surfacing as
-// an opaque 500. The adapter itself can't transparently recover from this (a dead socket errors
-// once and is evicted from the pool), so we retry the query once: the pool hands the retry a
-// freshly-dialed connection, which succeeds. `onPoolError`/`onConnectionError` also give us
-// visibility into these background failures instead of them being swallowed by the driver.
-const adapter = new PrismaNeon(
-  { connectionString: process.env.DATABASE_URL },
-  {
-    onPoolError: (err) => logger.warn('prisma_neon_pool_error', { message: err.message }),
-    onConnectionError: (err) => logger.warn('prisma_neon_connection_error', { message: err.message }),
-  },
-);
+// A pooled connection can still hand back a socket that died while idle between invocations —
+// the *next* query grabbed from the pool then fails immediately, before any SQL reaches the wire,
+// surfacing as an opaque 500. The pool can't transparently recover from this (a dead socket errors
+// once and is evicted), so we retry the query once below: the retry gets a freshly-dialed
+// connection and succeeds.
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
 const basePrismaClient = new PrismaClient({
   adapter,

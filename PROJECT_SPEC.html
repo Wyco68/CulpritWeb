@@ -177,8 +177,9 @@
     the visitor names <strong>which research group they represent</strong>, so the admin sees which groups
     are due to meet. Cancellations are kept as records, never deleted.</li>
   </ul>
-  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic —
-  restrained palette, mono accents, clean typographic hierarchy.</p>
+  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic. See
+  §9 for the current (2026-08-05) Figma-derived visual system: fixed dark-navy header, mono numbered
+  indices, colored-dot status badges.</p>
   <blockquote><strong>Elevator pitch:</strong> A clean public presence for a security researcher, plus a
   lightweight, admin-controlled meeting-request workflow that keeps a full audit trail of every request.</blockquote>
 </section>
@@ -211,8 +212,8 @@
   <div class="card">
     <h4>In Scope (MVP)</h4>
     <ul>
-      <li>Public site: <strong>Bio</strong>, <strong>Researches</strong>, <strong>Upcoming Events</strong> (admin-gated), <strong>Make Appointment</strong>.</li>
-      <li>Research groups &amp; visiting professors (CV-style: works &amp; achievements).</li>
+      <li>Public site: <strong>About</strong>, <strong>Research</strong>, <strong>Publications</strong>, <strong>Team Members</strong>, <strong>Upcoming Events</strong> (admin-gated), <strong>Make Appointment</strong> (current 6-tab layout, see §9.1 note, 2026-08-05).</li>
+      <li>Research groups &amp; visiting professors (CV-style: works &amp; achievements), via <strong>Team Members</strong>.</li>
       <li>Direct Calendly booking (→ <span class="pill booked">booked</span>) and request form (→ <span class="pill pending">pending</span>); requester names their research group.</li>
       <li>Admin panel: <strong>Set Information</strong> + <strong>Manage Appointments</strong>.</li>
       <li>Lifecycle: direct → booked; request pending → approved → booked, plus declined and cancelled.</li>
@@ -254,11 +255,20 @@
     <tr><td><code>FR-1</code></td><td>View <strong>Bio</strong>: photo, name, title, background text.</td></tr>
     <tr><td><code>FR-2</code></td><td>View <strong>Researches</strong>: list of works (title + summary + area).</td></tr>
     <tr><td><code>FR-3</code></td><td>View <strong>Publications</strong>: title, authors, venue, year, external link.</td></tr>
-    <tr><td><code>FR-4</code></td><td>View <strong>Research Groups</strong> &amp; visiting professors (CV-style).</td></tr>
+    <tr><td><code>FR-4</code></td><td>View <strong>Research Groups</strong> &amp; visiting professors (CV-style). <em>Behavioral note:</em> served today by the public <strong>Team Members</strong> tab, grouped by research group (backed by the relational <code>TeamMember</code> entity, §7.1), rather than a separate "Research Groups" tab.</td></tr>
     <tr><td><code>FR-5</code></td><td>View <strong>Upcoming Events</strong> <strong>only if</strong> admin enabled visibility.</td></tr>
     <tr><td><code>FR-6</code></td><td>Site fully readable without login.</td></tr>
   </table></div>
   <h3>5.2 Appointment request (Visitor)</h3>
+  <blockquote><strong>Note (current-state deviation, 2026-08-05):</strong> per explicit client
+  instruction ("calendly only accessible by widget embedded, no form"), the public <strong>Make
+  Appointment</strong> page ships with the <strong>embedded Calendly widget only</strong> — FR-7's
+  free-form request form is not rendered. FR-7/FR-8/FR-9's request-form UI and the pending-status
+  confirmation therefore have <strong>no current public entry point</strong>. The backend still
+  fully implements the request path (<code>POST /api/appointments</code>, the pending →
+  approved/declined admin workflow in §8.2/§10.1) — it's just unreached by any UI today. Direct
+  booking (FR-7a) is the sole visitor-facing flow, recorded via the Calendly webhook receiver
+  (§8.2a).</blockquote>
   <div class="twrap"><table>
     <tr><th>ID</th><th>Requirement</th></tr>
     <tr><td><code>FR-7</code></td><td>Submit request: name, email, preferred time/topic, and <strong>which research group they represent</strong>.</td></tr>
@@ -358,7 +368,22 @@
     <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
     <tr><td>name</td><td><code>string</code></td><td></td></tr>
     <tr><td>description</td><td><code>text</code></td><td></td></tr>
-    <tr><td>members</td><td><code>text/json</code></td><td>researchers &amp; visiting professors (CV-style)</td></tr>
+  </table></div>
+  <blockquote><strong>Note:</strong> <code>ResearchGroup.members</code> (text/json) was removed and
+  replaced by a proper relational <code>TeamMember</code> entity (client-requested, 2026-08-05) —
+  see below. A research group's roster is now its <code>TeamMember</code> records, not an inline
+  JSON blob.</blockquote>
+  <h4>TeamMember</h4>
+  <div class="twrap"><table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
+    <tr><td>name</td><td><code>string</code></td><td></td></tr>
+    <tr><td>role</td><td><code>string</code></td><td>e.g. "PhD Candidate", "Visiting Professor"</td></tr>
+    <tr><td>bio</td><td><code>text</code></td><td>nullable</td></tr>
+    <tr><td>photo_url</td><td><code>string</code></td><td>object-storage ref, nullable</td></tr>
+    <tr><td>research_group_id</td><td><code>uuid</code></td><td>FK → ResearchGroup, nullable (member may be unaffiliated)</td></tr>
+    <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
+    <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
   <h4>Appointment</h4>
   <div class="twrap"><table>
@@ -408,6 +433,10 @@
       <text class="dtext-mono" x="265" y="145" text-anchor="middle">PUBLICATION</text>
       <rect class="dnode" x="360" y="120" width="150" height="40" rx="8"/>
       <text class="dtext-mono" x="435" y="145" text-anchor="middle">RESEARCHGROUP</text>
+      <rect class="dnode" x="360" y="200" width="150" height="40" rx="8"/>
+      <text class="dtext-mono" x="435" y="225" text-anchor="middle">TEAMMEMBER</text>
+      <path class="dline" d="M435 160 L 435 198"/>
+      <text class="dmuted" x="442" y="182">has (optional)</text>
 
       <rect class="dnode-soft" x="540" y="18" width="150" height="40" rx="8"/>
       <text class="dtext-mono" x="615" y="43" text-anchor="middle">ADMIN</text>
@@ -476,7 +505,8 @@
     <tr><td><code>GET</code></td><td><code>/api/profile</code></td><td>Public</td><td>Get bio/profile.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/research</code></td><td>Public</td><td>List research works.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/publications</code></td><td>Public</td><td>List publications.</td></tr>
-    <tr><td><code>GET</code></td><td><code>/api/groups</code></td><td>Public</td><td>List groups &amp; members.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/groups</code></td><td>Public</td><td>List research groups.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/team-members</code></td><td>Public</td><td>List team members, ordered by sort_order. Optional <code>?groupId=</code> filter.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/events/upcoming</code></td><td>Public</td><td>Upcoming events (empty/403 if hidden).</td></tr>
   </table></div>
   <h3>8.2 Appointments</h3>
@@ -512,6 +542,7 @@
     <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/research</code></td><td>Admin</td><td>CRUD research.</td></tr>
     <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/publications</code></td><td>Admin</td><td>CRUD publications.</td></tr>
     <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/groups</code></td><td>Admin</td><td>CRUD groups.</td></tr>
+    <tr><td><code>POST/PUT/DELETE</code></td><td><code>/api/admin/team-members[/{id}]</code></td><td>Admin</td><td>CRUD team members (optional research_group_id).</td></tr>
     <tr><td><code>PUT</code></td><td><code>/api/admin/settings</code></td><td>Admin</td><td>Toggle event visibility, etc.</td></tr>
   </table></div>
   <blockquote>Admin endpoints validate the session (<code>401</code> if not). Invalid status moves are
@@ -521,20 +552,31 @@
 <!-- 9 -->
 <section id="s9">
   <h2><span class="n">09</span> UI Overview</h2>
-  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic — restrained
-  neutral palette, a single accent, mono/technical touches, generous whitespace, strong hierarchy.</p>
-  <h3>9.1 Public side — 4 tabs</h3>
+  <p><strong>Design language (2026-08-05, supersedes prior generic description):</strong> built from a
+  client-supplied Figma prototype — a fixed dark-navy header/hero band (circular profile photo, tab
+  bar with an accent-color underline on the active tab) above a light content area, monospaced
+  numbered indices for list content (e.g. publications), colored-dot status badges. One fixed visual
+  treatment; no light/dark theme switching (explicit client instruction; no OS-preference toggle
+  either). See <code>src/app/globals.css</code> for the actual design tokens rather than re-derived
+  hex values here.</p>
+  <h3>9.1 Public side — 6 tabs</h3>
+  <blockquote>Overrides the original 4-tab layout (2026-08-05). Publications is now its own tab
+  (previously bundled into "Researches"); Team Members is new (replaces a standalone "Research
+  Groups" tab — see FR-4); Make Appointment dropped its request-form UI (see §5.2 note) and is
+  Calendly-embed only. Routed as real pages under <code>src/app/[locale]/(public)/</code>.</blockquote>
   <div class="twrap"><table>
     <tr><th>Tab</th><th>Contents</th></tr>
-    <tr><td><strong>Bio</strong></td><td>Photo, name, title; structured background — position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks.</td></tr>
-    <tr><td><strong>Researches</strong></td><td>Simple list of works (+ publications, groups).</td></tr>
+    <tr><td><strong>About</strong></td><td>Photo, name, title; structured background — position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks.</td></tr>
+    <tr><td><strong>Research</strong></td><td>Simple list of research works.</td></tr>
+    <tr><td><strong>Publications</strong></td><td>Title, authors, venue, year, external link — monospaced numbered index list.</td></tr>
+    <tr><td><strong>Team Members</strong></td><td>Team members grouped by research group (CV-style: works &amp; achievements). Backed by <code>TeamMember</code> (§7.1).</td></tr>
     <tr><td><strong>Upcoming Events</strong></td><td>Next meetings + <strong>which research groups are due to meet</strong> — <strong>shown only if admin enabled visibility</strong>.</td></tr>
-    <tr><td><strong>Make Appointment</strong></td><td>Embedded <strong>Calendly</strong> widget for direct booking (30-min default). Also a request form (name, email, research group, time, topic) → shows <span class="pill pending">pending</span>.</td></tr>
+    <tr><td><strong>Make Appointment</strong></td><td>Embedded <strong>Calendly</strong> widget only, for direct booking (30-min default). No request form rendered (see §5.2 note); backend request path still exists.</td></tr>
   </table></div>
   <h3>9.2 Admin side — 2 tabs</h3>
   <div class="twrap"><table>
     <tr><th>Tab</th><th>Contents</th></tr>
-    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio, research, publications, groups. Clear <strong>"Save changes"</strong>. Event-visibility toggle; default slot duration (30 min).</td></tr>
+    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio, research, publications, groups, and <strong>team members</strong> (name, role, bio, photo, optional research-group assignment). Clear <strong>"Save changes"</strong>. Event-visibility toggle; default slot duration (30 min).</td></tr>
     <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. Buttons: Approve / Decline (requests); Cancel (approved/booked); Mark booked. Direct bookings arrive already <span class="pill booked">booked</span>.</td></tr>
   </table></div>
   <h3>9.3 Shared UI notes</h3>
@@ -617,7 +659,7 @@
       <text class="dmuted" x="310" y="346" text-anchor="middle">photos</text>
       <rect class="dnode" x="410" y="304" width="150" height="52" rx="8"/>
       <text class="dtext" x="485" y="330" text-anchor="middle">Integrations</text>
-      <text class="dmuted" x="485" y="346" text-anchor="middle">Calendly · Mail</text>
+      <text class="dmuted" x="485" y="346" text-anchor="middle">Calendly · Mail · YouTube (embed IDs)</text>
 
       <path class="dline" d="M310 68 L 310 90" marker-end="url(#ar2)"/>
       <path class="dline" d="M310 136 L 310 158" marker-end="url(#ar2)"/>
@@ -633,14 +675,21 @@
     </svg>
     <figcaption>Stack-agnostic: SPA · REST/JSON API · relational DB + object store · external integrations</figcaption>
   </figure>
+  <blockquote><strong>Note (2026-08-05):</strong> stack now concrete, not stack-agnostic aspiration —
+  see §14.1. DB is <strong>Supabase Postgres</strong>; object store is <strong>Supabase Storage</strong>
+  (buckets <code>profile</code>, <code>research</code>, <code>publications</code>, <code>events</code>
+  public-read; <code>documents</code> private/signed-URL). <strong>YouTube</strong> is the exclusive
+  video host (<code>src/modules/integrations/youtube/</code>) — no video bytes ever touch Supabase
+  Storage; the integration is built but not yet wired to any content model (no DB field stores a
+  video ID today).</blockquote>
   <h3>12.2 Module boundaries</h3>
   <ul>
-    <li><strong>content</strong> — profile, research, publications, groups (read public, write admin).</li>
+    <li><strong>content</strong> — profile, research, publications, research-groups (incl. TeamMember) (read public, write admin).</li>
     <li><strong>appointments</strong> — request intake, status machine, audit trail.</li>
-    <li><strong>auth</strong> — single-admin session management.</li>
+    <li><strong>auth</strong> — single-admin session management (Better Auth, DB-backed cookie sessions).</li>
     <li><strong>settings</strong> — feature flags (e.g. upcoming-events visibility).</li>
     <li><strong>notifications</strong> — email on status transitions.</li>
-    <li><strong>integrations</strong> — Calendly embed (client widget), email provider.</li>
+    <li><strong>integrations</strong> — Calendly (embed + server-only REST client + webhook receiver), Supabase Storage adapter, YouTube embed helper, email provider.</li>
   </ul>
   <h3>12.3 Cross-cutting</h3>
   <ul>
@@ -656,7 +705,7 @@
   <div class="twrap"><table>
     <tr><th>Milestone</th><th>Deliverables</th><th>Acceptance criteria</th></tr>
     <tr><td><strong>M0 — Scaffolding</strong></td><td>Repo, modular layout, CI, env config, DB schema migration.</td><td>App builds &amp; deploys a "hello" page; schema applies.</td></tr>
-    <tr><td><strong>M1 — Public content</strong></td><td>Content entities + public GET APIs + Bio / Researches tabs.</td><td>Visitor views seeded content; responsive; a11y passes.</td></tr>
+    <tr><td><strong>M1 — Public content</strong></td><td>Content entities + public GET APIs + About / Research tabs.</td><td>Visitor views seeded content; responsive; a11y passes.</td></tr>
     <tr><td><strong>M2 — Appointments + admin</strong></td><td>Appointment model + status machine; admin login; Manage Appointments table; Set Information forms.</td><td>Full lifecycle end-to-end; records never deleted; audit log written.</td></tr>
     <tr><td><strong>M3 — Calendly + events</strong></td><td>Embedded Calendly widget; Upcoming Events tab + visibility toggle.</td><td>Admin can manually book &amp; mark booked; events show/hide per setting.</td></tr>
     <tr><td><strong>M4 — Hardening</strong></td><td>Rate-limit + bot challenge; email notifications; validation; a11y + perf.</td><td>Spam-protected; emails fire on each transition; Lighthouse green.</td></tr>
@@ -667,11 +716,20 @@
 <!-- 14 -->
 <section id="s14">
   <h2><span class="n">14</span> Appendix</h2>
-  <h3>14.1 Candidate stacks (choose later)</h3>
+  <h3>14.1 Stack (adopted)</h3>
+  <blockquote><strong>Note (2026-08-05):</strong> Option A below is no longer just a candidate — it is
+  the <strong>adopted, running stack</strong>. Prisma connects via <code>@prisma/adapter-pg</code> (a
+  plain <code>pg</code> Pool) over Supabase's pooled Postgres connection (port 6543, pgbouncer), not
+  <code>@prisma/adapter-neon</code>. <strong>Supabase Auth was evaluated and explicitly rejected</strong>
+  for admin auth — the project kept <strong>Better Auth</strong> (single-admin, DB-backed cookie
+  sessions, not JWT) to avoid running two competing auth systems, since the existing single-admin
+  design already fit; <code>prisma/seed.ts</code> provisions the admin account from
+  <code>ADMIN_EMAIL</code>/<code>ADMIN_INITIAL_PASSWORD</code>. Option B's Cloudflare/R2 combination
+  was evaluated and not taken; retained below as historical record of the alternative considered.</blockquote>
   <div class="twrap"><table>
     <tr><th>Option</th><th>Frontend</th><th>Backend / API</th><th>Database</th><th>Storage</th><th>Notes</th></tr>
-    <tr><td>A</td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td>Supabase Storage</td><td>Supabase Auth; fast to build.</td></tr>
-    <tr><td>B</td><td>Cloudflare Pages</td><td>CF Workers (Hono)</td><td>D1 (SQLite)</td><td>R2</td><td>Edge-native, low cost.</td></tr>
+    <tr><td><strong>A (adopted)</strong></td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td>Supabase Storage</td><td>Better Auth for admin (not Supabase Auth — see note above); Prisma via <code>@prisma/adapter-pg</code>.</td></tr>
+    <tr><td>B (rejected)</td><td>Cloudflare Pages</td><td>CF Workers (Hono)</td><td>D1 (SQLite)</td><td>R2</td><td>Edge-native, low cost; not taken.</td></tr>
     <tr><td>C</td><td>Any SPA</td><td>Any REST service</td><td>Any relational DB</td><td>Any object store</td><td>Fully generic; matches this spec.</td></tr>
   </table></div>
   <h3>14.2 Calendly capability (free vs paid)</h3>

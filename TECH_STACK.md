@@ -60,10 +60,11 @@ project** — no generic product descriptions.
 - Migrations via `prisma migrate deploy` in CI; pooled `DATABASE_URL` for app, `DIRECT_URL` for
   migrations.
 
-### PostgreSQL (Neon)
-- Stores all entities + audit logs. **Not** photos/PDFs (URLs only).
+### PostgreSQL (Supabase)
+- Stores all entities + audit logs. **Not** photos/PDFs/videos (URLs/refs only).
 - Appointment records **never hard-deleted** — `declined`/`cancelled` are retained states.
-- Connection pooling mandatory in serverless (Neon pooler).
+- Connection pooling mandatory in serverless (Supabase pgbouncer pooler for `DATABASE_URL`, direct
+  connection for `DIRECT_URL`/migrations). Accessed via `@prisma/adapter-pg`.
 
 ### Better Auth
 - **Single admin, secure cookie sessions — not JWT.** Seeded from `ADMIN_EMAIL` /
@@ -73,10 +74,20 @@ project** — no generic product descriptions.
 
 ## Object storage (adapter)
 
-### Cloudflare R2
-- Interface-based storage adapter.
-- Holds professor photo, CV, PDFs, event images. DB stores only the URL reference (`photo_url`, etc.).
-- R2: S3-compatible, no egress fees.
+### Supabase Storage
+- Interface-based storage adapter (`src/modules/integrations/storage`), server-only, service-role
+  authenticated — bypasses RLS, is the only writer.
+- Buckets: `profile` · `research` · `publications` · `events` (public-read) and `documents`
+  (private, signed URLs only). DB stores only the path/URL reference (`photo_url`, etc.), never
+  binary file data.
+---
+
+## Video hosting
+
+### YouTube
+- Videos are hosted externally on YouTube — never uploaded to or proxied through Supabase Storage.
+- DB stores only a YouTube video ID/URL reference; the `YouTubeVideo` component
+  (`src/modules/integrations/youtube`) renders a responsive `youtube-nocookie.com` embed.
 ---
 
 ## Email
@@ -137,12 +148,14 @@ project** — no generic product descriptions.
 Users
   │
 Vercel ──► Next.js 15
-  │          ├── Public tabs · Admin tabs · Calendly embed (client)
+  │          ├── Public tabs · Admin tabs · Calendly embed (client) · YouTube embed (client)
   │          ├── Route Handlers (auth → validate → service → repository)
   │          └── Better Auth (cookie session)
   │
-  ├── PostgreSQL (Neon) ── Profile · Research · Publications · Groups · Appointments · Settings · AuditLog
-  ├── Object storage (R2 ⇄ Supabase) ── photos · CV · PDFs · event images (URLs in DB)
+  ├── Supabase
+  │     ├── PostgreSQL ── Profile · Research · Publications · Groups · Appointments · Settings · AuditLog
+  │     └── Storage ── profile/research/publications/events/documents buckets (URLs in DB)
+  ├── YouTube ── externally hosted videos; DB stores video ID/URL only
   ├── Resend + React Email ── appointment lifecycle notifications
   ├── Upstash Redis ── rate limiting
   ├── Turnstile ── bot defense

@@ -1,0 +1,122 @@
+import { prisma } from '@/modules/shared/lib/prisma';
+import type { Prisma, TeamMember as PrismaTeamMember } from '@prisma/client';
+import type { AuditContext, TeamMember } from './team-member.types';
+import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
+
+// The ONLY place Prisma is used for team-member data. No business rules here — the service
+// decides WHAT to write; the repository just persists it atomically alongside its audit entry.
+
+export type CreateTeamMemberData = CreateTeamMemberInput;
+export type UpdateTeamMemberData = UpdateTeamMemberInput;
+
+export type ListTeamMembersFilter = {
+  groupId?: string;
+};
+
+export interface TeamMemberRepository {
+  findById(id: string): Promise<TeamMember | null>;
+  /** Ordered by sortOrder asc; optionally filtered to one research group. */
+  list(filter?: ListTeamMembersFilter): Promise<TeamMember[]>;
+  createWithAudit(input: {
+    data: CreateTeamMemberData;
+    audit: AuditContext;
+  }): Promise<TeamMember>;
+  updateWithAudit(input: {
+    id: string;
+    data: UpdateTeamMemberData;
+    audit: AuditContext;
+  }): Promise<TeamMember>;
+  deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void>;
+}
+
+export function toDomain(row: PrismaTeamMember): TeamMember {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    bio: row.bio,
+    photoUrl: row.photoUrl,
+    researchGroupId: row.researchGroupId,
+    sortOrder: row.sortOrder,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
+  return {
+    actor: audit.actor,
+    action: audit.action,
+    entityType: 'team_member',
+    entityId,
+    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+  };
+}
+
+export class PrismaTeamMemberRepository implements TeamMemberRepository {
+  async findById(id: string): Promise<TeamMember | null> {
+    const row = await prisma.teamMember.findUnique({ where: { id } });
+    return row ? toDomain(row) : null;
+  }
+
+  async list(filter?: ListTeamMembersFilter): Promise<TeamMember[]> {
+    const rows = await prisma.teamMember.findMany({
+      where: filter?.groupId ? { researchGroupId: filter.groupId } : undefined,
+      orderBy: { sortOrder: 'asc' },
+    });
+    return rows.map(toDomain);
+  }
+
+  async createWithAudit(input: {
+    data: CreateTeamMemberData;
+    audit: AuditContext;
+  }): Promise<TeamMember> {
+    const created = await prisma.$transaction(async (tx) => {
+      const row = await tx.teamMember.create({
+        data: {
+          name: input.data.name,
+          role: input.data.role,
+          bio: input.data.bio ?? null,
+          photoUrl: input.data.photoUrl ?? null,
+          researchGroupId: input.data.researchGroupId ?? null,
+          sortOrder: input.data.sortOrder ?? 0,
+        },
+      });
+      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      return row;
+    });
+    return toDomain(created);
+  }
+
+  async updateWithAudit(input: {
+    id: string;
+    data: UpdateTeamMemberData;
+    audit: AuditContext;
+  }): Promise<TeamMember> {
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.teamMember.update({
+        where: { id: input.id },
+        data: {
+          ...(input.data.name !== undefined ? { name: input.data.name } : {}),
+          ...(input.data.role !== undefined ? { role: input.data.role } : {}),
+          ...(input.data.bio !== undefined ? { bio: input.data.bio ?? null } : {}),
+          ...(input.data.photoUrl !== undefined ? { photoUrl: input.data.photoUrl ?? null } : {}),
+          ...(input.data.researchGroupId !== undefined
+            ? { researchGroupId: input.data.researchGroupId }
+            : {}),
+          ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
+        },
+      });
+      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      return row;
+    });
+    return toDomain(updated);
+  }
+
+  async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      await tx.teamMember.delete({ where: { id: input.id } });
+      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+    });
+  }
+}

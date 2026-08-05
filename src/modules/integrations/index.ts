@@ -1,7 +1,9 @@
 // integrations module — edges behind interfaces: EmailClient (Resend), TurnstileVerifier
-// (Cloudflare), RateLimiter (Upstash). Each has a real adapter + a graceful no-op when its env
-// is unset, so dev/test never crash. No domain logic lives here.
-// (Calendly is embed-only and lives on the frontend; StorageAdapter lands with the profile slice.)
+// (Cloudflare), RateLimiter (Upstash), StorageAdapter (Supabase Storage). Each has a real
+// adapter + a graceful no-op when its env is unset, so dev/test never crash. No domain logic
+// lives here.
+// (Calendly is embed-only and lives on the frontend. YouTube is likewise embed-only — a
+// presentational iframe component + ID parsing utility, no domain wiring yet.)
 
 export { CalendlyEmbed, type CalendlyEmbedProps } from './calendly/calendly-embed';
 
@@ -63,3 +65,15 @@ export {
 } from './rate-limit/rate-limiter';
 
 export { guardPublicWrite, type PublicWriteGuardDeps } from './guard/public-write-guard';
+
+export {
+  type StorageAdapter,
+  type StorageBucket,
+  PUBLIC_STORAGE_BUCKETS,
+  NoopStorageAdapter,
+  SupabaseStorageAdapter,
+  getStorageAdapter,
+} from './storage/storage-adapter';
+
+export { YouTubeVideo, type YouTubeVideoProps } from './youtube/youtube-video';
+export { parseYouTubeVideoId } from './youtube/youtube-utils';

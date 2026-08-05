@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Script from 'next/script';
-import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 import { CalendarX2, Loader2 } from 'lucide-react';
 import { publicEnv } from '@/modules/shared/lib/env';
@@ -10,12 +9,9 @@ import { cn } from '@/modules/shared/lib/utils';
 
 const CALENDLY_WIDGET_SRC = 'https://assets.calendly.com/assets/external/widget.js';
 
-// Theme colours are passed to Calendly as hex without the leading '#'. They mirror the app's
-// accent/background tokens so the embedded widget blends with light and dark themes.
-const THEME_COLORS = {
-  light: { background: 'ffffff', text: '1a1a1a', primary: '0a7f8f' },
-  dark: { background: '0e1116', text: 'e5e7eb', primary: '22d3ee' },
-} as const;
+// The site has one fixed look (no theme switching) — these colours are passed to Calendly as hex
+// without the leading '#', mirroring the app's light-content accent tokens.
+const WIDGET_COLORS = { background: 'ffffff', text: '1a1a1a', primary: '0a7f8f' } as const;
 
 type CalendlyGlobal = {
   initInlineWidget: (options: { url: string; parentElement: HTMLElement }) => void;
@@ -27,14 +23,13 @@ declare global {
   }
 }
 
-function buildWidgetUrl(baseUrl: string, theme: 'light' | 'dark'): string | null {
+function buildWidgetUrl(baseUrl: string): string | null {
   try {
     const url = new URL(baseUrl);
-    const colors = THEME_COLORS[theme];
     url.searchParams.set('hide_gdpr_banner', '1');
-    url.searchParams.set('background_color', colors.background);
-    url.searchParams.set('text_color', colors.text);
-    url.searchParams.set('primary_color', colors.primary);
+    url.searchParams.set('background_color', WIDGET_COLORS.background);
+    url.searchParams.set('text_color', WIDGET_COLORS.text);
+    url.searchParams.set('primary_color', WIDGET_COLORS.primary);
     return url.toString();
   } catch {
     return null;
@@ -51,12 +46,10 @@ export interface CalendlyEmbedProps {
 
 /**
  * Embeds the free Calendly inline scheduling widget (embed + metadata only — no webhooks/sync).
- * Theme-aware, re-initialising when the resolved theme changes. Renders a graceful empty state
- * when no Calendly URL is configured so the page never crashes.
+ * Renders a graceful empty state when no Calendly URL is configured so the page never crashes.
  */
 export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbedProps) {
   const t = useTranslations('appointment.calendly');
-  const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [initialised, setInitialised] = useState(false);
@@ -80,16 +73,13 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
   }, []);
 
   const baseUrl = url ?? publicEnv.calendlyUrl;
-  // `resolvedTheme` is undefined until next-themes hydrates; default to light to avoid a flash.
-  const theme: 'light' | 'dark' = resolvedTheme === 'dark' ? 'dark' : 'light';
-  const widgetUrl = baseUrl ? buildWidgetUrl(baseUrl, theme) : null;
+  const widgetUrl = baseUrl ? buildWidgetUrl(baseUrl) : null;
 
   useEffect(() => {
     const container = containerRef.current;
     if (!scriptReady || !widgetUrl || !container || !window.Calendly) return;
 
     try {
-      // Re-initialise on theme change: clear any prior iframe, then mount fresh.
       container.replaceChildren();
       window.Calendly.initInlineWidget({ url: widgetUrl, parentElement: container });
       setInitialised(true);

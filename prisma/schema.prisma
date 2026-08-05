@@ -57,14 +57,30 @@ model Publication {
 }
 
 model ResearchGroup {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  description String   @db.Text
-  members     Json // CV-style researchers & visiting professors
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  description String       @db.Text
+  teamMembers TeamMember[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
 
   @@map("research_group")
+}
+
+model TeamMember {
+  id              String         @id @default(cuid())
+  name            String
+  role            String // e.g. "PhD Candidate", "Visiting Professor"
+  bio             String?        @db.Text
+  photoUrl        String?        @map("photo_url")
+  researchGroupId String?        @map("research_group_id")
+  researchGroup   ResearchGroup? @relation(fields: [researchGroupId], references: [id], onDelete: SetNull)
+  sortOrder       Int            @default(0) @map("sort_order")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([researchGroupId])
+  @@map("team_member")
 }
 
 enum AppointmentStatus {

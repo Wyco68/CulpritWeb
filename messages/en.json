@@ -1,27 +1,94 @@
 {
   "common": {
     "appName": "The Culprit",
-    "tagline": "Information Security Research"
+    "tagline": "Information Security Research",
+    "theme": {
+      "label": "Theme",
+      "light": "Light theme",
+      "dark": "Dark theme",
+      "system": "Match system theme"
+    }
   },
   "nav": {
-    "bio": "Bio",
+    "ariaLabel": "Primary",
+    "about": "About",
     "research": "Research",
     "publications": "Publications",
-    "researchGroups": "Research Groups",
+    "team": "Team Members",
     "events": "Upcoming Events",
-    "appointment": "Make Appointment"
+    "appointment": "Make Appointment",
+    "fallbackName": "The Culprit",
+    "photoAlt": "Portrait of {name}"
   },
-  "home": {
-    "title": "The Culprit",
-    "subtitle": "A clean public presence for a security researcher, plus a lightweight, admin-controlled meeting workflow.",
-    "cta": "Request a meeting"
+  "about": {
+    "metaTitle": "About",
+    "metaDescription": "Position, education, fellowships, teaching, and research interests.",
+    "title": "About",
+    "emptyTitle": "Profile information is not available",
+    "emptyBody": "Please check back soon.",
+    "fields": {
+      "researchStatement": "Research statement",
+      "education": "Education",
+      "fellowshipsVisiting": "Fellowships & visiting appointments",
+      "teachingRoles": "Teaching roles",
+      "teachingAwards": "Teaching awards",
+      "scholarshipsTravelAwards": "Scholarships & travel awards",
+      "researchInterests": "Research interests",
+      "invitedTalks": "Invited talks"
+    }
+  },
+  "research": {
+    "metaTitle": "Research",
+    "metaDescription": "Current research works and areas of focus.",
+    "title": "Research",
+    "emptyTitle": "No research works published yet",
+    "emptyBody": "Please check back soon."
+  },
+  "publications": {
+    "metaTitle": "Publications",
+    "metaDescription": "Peer-reviewed publications and external links.",
+    "title": "Publications",
+    "emptyTitle": "No publications listed yet",
+    "emptyBody": "Please check back soon.",
+    "viewLink": "View publication",
+    "opensInNewTab": "opens in a new tab"
+  },
+  "team": {
+    "metaTitle": "Team Members",
+    "metaDescription": "Research groups, researchers, and visiting professors.",
+    "title": "Team Members",
+    "emptyTitle": "No team members listed yet",
+    "emptyBody": "Please check back soon.",
+    "other": "Other",
+    "photoAlt": "Portrait of {name}",
+    "showMore": "Show more",
+    "showLess": "Show less"
+  },
+  "events": {
+    "metaTitle": "Upcoming Events",
+    "metaDescription": "Upcoming meetings and the research groups due to meet.",
+    "title": "Upcoming Events",
+    "hiddenTitle": "Upcoming events aren't shown right now",
+    "hiddenBody": "The admin hasn't made this section public yet. Please check back soon.",
+    "emptyTitle": "No upcoming events",
+    "emptyBody": "There are no scheduled meetings at this time.",
+    "noResearchGroup": "No research group specified"
+  },
+  "appointments": {
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "booked": "Booked",
+      "declined": "Declined",
+      "cancelled": "Cancelled"
+    }
   },
   "appointment": {
     "metaTitle": "Make Appointment",
-    "metaDescription": "Book a 30-minute meeting directly against live availability, or send a meeting request for review.",
+    "metaDescription": "Book a 30-minute meeting directly against live availability.",
     "eyebrow": "Make Appointment",
-    "title": "Schedule a meeting",
-    "subtitle": "Book a 30-minute slot directly against live availability, or send a request for review.",
+    "title": "Make Appointment",
+    "subtitle": "Pick an open 30-minute slot below. Your booking is confirmed instantly — no approval needed.",
     "bookDirectlyTitle": "Book directly",
     "bookDirectlyBody": "Pick an open 30-minute slot below. Your booking is confirmed instantly — no approval needed.",
     "calendly": {
@@ -29,6 +96,211 @@
       "loading": "Loading available times…",
       "unavailableTitle": "Scheduling is temporarily unavailable",
       "unavailableBody": "Direct booking isn't configured right now. Please check back soon or send a meeting request instead."
+    }
+  },
+  "integrations": {
+    "youtube": {
+      "unavailableTitle": "Video unavailable",
+      "unavailableBody": "This video couldn't be loaded right now. Please check back soon."
+    }
+  },
+  "admin": {
+    "login": {
+      "metaTitle": "Admin Login",
+      "title": "Admin Login",
+      "subtitle": "Sign in to manage The Culprit.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "success": "Signed in.",
+      "genericError": "Could not sign in. Check your credentials and try again."
+    },
+    "nav": {
+      "ariaLabel": "Admin",
+      "brand": "The Culprit — Admin",
+      "dashboard": "Dashboard",
+      "profile": "Profile",
+      "research": "Research",
+      "publications": "Publications",
+      "groups": "Research Groups",
+      "teamMembers": "Team Members",
+      "appointments": "Appointments",
+      "settings": "Settings",
+      "logout": "Log out",
+      "logoutError": "Could not log out. Please try again."
+    },
+    "dashboard": {
+      "metaTitle": "Admin Dashboard",
+      "title": "Dashboard",
+      "subtitle": "A quick overview of the site's content and pending requests.",
+      "researchCount": "Research works",
+      "publicationsCount": "Publications",
+      "groupsCount": "Research groups",
+      "teamMembersCount": "Team members",
+      "pendingCount": "Pending requests",
+      "upcomingCount": "Upcoming (approved/booked)",
+      "quickLinksTitle": "Manage",
+      "reviewRequests": "Review requests"
+    },
+    "common": {
+      "save": "Save changes",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "actions": "Actions",
+      "close": "Close",
+      "confirmDeleteTitle": "Delete this item?",
+      "confirmDeleteBody": "This action cannot be undone.",
+      "saveSuccess": "Changes saved.",
+      "saveError": "Something went wrong. Please try again.",
+      "deleteSuccess": "Deleted.",
+      "deleteError": "Could not delete. Please try again.",
+      "createSuccess": "Created.",
+      "createError": "Could not create. Please try again.",
+      "required": "This field is required.",
+      "loading": "Loading…",
+      "none": "None"
+    },
+    "profile": {
+      "metaTitle": "Admin — Profile",
+      "title": "Set Information — Profile",
+      "subtitle": "Edit the structured bio shown on the public site.",
+      "fullName": "Full name",
+      "titleField": "Title",
+      "photoUrl": "Photo URL",
+      "bio": "Short bio",
+      "positionAffiliation": "Position & affiliation",
+      "researchStatement": "Research statement",
+      "sections": {
+        "education": "Education",
+        "fellowshipsVisiting": "Fellowships & visiting appointments",
+        "teachingRoles": "Teaching roles",
+        "teachingAwards": "Teaching awards",
+        "scholarshipsTravelAwards": "Scholarships & travel awards",
+        "researchInterests": "Research interests",
+        "invitedTalks": "Invited talks"
+      },
+      "item": {
+        "titleLabel": "Title",
+        "subtitleLabel": "Subtitle",
+        "yearLabel": "Year",
+        "descriptionLabel": "Description",
+        "addItem": "Add item",
+        "removeItem": "Remove item",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "empty": "No items yet."
+      }
+    },
+    "research": {
+      "metaTitle": "Admin — Research",
+      "title": "Research",
+      "subtitle": "Manage the public research listing.",
+      "addTitle": "Add research work",
+      "editTitle": "Edit research work",
+      "columns": { "title": "Title", "area": "Area", "sortOrder": "Order" },
+      "fields": {
+        "title": "Title",
+        "summary": "Summary",
+        "area": "Area",
+        "sortOrder": "Sort order"
+      },
+      "empty": "No research works yet.",
+      "emptyBody": "Add the first research work to show it on the public site."
+    },
+    "publications": {
+      "metaTitle": "Admin — Publications",
+      "title": "Publications",
+      "subtitle": "Manage the public publications list.",
+      "addTitle": "Add publication",
+      "editTitle": "Edit publication",
+      "columns": { "title": "Title", "venue": "Venue", "year": "Year" },
+      "fields": {
+        "title": "Title",
+        "authors": "Authors",
+        "venue": "Venue",
+        "year": "Year",
+        "link": "Link"
+      },
+      "empty": "No publications yet.",
+      "emptyBody": "Add the first publication to show it on the public site."
+    },
+    "groups": {
+      "metaTitle": "Admin — Research Groups",
+      "title": "Research Groups",
+      "subtitle": "Manage research groups shown on the public site.",
+      "addTitle": "Add research group",
+      "editTitle": "Edit research group",
+      "columns": { "name": "Name", "members": "Members" },
+      "fields": { "name": "Name", "description": "Description" },
+      "empty": "No research groups yet.",
+      "emptyBody": "Add the first research group to organize team members under it."
+    },
+    "teamMembers": {
+      "metaTitle": "Admin — Team Members",
+      "title": "Team Members",
+      "subtitle": "Manage researchers and visiting professors.",
+      "addTitle": "Add team member",
+      "editTitle": "Edit team member",
+      "columns": { "name": "Name", "role": "Role", "group": "Research group" },
+      "fields": {
+        "name": "Name",
+        "role": "Role",
+        "bio": "Bio",
+        "photoUrl": "Photo URL",
+        "researchGroupId": "Research group",
+        "sortOrder": "Sort order",
+        "noGroup": "No group"
+      },
+      "empty": "No team members yet.",
+      "emptyBody": "Add the first team member."
+    },
+    "appointments": {
+      "metaTitle": "Admin — Appointments",
+      "title": "Manage Appointments",
+      "subtitle": "Review requests and manage the appointment lifecycle.",
+      "columns": {
+        "requester": "Requester",
+        "researchGroup": "Research group",
+        "time": "Requested time",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "filterAll": "All",
+      "approve": "Approve",
+      "decline": "Decline",
+      "markBooked": "Mark booked",
+      "cancel": "Cancel",
+      "empty": "No appointments yet.",
+      "emptyBody": "Requests and bookings will appear here.",
+      "approveSuccess": "Request approved.",
+      "declineSuccess": "Request declined.",
+      "bookSuccess": "Marked as booked.",
+      "cancelSuccess": "Appointment cancelled.",
+      "actionError": "Could not update the appointment. Please try again.",
+      "declineDialogTitle": "Decline this request?",
+      "declineDialogBody": "The requester will be notified. This cannot be undone.",
+      "declineReasonLabel": "Reason (optional)",
+      "cancelDialogTitle": "Cancel this appointment?",
+      "cancelDialogBody": "The requester will be notified. The record is kept for audit.",
+      "cancelReasonLabel": "Reason",
+      "bookDialogTitle": "Mark this appointment as booked",
+      "bookDialogBody": "Enter the Calendly event reference for the meeting you just created manually.",
+      "calendlyEventRefLabel": "Calendly event reference",
+      "noResearchGroup": "No research group specified",
+      "noTime": "No time specified"
+    },
+    "settings": {
+      "metaTitle": "Admin — Settings",
+      "title": "Settings",
+      "subtitle": "Control site-wide visibility and appointment defaults.",
+      "upcomingEventsVisibleLabel": "Show Upcoming Events publicly",
+      "upcomingEventsVisibleDescription": "When off, visitors won't see the Upcoming Events tab.",
+      "appointmentDurationLabel": "Default appointment slot duration (minutes)",
+      "appointmentDurationDescription": "Used as the default meeting length (5–480 minutes)."
     }
   }
 }
