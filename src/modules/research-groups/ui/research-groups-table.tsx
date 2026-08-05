@@ -10,7 +10,8 @@ import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
-import type { ResearchGroup } from '@/modules/research-groups';
+// Deep import, not the barrel — see research-group-form-dialog.tsx's comment.
+import type { ResearchGroup } from '../research-group.types';
 import { ResearchGroupFormDialog } from './research-group-form-dialog';
 
 async function deleteGroup(id: string) {

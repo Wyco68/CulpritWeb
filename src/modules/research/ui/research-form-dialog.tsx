@@ -12,11 +12,12 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
-import type { Research } from '@/modules/research';
-// Deep, module-internal import (not the barrel): `@/modules/research`'s index also re-exports
+// Deep, module-internal imports (not the barrel): `@/modules/research`'s index also re-exports
 // `getResearchService`, whose composition root imports the Prisma repository (`pg`/`fs`, Node-only).
-// A Client Component importing that barrel would drag Prisma into the browser bundle and fail to
-// resolve `fs` at build time. The pure, side-effect-free schema file is safe to import directly.
+// A Client Component importing that barrel — even a type-only import, confirmed empirically —
+// would drag Prisma into the browser bundle and fail to resolve `fs` at build time. The pure,
+// side-effect-free `.types`/`.schema` files are safe to import directly.
+import type { Research } from '../research.types';
 import { createResearchSchema, type CreateResearchInput } from '../research.schema';
 
 // `sortOrder` uses `z.coerce.number()`, whose *input* type (raw, pre-coercion) is `unknown` —

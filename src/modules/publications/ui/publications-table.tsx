@@ -10,7 +10,8 @@ import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
-import type { Publication } from '@/modules/publications';
+// Deep import, not the barrel — see publication-form-dialog.tsx's comment.
+import type { Publication } from '../publication.types';
 import { PublicationFormDialog } from './publication-form-dialog';
 
 async function deletePublication(id: string) {

@@ -10,7 +10,8 @@ import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
-import type { Research } from '@/modules/research';
+// Deep import, not the barrel — see research-form-dialog.tsx's comment.
+import type { Research } from '../research.types';
 import { ResearchFormDialog } from './research-form-dialog';
 
 async function deleteResearch(id: string) {

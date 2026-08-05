@@ -10,9 +10,11 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
-import type { Profile } from '@/modules/profile';
-// Deep, module-internal import — see the equivalent comment in research-form-dialog.tsx (the
-// barrel also re-exports the Prisma-backed `getProfileService`, unsafe for a Client Component).
+// Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx. The
+// barrel also re-exports the Prisma-backed `getProfileService`; even a type-only import of the
+// barrel drags Prisma/`pg` into the client bundle (confirmed empirically — SWC didn't elide it),
+// so both the schema AND the type import here go straight to their concrete files.
+import type { Profile } from '../profile.types';
 import { updateProfileSchema, type UpdateProfileInput } from '../profile.schema';
 import { ListFieldEditor } from './list-field-editor';
 

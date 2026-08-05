@@ -12,9 +12,10 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
-import type { Publication } from '@/modules/publications';
-// Deep, module-internal import — see the equivalent comment in research-form-dialog.tsx (the
-// barrel also re-exports the Prisma-backed `getPublicationService`, unsafe for a Client Component).
+// Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx (the
+// barrel also re-exports the Prisma-backed `getPublicationService`; even a type-only barrel
+// import drags Prisma/`pg` into the client bundle, confirmed empirically).
+import type { Publication } from '../publication.types';
 import { createPublicationSchema, type CreatePublicationInput } from '../publication.schema';
 
 type PublicationFormInput = z.input<typeof createPublicationSchema>;

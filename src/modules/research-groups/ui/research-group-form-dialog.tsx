@@ -11,9 +11,10 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
-import type { ResearchGroup } from '@/modules/research-groups';
-// Deep, module-internal import — see the equivalent comment in research-form-dialog.tsx (the
-// barrel also re-exports Prisma-backed service getters, unsafe for a Client Component).
+// Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx (the
+// barrel also re-exports Prisma-backed service getters; even a type-only barrel import drags
+// Prisma/`pg` into the client bundle, confirmed empirically).
+import type { ResearchGroup } from '../research-group.types';
 import { createResearchGroupSchema, type CreateResearchGroupInput } from '../research-group.schema';
 
 async function submitGroup(id: string | undefined, input: CreateResearchGroupInput) {
