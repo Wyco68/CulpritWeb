@@ -16,6 +16,10 @@ export type Appointment = {
   cancelToken: string;
   createdAt: Date;
   updatedAt: Date;
+  /** Calendly-reported scheduled start time, when linked via the REST integration/webhook.
+   *  Optional on the domain type so existing call sites/fixtures built before this field existed
+   *  keep compiling; only the upcoming-events read path relies on it. */
+  scheduledAt?: Date | null;
 };
 
 /** Admin-driven transition verbs; visitor self-cancel reuses `cancel`. */

@@ -27,6 +27,10 @@ export type UpdateAppointmentData = {
 export type ListAppointmentsFilter = {
   status?: AppointmentStatus;
   source?: AppointmentSource;
+  /** Match any of these statuses (used by the upcoming-events read path: approved OR booked). */
+  statusIn?: AppointmentStatus[];
+  /** Only appointments whose requestedTime OR scheduledAt is at/after this instant. */
+  fromTime?: Date;
 };
 
 export interface AppointmentRepository {
@@ -57,6 +61,7 @@ function toDomain(row: PrismaAppointment): Appointment {
     cancelToken: row.cancelToken,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    scheduledAt: row.scheduledAt,
   };
 }
 
@@ -83,7 +88,16 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
     const rows = await prisma.appointment.findMany({
       where: {
         ...(filter?.status ? { status: filter.status } : {}),
+        ...(filter?.statusIn ? { status: { in: filter.statusIn } } : {}),
         ...(filter?.source ? { source: filter.source } : {}),
+        ...(filter?.fromTime
+          ? {
+              OR: [
+                { requestedTime: { gte: filter.fromTime } },
+                { scheduledAt: { gte: filter.fromTime } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: 'desc' },
     });
