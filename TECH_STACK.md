@@ -129,7 +129,13 @@ project** — no generic product descriptions.
 - Component tests: forms, dialogs, buttons, status pills, user interactions.
 
 ### Playwright
-- E2E: login, full appointment lifecycle (request → approve → mark booked → email), CRUD.
+- Config: `playwright.config.ts` (chromium project, `webServer` boots `npm run dev` against
+  `http://localhost:3000`, reuses an already-running dev server outside CI).
+- Covered today (`tests/e2e/`): public Make Appointment page render + Calendly embed
+  container/empty-state, admin login page client-side required-field validation.
+- Not yet covered — real gaps, not just unwritten cases: full appointment lifecycle (request →
+  approve → mark booked → email) and admin CRUD both require a seeded DB session/fixtures and
+  admin-authenticated flows that don't exist as e2e specs yet.
 
 ---
 
