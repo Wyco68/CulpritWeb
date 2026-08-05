@@ -41,7 +41,9 @@ export function AppointmentsTable({
   activeFilter: Filter;
 }) {
   const t = useTranslations('admin.appointments');
-  const tCommon = useTranslations('admin.common');
+  // Reuses the same status labels as the public site's StatusPill (`appointments.status.*`)
+  // instead of duplicating them under `admin.common` — one source of truth for status copy.
+  const tStatus = useTranslations('appointments.status');
   const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
   const router = useRouter();
 
@@ -115,7 +117,7 @@ export function AppointmentsTable({
                     : 'border-border text-muted-foreground hover:bg-muted',
                 )}
               >
-                {filter === 'all' ? t('filterAll') : tCommon(filter)}
+                {filter === 'all' ? t('filterAll') : tStatus(filter)}
               </Link>
             </li>
           ))}
