@@ -13,7 +13,7 @@ import { NavTabs } from './nav-tabs';
 export async function SiteHeader({ profile }: { profile: Profile | null }) {
   const t = await getTranslations('nav');
 
-  const fullName = profile?.fullName ?? t('fallbackName');
+  const fullName = profile?.fullName || t('fallbackName');
   const initials = fullName
     .split(' ')
     .filter(Boolean)
