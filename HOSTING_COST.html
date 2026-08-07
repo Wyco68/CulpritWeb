@@ -281,8 +281,8 @@ existing server, at roughly $7 to $10 a month (฿232 to ฿331).</strong></p>
     <div class="row">
       <span class="box"></span>
       <span class="txt"><b>2 · Buy one domain, used for both the address and the email</b>
-      <span>Keeps the admin login codes off an allowance shared with other applications. The only paid
-      line besides the server.</span></span>
+      <span>Gives the admin login codes a sending allowance of their own. The only paid line besides the
+      server.</span></span>
       <span class="amt">~$12<small>฿397 per year</small></span>
     </div>
     <div class="row">
@@ -294,7 +294,7 @@ existing server, at roughly $7 to $10 a month (฿232 to ฿331).</strong></p>
     <div class="row">
       <span class="box"></span>
       <span class="txt"><b>And agree the server share with its owner</b>
-      <span>Hold it under $12 a month (฿397), or a server of our own becomes better value.</span></span>
+      <span>A share of the running cost of a server that is already in place, to be agreed. Option 3 in section 2 is the reference price for comparison.</span></span>
       <span class="amt">$6–9<small>฿199–298 per month</small></span>
     </div>
   </div>
@@ -397,10 +397,10 @@ without changing the site.</p>
   it is the "from" address on the emails the site itself sends.</p>
   <p><b>Why the email side matters.</b> The site's own email is short but critical: the
   <b>verification code the admin needs to log in</b>. Resend's free plan allows 3,000 emails a month tied
-  to <b>one domain per account</b>, and our existing Resend setup already spends its one slot on other
-  applications, sharing that allowance with them. If another application has a busy day, this site's
-  emails stop being delivered and <b>the admin cannot get into the admin panel</b>. A domain of our own
-  gets its own registration, its own key and its own 3,000 emails.</p>
+  to <b>one domain per account</b>, so any sending account without its own domain has to share that
+  allowance. On a shared account a busy day elsewhere can exhaust it, this site's emails stop being
+  delivered, and <b>the admin cannot get into the admin panel</b>. A domain of our own gets its own
+  registration, its own key and its own 3,000 emails.</p>
   <div class="verdict"><b>We propose:</b> buy one domain. <b>If you would rather not:</b> the site can run
   free on <code>culprit.wyco-dev.com</code>, a sub-address of a domain already owned, and the email would
   need a second free Resend account registered against it. That works and costs nothing, but it is two
@@ -605,8 +605,9 @@ choices exist, and they run out in very different ways.</p>
 <p><b>On the shared server (Option 2).</b> The existing machine is already paid for by its owner, so this
 site adds no new bill, but it does consume part of something someone else pays for. The report uses
 <b>$6 to $9 a month (฿199 to ฿298)</b>, roughly half a dedicated server, as a placeholder for whatever
-is agreed. Hold it under $12 a month (฿397), or Option 3 becomes better value. If the machine ever
-needs upsizing to carry both applications, that step is $6 a month (฿199) and should be split.</p>
+is agreed. Option 3 below, at $12 to $18 a month (฿397 to ฿596), is the natural reference point: a
+share priced above a dedicated server of our own would not be worth taking. If the machine ever needs
+upsizing to carry both applications, that step is $6 a month (฿199).</p>
 
 <h4>Vercel, used in Option 1 only</h4>
 <div class="tw">
@@ -695,8 +696,8 @@ appear later.</p>
 <p><b>Resend never carries booking email.</b> Calendly does all of that. What Resend sends is the
 <b>admin login verification code</b> and any future site-generated notice, which is a handful of messages
 a month against an allowance of 3,000. Volume will never be the problem here. The problem worth guarding
-against is a shared allowance being spent by another application on the day the admin needs to log in,
-which is exactly what Decision 2 fixes.</p>
+against is a shared sending allowance running out on the day the admin needs to log in, which is exactly
+what Decision 2 fixes.</p>
 
 <h3>8.5 Upstash, the spam brake</h3>
 <div class="tw">
@@ -858,7 +859,7 @@ normal arrangement for two low-traffic sites.</p>
 <thead><tr><th>What could happen</th><th>Effect</th><th>Likelihood</th><th class="num">Cost to fix</th></tr></thead>
 <tbody>
   <tr><td>Bots book fake appointments in Calendly</td><td>The professor's only bookable calendar fills with rubbish</td><td><span class="pill p-warn">Medium</span></td><td class="num free">$0 · Turnstile</td></tr>
-  <tr><td>Site email shares an allowance with other applications</td><td>The admin login verification code never arrives and nobody can reach the admin panel</td><td><span class="pill p-warn">Medium</span></td><td class="num">$12/yr <span class="thb">฿397</span></td></tr>
+  <tr><td>Site email runs on a shared sending account</td><td>The admin login verification code never arrives and nobody can reach the admin panel</td><td><span class="pill p-warn">Medium</span></td><td class="num">$12/yr <span class="thb">฿397</span></td></tr>
   <tr><td>Server-share negotiation lands high</td><td>Option 2 loses its advantage over a dedicated server</td><td><span class="pill p-warn">Medium</span></td><td class="num">Switch to Option 3<br><span class="thb">$13–19 · ฿430–629</span></td></tr>
   <tr><td>Admin forgets to copy a Calendly booking</td><td>That booking is missing from the admin table and Upcoming Events</td><td><span class="pill p-warn">Medium</span></td><td class="num">$10/mo <span class="thb">฿331</span></td></tr>
   <tr><td>Database lost with no backup</td><td>Content re-entered by the admin; past booking history unrecoverable</td><td><span class="pill p-ok">Low</span></td><td class="num">$25/mo <span class="thb">฿828</span></td></tr>
@@ -919,8 +920,8 @@ re-check before committing.</p>
 
 <h4>Other assumptions</h4>
 <ul>
-  <li>The existing DigitalOcean server has spare capacity for a second small application, and its owner
-  agrees to a share. Both worth confirming before launch.</li>
+  <li>The existing DigitalOcean server has spare capacity for a second small application, and a share of
+  its cost can be agreed. Both worth confirming before launch.</li>
   <li>Moving file storage to R2 and adding the Turnstile check to the booking page are development tasks,
   costed at $0 in supplier fees but not in time.</li>
   <li>Development and ongoing maintenance time are excluded throughout. These are supplier costs only.</li>
