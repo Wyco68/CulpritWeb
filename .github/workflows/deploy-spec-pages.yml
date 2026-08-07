@@ -6,6 +6,7 @@ name: Deploy Docs to GitHub Pages
 #   FRONTEND.html              -> frontend.html
 #   BACKEND.html               -> backend.html
 #   DEPLOYMENT.html            -> deployment.html
+#   HOSTING_COST.html          -> hosting-cost.html   (+ hosting-cost.pdf, hosting-cost-assets/)
 # Fully independent from the Vercel application deploy — different target, different domain.
 # This workflow touches nothing else in the repo.
 
@@ -18,6 +19,9 @@ on:
       - 'FRONTEND.html'
       - 'BACKEND.html'
       - 'DEPLOYMENT.html'
+      - 'HOSTING_COST.html'
+      - 'hosting-cost.pdf'
+      - 'hosting-cost-assets/**'
       - '.github/workflows/deploy-spec-pages.yml'
   workflow_dispatch:
 
@@ -52,13 +56,18 @@ jobs:
           rm -rf _site
           mkdir -p _site
           cp PROJECT_SPEC.html _site/index.html
-          for pair in "DEVELOPMENT_PROGRESS.html:progress.html" "FRONTEND.html:frontend.html" "BACKEND.html:backend.html" "DEPLOYMENT.html:deployment.html"; do
+          for pair in "DEVELOPMENT_PROGRESS.html:progress.html" "FRONTEND.html:frontend.html" "BACKEND.html:backend.html" "DEPLOYMENT.html:deployment.html" "HOSTING_COST.html:hosting-cost.html" "hosting-cost.pdf:hosting-cost.pdf"; do
             src="${pair%%:*}"
             dest="${pair##*:}"
             if [ -f "$src" ]; then
               cp "$src" "_site/$dest"
             fi
           done
+          # Screenshots referenced by hosting-cost.html. Images only, nothing else.
+          if [ -d hosting-cost-assets ]; then
+            mkdir -p _site/hosting-cost-assets
+            cp hosting-cost-assets/*.png _site/hosting-cost-assets/
+          fi
           # Do NOT copy any other file. The Pages site is these docs only.
 
       - name: Configure Pages
