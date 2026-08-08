@@ -8,10 +8,7 @@ import type { Publication } from '../publication.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
-}));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderTable(items: Publication[]) {
@@ -32,7 +29,7 @@ describe('PublicationsTable', () => {
 
   it('shows the empty state when there are no publications', () => {
     renderTable([]);
-    expect(screen.getByText('admin.publications.empty')).toBeInTheDocument();
+    expect(screen.getByText('No publications yet.')).toBeInTheDocument();
   });
 
   it('creates a publication via the Add dialog (POST)', async () => {
@@ -40,15 +37,12 @@ describe('PublicationsTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'admin.common.add' }));
-    await user.type(screen.getByLabelText(/admin.publications.fields.title/, { exact: false }), 'A paper');
-    await user.type(
-      screen.getByLabelText(/admin.publications.fields.authors/, { exact: false }),
-      'A. Author',
-    );
-    await user.type(screen.getByLabelText(/admin.publications.fields.venue/, { exact: false }), 'USENIX');
-    await user.type(screen.getByLabelText(/admin.publications.fields.link/, { exact: false }), 'https://example.com/paper');
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.type(screen.getByLabelText('Title', { exact: false }), 'A paper');
+    await user.type(screen.getByLabelText('Authors', { exact: false }), 'A. Author');
+    await user.type(screen.getByLabelText('Venue', { exact: false }), 'USENIX');
+    await user.type(screen.getByLabelText('Link', { exact: false }), 'https://example.com/paper');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(

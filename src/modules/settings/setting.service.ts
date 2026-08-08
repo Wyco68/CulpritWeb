@@ -22,10 +22,6 @@ function coerceBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
 
-function coerceNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
 export function createSettingsService(deps: SettingsServiceDeps): SettingsService {
   const { repository } = deps;
   const log = deps.logger ?? defaultLogger;
@@ -36,10 +32,6 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
       upcomingEventsVisible: coerceBoolean(
         raw[SETTING_KEYS.upcomingEventsVisible],
         SETTINGS_DEFAULTS.upcomingEventsVisible,
-      ),
-      appointmentDurationMinutes: coerceNumber(
-        raw[SETTING_KEYS.appointmentDurationMinutes],
-        SETTINGS_DEFAULTS.appointmentDurationMinutes,
       ),
     };
   }
@@ -55,13 +47,9 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
 
     async updateSettings(input, actor) {
       try {
-        const values: Record<string, unknown> = {};
-        if (input.upcomingEventsVisible !== undefined) {
-          values[SETTING_KEYS.upcomingEventsVisible] = input.upcomingEventsVisible;
-        }
-        if (input.appointmentDurationMinutes !== undefined) {
-          values[SETTING_KEYS.appointmentDurationMinutes] = input.appointmentDurationMinutes;
-        }
+        const values: Record<string, unknown> = {
+          [SETTING_KEYS.upcomingEventsVisible]: input.upcomingEventsVisible,
+        };
 
         await repository.setManyWithAudit({
           values,

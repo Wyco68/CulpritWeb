@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { VideoOff } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
 import { parseYouTubeVideoId } from './youtube-utils';
@@ -23,7 +22,6 @@ export interface YouTubeVideoProps {
  * doesn't resolve to a valid video.
  */
 export function YouTubeVideo({ videoId, title, className }: YouTubeVideoProps) {
-  const t = useTranslations('integrations.youtube');
   const resolvedId = parseYouTubeVideoId(videoId);
 
   if (!resolvedId) {
@@ -36,8 +34,10 @@ export function YouTubeVideo({ videoId, title, className }: YouTubeVideoProps) {
         )}
       >
         <VideoOff className="size-8 text-muted-foreground" aria-hidden="true" />
-        <p className="text-base font-medium text-foreground">{t('unavailableTitle')}</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{t('unavailableBody')}</p>
+        <p className="text-base font-medium text-foreground">Video unavailable</p>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          This video couldn&apos;t be loaded right now. Please check back soon.
+        </p>
       </div>
     );
   }

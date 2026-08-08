@@ -7,21 +7,7 @@ const pushMock = vi.fn();
 const refreshMock = vi.fn();
 const signInEmailMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
-    const messages: Record<string, string> = {
-      emailLabel: 'Email',
-      emailPlaceholder: 'you@example.com',
-      passwordLabel: 'Password',
-      submit: 'Sign in',
-      success: 'Signed in.',
-      genericError: 'Could not sign in. Check your credentials and try again.',
-    };
-    return messages[key] ?? key;
-  },
-}));
-
-vi.mock('@/i18n/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
 }));
 

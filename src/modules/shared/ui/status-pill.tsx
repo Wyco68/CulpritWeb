@@ -1,27 +1,32 @@
-import { Ban, CalendarCheck2, CircleCheck, Clock3, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Ban, CalendarCheck2 } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
 
 // The one canonical appointment-status pill, reused everywhere the lifecycle is shown (public
-// Upcoming Events today; admin Manage Appointments later). Status is conveyed by icon + text
-// label, never color alone (WCAG 2.1 AA — "use of color"). Works in Server Components too:
-// next-intl's `useTranslations` is dual server/client since v3.
+// Upcoming Events, admin Manage Appointments). Status is conveyed by icon + text label, never
+// color alone (WCAG 2.1 AA — "use of color"). Works in Server Components too — plain literal
+// strings, no client-only i18n context required.
+//
+// Only two states exist: every appointment is admin-declared, so there is nothing to be pending,
+// approved, declined, or booked — it is either `scheduled` or `cancelled`.
 
-export type AppointmentStatus = 'pending' | 'approved' | 'booked' | 'declined' | 'cancelled';
+export type AppointmentStatus = 'scheduled' | 'cancelled';
 
 const STATUS_STYLES: Record<
   AppointmentStatus,
-  { icon: typeof Clock3; dot: string; text: string }
+  { icon: typeof CalendarCheck2; dot: string; text: string; label: string }
 > = {
-  pending: { icon: Clock3, dot: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-400' },
-  approved: { icon: CircleCheck, dot: 'bg-sky-500', text: 'text-sky-700 dark:text-sky-400' },
-  booked: {
+  scheduled: {
     icon: CalendarCheck2,
     dot: 'bg-emerald-500',
     text: 'text-emerald-700 dark:text-emerald-400',
+    label: 'Scheduled',
   },
-  declined: { icon: XCircle, dot: 'bg-rose-500', text: 'text-rose-700 dark:text-rose-400' },
-  cancelled: { icon: Ban, dot: 'bg-slate-400', text: 'text-muted-foreground' },
+  cancelled: {
+    icon: Ban,
+    dot: 'bg-slate-400',
+    text: 'text-muted-foreground',
+    label: 'Cancelled',
+  },
 };
 
 export interface StatusPillProps {
@@ -30,8 +35,7 @@ export interface StatusPillProps {
 }
 
 export function StatusPill({ status, className }: StatusPillProps) {
-  const t = useTranslations('appointments.status');
-  const { icon: Icon, dot, text } = STATUS_STYLES[status];
+  const { icon: Icon, dot, text, label } = STATUS_STYLES[status];
 
   return (
     <span
@@ -43,7 +47,7 @@ export function StatusPill({ status, className }: StatusPillProps) {
     >
       <span className={cn('size-1.5 shrink-0 rounded-full', dot)} aria-hidden="true" />
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-      {t(status)}
+      {label}
     </span>
   );
 }

@@ -8,11 +8,7 @@ import type { Research } from '../research.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
-}));
-
-vi.mock('@/i18n/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: refreshMock }),
 }));
 
@@ -32,6 +28,7 @@ const existing: Research = {
   title: 'Malware analysis at scale',
   summary: 'Existing summary',
   area: 'malware analysis',
+  link: null,
   sortOrder: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -46,7 +43,7 @@ describe('ResearchTable', () => {
 
   it('shows the empty state when there are no research works', () => {
     renderTable([]);
-    expect(screen.getByText('admin.research.empty')).toBeInTheDocument();
+    expect(screen.getByText('No research works yet.')).toBeInTheDocument();
   });
 
   it('creates a new research work via the Add dialog (POST)', async () => {
@@ -54,14 +51,11 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'admin.common.add' }));
-    await user.type(screen.getByLabelText(/admin.research.fields.title/, { exact: false }), 'New work');
-    await user.type(screen.getByLabelText(/admin.research.fields.area/, { exact: false }), 'crypto');
-    await user.type(
-      screen.getByLabelText(/admin.research.fields.summary/, { exact: false }),
-      'A summary',
-    );
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.type(screen.getByLabelText('Title', { exact: false }), 'New work');
+    await user.type(screen.getByLabelText('Area', { exact: false }), 'crypto');
+    await user.type(screen.getByLabelText('Summary', { exact: false }), 'A summary');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/research', expect.objectContaining({ method: 'POST' })));
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
@@ -72,11 +66,11 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([existing]);
 
-    await user.click(screen.getByRole('button', { name: /admin.common.edit/ }));
-    const titleInput = screen.getByLabelText(/admin.research.fields.title/, { exact: false });
+    await user.click(screen.getByRole('button', { name: /Edit/ }));
+    const titleInput = screen.getByLabelText('Title', { exact: false });
     await user.clear(titleInput);
     await user.type(titleInput, 'Updated title');
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -91,9 +85,9 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([existing]);
 
-    await user.click(screen.getByRole('button', { name: /admin.common.delete/ }));
-    const dialog = screen.getByRole('dialog', { name: 'admin.common.confirmDeleteTitle' });
-    await user.click(within(dialog).getByRole('button', { name: 'admin.common.delete' }));
+    await user.click(screen.getByRole('button', { name: /Delete/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete this item?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/research/r1', expect.objectContaining({ method: 'DELETE' })),

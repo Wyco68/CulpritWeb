@@ -37,17 +37,14 @@ function build() {
 }
 
 describe('settings service', () => {
-  it('getSettings() returns the documented defaults when no rows exist', async () => {
+  it('getSettings() returns the documented default when no rows exist', async () => {
     const { service } = build();
     const result = await service.getSettings();
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.upcomingEventsVisible).toBe(false);
-      expect(result.data.appointmentDurationMinutes).toBe(30);
-    }
+    if (result.ok) expect(result.data.upcomingEventsVisible).toBe(false);
   });
 
-  it('updateSettings() persists a single key and audits', async () => {
+  it('updateSettings() persists the key and audits', async () => {
     const { repository, service } = build();
     const result = await service.updateSettings({ upcomingEventsVisible: true }, 'admin:1');
     expect(result.ok).toBe(true);
@@ -56,23 +53,10 @@ describe('settings service', () => {
     expect(repository.audits.at(-1)?.action).toBe('settings.update');
   });
 
-  it('updateSettings() persists both keys in one call', async () => {
-    const { service } = build();
-    const result = await service.updateSettings(
-      { upcomingEventsVisible: true, appointmentDurationMinutes: 60 },
-      'admin:1',
-    );
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.upcomingEventsVisible).toBe(true);
-      expect(result.data.appointmentDurationMinutes).toBe(60);
-    }
-  });
-
   it('getSetting() reads a single typed value with its default applied', async () => {
     const { service } = build();
-    expect(await service.getSetting('appointmentDurationMinutes')).toBe(30);
-    await service.updateSettings({ appointmentDurationMinutes: 45 }, 'admin:1');
-    expect(await service.getSetting('appointmentDurationMinutes')).toBe(45);
+    expect(await service.getSetting('upcomingEventsVisible')).toBe(false);
+    await service.updateSettings({ upcomingEventsVisible: true }, 'admin:1');
+    expect(await service.getSetting('upcomingEventsVisible')).toBe(true);
   });
 });

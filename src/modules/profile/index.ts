@@ -13,7 +13,8 @@ export {
 
 export type { ProfileRepository } from './profile.repository';
 
-export { getProfileService } from './container';
+export { getProfileService, getProfileCached } from './container';
 
 export { ProfileAffiliations } from './ui/profile-affiliations';
+export { ProfileLinks } from './ui/profile-links';
 export { ProfileForm } from './ui/profile-form';

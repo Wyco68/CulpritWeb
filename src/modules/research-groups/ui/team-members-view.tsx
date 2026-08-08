@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { cn } from '@/modules/shared/lib/utils';
 // Deep imports, not the barrel — the barrel re-exports Prisma-backed service getters; even a
@@ -15,7 +14,6 @@ import type { TeamMember } from '../team-member.types';
 // with no header when empty.
 
 function MemberCard({ member }: { member: TeamMember }) {
-  const t = useTranslations('team');
   const bioId = useId();
   const [expanded, setExpanded] = useState(false);
   const bio = member.bio ?? '';
@@ -26,7 +24,7 @@ function MemberCard({ member }: { member: TeamMember }) {
     <li className="flex gap-4 rounded-lg border border-border p-4">
       <Avatar
         src={member.photoUrl}
-        alt={t('photoAlt', { name: member.name })}
+        alt={`Portrait of ${member.name}`}
         fallback={member.name.slice(0, 1).toUpperCase()}
         size="sm"
       />
@@ -46,7 +44,7 @@ function MemberCard({ member }: { member: TeamMember }) {
                 onClick={() => setExpanded((value) => !value)}
                 className="mt-1 rounded text-sm font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                {expanded ? t('showLess') : t('showMore')}
+                {expanded ? 'Show less' : 'Show more'}
               </button>
             )}
           </>
@@ -94,8 +92,6 @@ export function TeamMembersView({
   groups: ResearchGroup[];
   ungrouped: TeamMember[];
 }) {
-  const t = useTranslations('team');
-
   return (
     <div className="space-y-12">
       {groups
@@ -110,7 +106,7 @@ export function TeamMembersView({
         ))}
 
       {ungrouped.length > 0 && (
-        <GroupSection heading={groups.length > 0 ? t('other') : undefined} members={ungrouped} />
+        <GroupSection heading={groups.length > 0 ? 'Other' : undefined} members={ungrouped} />
       )}
     </div>
   );

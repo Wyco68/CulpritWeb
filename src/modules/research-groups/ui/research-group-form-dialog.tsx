@@ -3,9 +3,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Dialog } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -37,8 +36,6 @@ export function ResearchGroupFormDialog({
   onOpenChange: (open: boolean) => void;
   group?: ResearchGroup;
 }) {
-  const t = useTranslations('admin.groups');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
   const isEdit = Boolean(group);
 
@@ -58,31 +55,34 @@ export function ResearchGroupFormDialog({
   const mutation = useMutation({
     mutationFn: (input: CreateResearchGroupInput) => submitGroup(group?.id, input),
     onSuccess: () => {
-      toast.success(isEdit ? tCommon('saveSuccess') : tCommon('createSuccess'));
+      toast.success(isEdit ? 'Changes saved.' : 'Created.');
       onOpenChange(false);
       reset();
       router.refresh();
     },
-    onError: () => toast.error(isEdit ? tCommon('saveError') : tCommon('createError')),
+    onError: () =>
+      toast.error(
+        isEdit ? 'Something went wrong. Please try again.' : 'Could not create. Please try again.',
+      ),
   });
 
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? t('editTitle') : t('addTitle')}
-      closeLabel={tCommon('close')}
+      title={isEdit ? 'Edit research group' : 'Add research group'}
+      closeLabel="Close"
     >
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
         noValidate
         className="flex flex-col gap-4"
       >
-        <FormField label={t('fields.name')} htmlFor="group-name" required error={errors.name?.message}>
+        <FormField label="Name" htmlFor="group-name" required error={errors.name?.message}>
           {(fieldProps) => <Input {...fieldProps} {...register('name')} />}
         </FormField>
         <FormField
-          label={t('fields.description')}
+          label="Description"
           htmlFor="group-description"
           required
           error={errors.description?.message}
@@ -92,10 +92,10 @@ export function ResearchGroupFormDialog({
 
         <div className="mt-2 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {tCommon('cancel')}
+            Cancel
           </Button>
           <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            {tCommon('save')}
+            Save changes
           </Button>
         </div>
       </form>

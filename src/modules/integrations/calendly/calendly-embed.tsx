@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Script from 'next/script';
-import { useTranslations } from 'next-intl';
 import { CalendarX2, Loader2 } from 'lucide-react';
 import { publicEnv } from '@/modules/shared/lib/env';
 import { cn } from '@/modules/shared/lib/utils';
@@ -45,11 +44,14 @@ export interface CalendlyEmbedProps {
 }
 
 /**
- * Embeds the free Calendly inline scheduling widget (embed + metadata only — no webhooks/sync).
+ * Embeds the free Calendly inline scheduling widget — embed only, by design: the app has no
+ * server-side Calendly integration of any kind (no PAT, no REST client, no webhook). A booking
+ * made here happens entirely on Calendly's side, including Calendly's own confirmation email to
+ * the visitor; nothing about it is recorded locally. If it should appear on the public Upcoming
+ * Events tab, the admin adds it there manually (see modules/appointments/ui/appointment-form-dialog).
  * Renders a graceful empty state when no Calendly URL is configured so the page never crashes.
  */
 export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbedProps) {
-  const t = useTranslations('appointment.calendly');
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [initialised, setInitialised] = useState(false);
@@ -100,8 +102,12 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
         )}
       >
         <CalendarX2 className="size-8 text-muted-foreground" aria-hidden="true" />
-        <p className="text-base font-medium text-foreground">{t('unavailableTitle')}</p>
-        <p className="max-w-sm text-sm text-muted-foreground">{t('unavailableBody')}</p>
+        <p className="text-base font-medium text-foreground">
+          Scheduling is temporarily unavailable
+        </p>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Direct booking isn&apos;t configured right now. Please check back soon.
+        </p>
       </div>
     );
   }
@@ -109,7 +115,7 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
   return (
     <section aria-labelledby={regionLabelId} className={cn('relative', className)}>
       <h2 id={regionLabelId} className="sr-only">
-        {t('regionLabel')}
+        Calendly scheduling widget
       </h2>
 
       {!initialised && (
@@ -120,7 +126,7 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
           style={{ minHeight }}
         >
           <Loader2 className="size-6 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
-          <span className="text-sm text-muted-foreground">{t('loading')}</span>
+          <span className="text-sm text-muted-foreground">Loading available times…</span>
         </div>
       )}
 

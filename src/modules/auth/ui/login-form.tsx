@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -17,7 +16,6 @@ import { loginSchema, type LoginInput } from '../login.schema';
 // message, and redirects on success. The admin layout's server-side `requireAdmin()` check is the
 // actual gate (see CLAUDE.md) — this form is UX, not the security boundary.
 export function LoginForm() {
-  const t = useTranslations('admin.login');
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -35,13 +33,13 @@ export function LoginForm() {
     });
 
     if (error) {
-      const message = error.message ?? t('genericError');
+      const message = error.message ?? 'Could not sign in. Check your credentials and try again.';
       setFormError(message);
       toast.error(message);
       return;
     }
 
-    toast.success(t('success'));
+    toast.success('Signed in.');
     router.push('/admin');
     router.refresh();
   }
@@ -58,24 +56,19 @@ export function LoginForm() {
         </div>
       )}
 
-      <FormField label={t('emailLabel')} htmlFor="email" error={errors.email?.message} required>
+      <FormField label="Email" htmlFor="email" error={errors.email?.message} required>
         {(fieldProps) => (
           <Input
             {...fieldProps}
             {...register('email')}
             type="email"
             autoComplete="username"
-            placeholder={t('emailPlaceholder')}
+            placeholder="you@example.com"
           />
         )}
       </FormField>
 
-      <FormField
-        label={t('passwordLabel')}
-        htmlFor="password"
-        error={errors.password?.message}
-        required
-      >
+      <FormField label="Password" htmlFor="password" error={errors.password?.message} required>
         {(fieldProps) => (
           <Input
             {...fieldProps}
@@ -87,7 +80,7 @@ export function LoginForm() {
       </FormField>
 
       <Button type="submit" size="lg" loading={isSubmitting} className="mt-1">
-        {t('submit')}
+        Sign in
       </Button>
     </form>
   );

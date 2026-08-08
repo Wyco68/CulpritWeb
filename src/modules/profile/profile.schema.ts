@@ -22,6 +22,18 @@ const listItemSchema = z.object({
 });
 const listSchema = (maxItems: number) => z.array(listItemSchema).max(maxItems);
 
+/** An optional external profile link. Empty string from an untouched form input means "unset". */
+const optionalUrl = z
+  .string()
+  .trim()
+  .max(2000)
+  .refine((v) => v === '' || z.string().url().safeParse(v).success, {
+    message: 'Must be a valid URL.',
+  })
+  .transform((v) => v || null)
+  .nullable()
+  .optional();
+
 /** Admin: replace the whole structured profile (singleton, full-document PUT). */
 export const updateProfileSchema = z.object({
   fullName: safeText(200),
@@ -43,5 +55,7 @@ export const updateProfileSchema = z.object({
   researchInterests: listSchema(50).optional(),
   researchStatement: optionalSafeText(5000),
   invitedTalks: listSchema(50).optional(),
+  linkedinUrl: optionalUrl,
+  googleScholarUrl: optionalUrl,
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

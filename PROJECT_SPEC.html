@@ -14,6 +14,7 @@
     --declined:#8a1f1f; --declined-bg:#fadaddad;
     --booked:#0b4f8a; --booked-bg:#d6e8fb;
     --cancelled:#4b5563; --cancelled-bg:#e5e7eb;
+    --scheduled:#0b4f8a; --scheduled-bg:#d6e8fb;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
@@ -27,6 +28,7 @@
       --declined:#f08a8a; --declined-bg:#3a1414;
       --booked:#6fb4f0; --booked-bg:#0d2740;
       --cancelled:#aab4c2; --cancelled-bg:#242b38;
+      --scheduled:#6fb4f0; --scheduled-bg:#0d2740;
     }
   }
   *{box-sizing:border-box}
@@ -93,6 +95,7 @@
   .declined{color:var(--declined);background:var(--declined-bg)}
   .booked{color:var(--booked);background:var(--booked-bg)}
   .cancelled{color:var(--cancelled);background:var(--cancelled-bg)}
+  .scheduled{color:var(--scheduled);background:var(--scheduled-bg)}
 
   .yes{color:var(--approved);font-weight:700}
   .no{color:var(--declined);font-weight:700}
@@ -152,12 +155,11 @@
 <main>
 <header class="doc">
   <h1>PROJECT_SPEC — "The Culprit"</h1>
-  <div class="sub">Personal academic website + direct Calendly booking &amp; appointment-request system for an information-security professor.</div>
+  <div class="sub">Personal academic website + embedded Calendly widget &amp; admin-only appointment log for an information-security professor.</div>
   <div class="meta">
     <span class="tag">Status: v1.0 — In development</span>
     <span class="tag">Owner: Project team</span>
-    <span class="tag">Calendly: Free + direct booking</span>
-    <span class="tag">Slot: 30 min</span>
+    <span class="tag">Calendly: Free, embed-only</span>
     <span class="tag">Auth: Single admin</span>
   </div>
 </header>
@@ -166,23 +168,28 @@
 <section id="s1">
   <h2><span class="n">01</span> Project Overview</h2>
   <p><strong>"The Culprit"</strong> is a personal academic website for a professor whose field is
-  <strong>information security</strong>. It presents the professor's work publicly and lets visitors
-  <strong>book directly</strong> against her live availability, or submit a request the admin reviews.</p>
+  <strong>information security</strong>. It presents the professor's work publicly and gives the admin
+  a simple, direct way to record and manage their own appointments.</p>
   <p>The product has <strong>two halves</strong>:</p>
   <ul>
-    <li><strong>Public info</strong> — bio, research, publications, and research groups (incl. visiting
+    <li><strong>Public info</strong> — bio, research, publications, and team members (incl. visiting
     professors). Design reference: the UCL profile of Lorenzo Cavallaro.</li>
-    <li><strong>Appointment system</strong> — a visitor <strong>books directly</strong> against live
-    availability via the <strong>embedded Calendly</strong> widget (30-min default), or submits a request
-    stored as <span class="pill pending">pending</span> that the admin approves or declines. When booking,
-    the visitor names <strong>which research group they represent</strong>, so the admin sees which groups
-    are due to meet. Cancellations are kept as records, never deleted.</li>
+    <li><strong>Appointment system</strong> — <strong>descoped 2026-08-08</strong> (see §2 NG2/NG6):
+    no visitor request form, no review queue, no server-side link between the two ways a meeting can
+    happen. A visitor can book a slot via the <strong>embedded Calendly</strong> widget
+    (<code>NEXT_PUBLIC_CALENDLY_URL</code>), but that booking lives entirely on Calendly's side and
+    never reaches this app. Separately, the admin can <strong>directly declare an appointment</strong>
+    (name, optional email, optional research group, time, optional topic) in Manage Appointments —
+    that is the only way a row is ever created in this app's database. The one lifecycle transition
+    is <span class="pill cancelled">scheduled → cancelled</span>; records are never hard-deleted.</li>
   </ul>
   <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic. See
   §9 for the current (2026-08-05) Figma-derived visual system: fixed dark-navy header, mono numbered
   indices, colored-dot status badges.</p>
   <blockquote><strong>Elevator pitch:</strong> A clean public presence for a security researcher, plus a
-  lightweight, admin-controlled meeting-request workflow that keeps a full audit trail of every request.</blockquote>
+  lightweight, admin-only appointment log — kept simple by leaning entirely on Calendly's own free
+  embed for visitor-facing booking rather than half-building server-side sync that Calendly's Free
+  plan can't actually support.</blockquote>
 </section>
 
 <!-- 2 -->
@@ -190,20 +197,21 @@
   <h2><span class="n">02</span> Goals &amp; Non-Goals</h2>
   <h3>Goals</h3>
   <ul>
-    <li><strong>G1</strong> — Professional, minimalist public presence (bio, research, publications, groups).</li>
-    <li><strong>G2</strong> — Visitors book directly (30-min default) or request a meeting, no account (name + email only).</li>
-    <li><strong>G3</strong> — Admin fully controls: approve, decline, cancel requests; edit all content.</li>
-    <li><strong>G4</strong> — Durable record of every appointment (direct or request) + status change (cancellations soft, retained).</li>
-    <li><strong>G5</strong> — Integrate the Calendly widget for direct booking against availability.</li>
+    <li><strong>G1</strong> — Professional, minimalist public presence (bio, research, publications, team members).</li>
+    <li><strong>G2</strong> — <s>Visitors book directly (30-min default) or request a meeting, no account (name + email only).</s> <strong>Descoped (2026-08-08):</strong> a visitor can still book via the embedded Calendly widget, but that's Calendly's own flow, entirely outside this app — see NG6. No in-app request form exists.</li>
+    <li><strong>G3</strong> — <s>Admin fully controls: approve, decline, cancel requests; edit all content.</s> <strong>Reworded (2026-08-08):</strong> admin directly declares and cancels appointments (no review queue) and edits all public content.</li>
+    <li><strong>G4</strong> — Durable record of every admin-declared appointment + status change (cancellations soft, retained).</li>
+    <li><strong>G5</strong> — Embed the Calendly widget so visitors can book directly against availability, independent of this app's own records.</li>
     <li><strong>G6</strong> — Clean, <strong>modular</strong> architecture reusable across future apps.</li>
   </ul>
   <h3>Non-Goals</h3>
   <ul>
-    <li><strong>NG1</strong> — Direct booking is handled by the Calendly widget itself; the app does not auto-create a Calendly event from a <span class="pill pending">pending</span> request (that path stays manual). No Calendly API supports programmatic booking creation on any plan, so this remains true even after the REST integration below.</li>
-    <li><strong>NG2</strong> — <s>No real-time Calendly sync / webhooks in the MVP</s> <strong>Superseded (2026-08-02):</strong> a server-side Calendly REST integration was built ahead of schedule (read event-types/scheduled events/availability, admin-triggered cancel that drives the local status machine, and a signature-verified idempotent webhook receiver for <code>invitee.created</code>/<code>invitee.canceled</code>) — see §14.2. Scoped to <strong>read + cancel + webhook-receive</strong>; does not include auto-book/create-booking, which stays out of scope since Calendly has no public API for it on any plan. Webhook <em>subscription</em> itself may still require a paid Calendly plan; the receiver is built and ready regardless.</li>
+    <li><strong>NG1</strong> — Direct booking is handled by the Calendly widget itself; the app does not auto-create, capture, or sync a Calendly booking in any way. No Calendly API supports programmatic booking creation on any plan, and (per NG6) no server-side integration exists at all to capture bookings after the fact either.</li>
+    <li><strong>NG2</strong> — No real-time Calendly sync / webhooks. <strong>History:</strong> briefly superseded 2026-08-02 by a server-side Calendly REST integration (PAT client, read event-types/events/availability, admin cancel-with-sync, signature-verified webhook receiver). <strong>Reverted 2026-08-08</strong> and removed outright: Calendly webhook <em>subscriptions</em> require the Standard tier or above — the Free plan has no webhook access on any tier — so the receiver could never actually fire without a paid upgrade. Reverted to the original NG2 stance: embed only. See §14.2 and <code>src/modules/integrations/calendly/README.md</code>.</li>
     <li><strong>NG3</strong> — No public user accounts / logins / visitor profiles.</li>
     <li><strong>NG4</strong> — No multi-admin, no per-researcher self-editing in MVP (single admin).</li>
     <li><strong>NG5</strong> — No payments, chat, or extra content-approval workflows.</li>
+    <li><strong>NG6</strong> <em>(new, 2026-08-08)</em> — No server-side link between a Calendly embed booking and this app's <code>Appointment</code> table, and no appointment review/approval queue. An appointment row exists only because the admin typed it into Manage Appointments directly. See §10.1.</li>
   </ul>
 </section>
 
@@ -215,20 +223,22 @@
     <ul>
       <li>Public site: <strong>About</strong>, <strong>Research</strong>, <strong>Publications</strong>, <strong>Team Members</strong>, <strong>Upcoming Events</strong> (admin-gated), <strong>Make Appointment</strong> (current 6-tab layout, see §9.1 note, 2026-08-05).</li>
       <li>Research groups &amp; visiting professors (CV-style: works &amp; achievements), via <strong>Team Members</strong>.</li>
-      <li>Direct Calendly booking (→ <span class="pill booked">booked</span>) and request form (→ <span class="pill pending">pending</span>); requester names their research group.</li>
+      <li>Direct booking via embedded Calendly widget — Calendly's own flow, not recorded in this app.</li>
+      <li>Admin <strong>directly declares</strong> appointments (name, optional email, optional research group, time, optional topic) via Manage Appointments — no requester-facing form or approval step.</li>
       <li>Admin panel: <strong>Set Information</strong> + <strong>Manage Appointments</strong>.</li>
-      <li>Lifecycle: direct → booked; request pending → approved → booked, plus declined and cancelled.</li>
-      <li>Embedded free Calendly widget; single admin auth; notification emails.</li>
+      <li>Lifecycle: <span class="pill cancelled">scheduled → cancelled</span> only (admin-declared, admin-cancelled, reason required).</li>
+      <li>Embedded free Calendly widget on the public tab only; single admin auth; no appointment notification emails.</li>
     </ul>
   </div>
   <div class="card">
     <h4>Out of Scope / Future</h4>
     <ul>
-      <li><strong>F1</strong> — Paid-Calendly auto-book + webhook sync.</li>
+      <li><s><strong>F1</strong> — Paid-Calendly auto-book + webhook sync.</s> Moot: no approval/webhook path left to auto-book into. Superseded by <strong>F1a</strong>: reintroducing a visitor-facing request/review queue, should that be wanted later.</li>
       <li><strong>F2</strong> — Multiple admins / roles; researcher self-service editing.</li>
       <li><strong>F3</strong> — Public search / tagging / filtering of publications.</li>
-      <li><strong>F4</strong> — Analytics dashboard, multi-language.</li>
+      <li><strong>F4</strong> — Analytics dashboard, multi-language, dark/light user toggle.</li>
       <li><strong>F5</strong> — Native mobile apps.</li>
+      <li><strong>F6</strong> <em>(new, 2026-08-08)</em> — Appointment confirmation/cancellation emails to the requester; removed with the <code>notifications</code> module.</li>
     </ul>
   </div>
 </section>
@@ -238,13 +248,15 @@
   <h2><span class="n">04</span> User Roles &amp; Personas</h2>
   <div class="twrap"><table>
     <tr><th>Role</th><th>Auth</th><th>Description</th><th>Primary needs</th></tr>
-    <tr><td><strong>Visitor</strong></td><td>Anonymous</td><td>Prospective collaborator, student, or fellow researcher.</td><td>Read content; see upcoming events (if shown); request a meeting.</td></tr>
-    <tr><td><strong>Admin</strong></td><td>Single login</td><td>The professor or a delegated assistant.</td><td>Edit all content; review/approve/decline/cancel; book approved meetings in Calendly.</td></tr>
+    <tr><td><strong>Visitor</strong></td><td>Anonymous</td><td>Prospective collaborator, student, or fellow researcher.</td><td>Read content; see upcoming events (if shown); book via embedded Calendly widget.</td></tr>
+    <tr><td><strong>Admin</strong></td><td>Single login</td><td>The professor or a delegated assistant.</td><td>Edit all content; directly log and cancel appointments in Manage Appointments.</td></tr>
   </table></div>
   <p><strong>Persona — Visitor "Dr. Rivera":</strong> wants recent security publications + a 30-min intro
-  call. Expects a fast, no-signup form and a clear "pending" confirmation.</p>
-  <p><strong>Persona — Admin "The Professor":</strong> infrequent but decisive. Wants one table of requests
-  with one-click approve/decline, and a simple form to update the bio before a conference.</p>
+  call. Books directly in the Calendly widget and gets Calendly's own confirmation email — never
+  touches this app's own systems.</p>
+  <p><strong>Persona — Admin "The Professor":</strong> infrequent but decisive. Wants a single table of
+  appointments they've entered themselves, with a quick add/edit/cancel, and a simple form to update
+  the bio before a conference.</p>
 </section>
 
 <!-- 5 -->
@@ -255,50 +267,53 @@
     <tr><th>ID</th><th>Requirement</th></tr>
     <tr><td><code>FR-1</code></td><td>View <strong>Bio</strong>: photo, name, title, background text.</td></tr>
     <tr><td><code>FR-2</code></td><td>View <strong>Researches</strong>: list of works (title + summary + area).</td></tr>
-    <tr><td><code>FR-3</code></td><td>View <strong>Publications</strong>: title, authors, venue, year, external link.</td></tr>
+    <tr><td><code>FR-3</code></td><td>View <strong>Publications</strong>: title, authors, venue, year, external link. <em>Behavioral note (2026-08-08):</em> <code>link</code> is nullable — conference and book-chapter entries frequently have no stable public URL, so the link is shown only when present.</td></tr>
     <tr><td><code>FR-4</code></td><td>View <strong>Research Groups</strong> &amp; visiting professors (CV-style). <em>Behavioral note:</em> served today by the public <strong>Team Members</strong> tab, grouped by research group (backed by the relational <code>TeamMember</code> entity, §7.1), rather than a separate "Research Groups" tab.</td></tr>
     <tr><td><code>FR-5</code></td><td>View <strong>Upcoming Events</strong> <strong>only if</strong> admin enabled visibility.</td></tr>
     <tr><td><code>FR-6</code></td><td>Site fully readable without login.</td></tr>
   </table></div>
   <h3>5.2 Appointment request (Visitor)</h3>
-  <blockquote><strong>Note (current-state deviation, 2026-08-05):</strong> per explicit client
-  instruction ("calendly only accessible by widget embedded, no form"), the public <strong>Make
-  Appointment</strong> page ships with the <strong>embedded Calendly widget only</strong> — FR-7's
-  free-form request form is not rendered. FR-7/FR-8/FR-9's request-form UI and the pending-status
-  confirmation therefore have <strong>no current public entry point</strong>. The backend still
-  fully implements the request path (<code>POST /api/appointments</code>, the pending →
-  approved/declined admin workflow in §8.2/§10.1) — it's just unreached by any UI today. Direct
-  booking (FR-7a) is the sole visitor-facing flow, recorded via the Calendly webhook receiver
-  (§8.2a).</blockquote>
+  <blockquote><strong>Note (removed, 2026-08-08 — supersedes the 2026-08-05 "form hidden but backend
+  live" note):</strong> the free-form request path was removed entirely, frontend and backend. No
+  <code>POST /api/appointments</code>, no pending → approved/declined admin workflow, no visitor
+  self-cancel token, no notification emails. FR-7, FR-8, FR-9, FR-11, and FR-12 below describe
+  requirements that no longer apply — kept here (not deleted) as a record of prior intent. FR-7a and
+  FR-10 (embedded Calendly widget) remain the only visitor-facing appointment behavior, and it's
+  entirely a Calendly-side flow: no data reaches this app (see §2 NG6, §10.1).</blockquote>
   <div class="twrap"><table>
     <tr><th>ID</th><th>Requirement</th></tr>
-    <tr><td><code>FR-7</code></td><td>Submit request: name, email, preferred time/topic, and <strong>which research group they represent</strong>.</td></tr>
-    <tr><td><code>FR-7a</code></td><td><strong>Book directly</strong> against live availability via the embedded <strong>Calendly</strong> widget (30-min default), no admin approval.</td></tr>
-    <tr><td><code>FR-8</code></td><td>A request is stored <span class="pill pending">pending</span>; a direct Calendly booking is stored <span class="pill booked">booked</span>.</td></tr>
-    <tr><td><code>FR-9</code></td><td>Confirmation: "pending" for a request, "booked" for a direct booking.</td></tr>
-    <tr><td><code>FR-10</code></td><td>Tab shows embedded <strong>Calendly</strong> widget for live availability + direct booking.</td></tr>
-    <tr><td><code>FR-11</code></td><td>Cancel own meeting via a unique link (→ <span class="pill cancelled">cancelled</span>, record kept).</td></tr>
-    <tr><td><code>FR-12</code></td><td>Form protected against spam/bots (rate-limit + challenge).</td></tr>
+    <tr><td><code><s>FR-7</s></code></td><td><em>(removed 2026-08-08)</em> Submit request: name, email, preferred time/topic, and which research group they represent.</td></tr>
+    <tr><td><code>FR-7a</code></td><td><strong>Book directly</strong> against live availability via the embedded <strong>Calendly</strong> widget, no admin approval. <em>Behavioral note:</em> the booking happens entirely on Calendly's side (incl. Calendly's own confirmation email); nothing reaches this app.</td></tr>
+    <tr><td><code><s>FR-8</s></code></td><td><em>(removed 2026-08-08)</em> A request is stored pending; a direct booking is stored booked.</td></tr>
+    <tr><td><code><s>FR-9</s></code></td><td><em>(removed 2026-08-08)</em> Confirmation: "pending" for a request, "booked" for a direct booking.</td></tr>
+    <tr><td><code>FR-10</code></td><td>Tab shows embedded <strong>Calendly</strong> widget for live availability + direct booking. This is the entire "Make Appointment" tab today.</td></tr>
+    <tr><td><code><s>FR-11</s></code></td><td><em>(removed 2026-08-08)</em> Cancel own meeting via a unique link. No visitor-facing appointment record exists to cancel.</td></tr>
+    <tr><td><code><s>FR-12</s></code></td><td><em>(removed as a form guard 2026-08-08; repurposed later same day)</em> The original requirement — protecting a request <em>form</em> against spam/bots — no longer applies, since no public appointment-writing endpoint exists. <strong>Behavioral note (2026-08-08):</strong> Turnstile now gates <em>visibility</em> of the embedded Calendly widget instead: <code>TurnstileChallenge</code> renders first on the Make Appointment tab and only reveals the embed after <code>POST /api/turnstile/verify</code> (IP-rate-limited via Upstash) confirms the token server-side. Protects the embed's exposure to bots, not a form submission — there is still no appointment-writing endpoint of any kind. See §6, §14.2.</td></tr>
   </table></div>
   <h3>5.3 Admin — content management</h3>
   <div class="twrap"><table>
     <tr><th>ID</th><th>Requirement</th></tr>
     <tr><td><code>FR-13</code></td><td>Log in via a single admin account.</td></tr>
-    <tr><td><code>FR-14</code></td><td>Edit the structured <strong>Bio</strong> (position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks), Research, Publications, Groups via simple forms.</td></tr>
+    <tr><td><code>FR-14</code></td><td>Edit the structured <strong>Bio</strong> (position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks, plus <strong>LinkedIn</strong>/<strong>Google Scholar</strong> links — added 2026-08-08), Research, Publications, Groups, and Team Members via simple forms.</td></tr>
     <tr><td><code>FR-15</code></td><td>Each form has a clear <strong>"Save changes"</strong> action + feedback.</td></tr>
     <tr><td><code>FR-16</code></td><td>Toggle whether Upcoming Events is visible to visitors.</td></tr>
-    <tr><td><code>FR-16a</code></td><td>Set the default appointment <strong>slot duration</strong> (default 30 min) via settings.</td></tr>
+    <tr><td><code><s>FR-16a</s></code></td><td><em>(removed 2026-08-08)</em> Set the default appointment slot duration. Moot: admin enters an exact start time per appointment; <code>Setting</code> is just <code>{ upcomingEventsVisible }</code>.</td></tr>
   </table></div>
   <h3>5.4 Admin — appointment management</h3>
+  <blockquote><strong>Note (rewritten 2026-08-08):</strong> the review-queue workflow (FR-18/19/20/23
+  below) was removed entirely along with the pending/approved/declined/booked states — see §2 NG6,
+  §7.1, §10.1. An appointment now exists only because the admin typed it in directly.</blockquote>
   <div class="twrap"><table>
     <tr><th>ID</th><th>Requirement</th></tr>
-    <tr><td><code>FR-17</code></td><td>See table of appointments: <strong>name, research group, time, status</strong>.</td></tr>
-    <tr><td><code>FR-18</code></td><td><strong>Approve</strong> a pending request (→ <span class="pill approved">approved</span>).</td></tr>
-    <tr><td><code>FR-19</code></td><td><strong>Decline</strong> a pending request (→ <span class="pill declined">declined</span>; nothing booked).</td></tr>
-    <tr><td><code>FR-20</code></td><td>On approval, <strong>manually</strong> create the Calendly event, then <strong>mark</strong> <span class="pill booked">booked</span> (store event ref).</td></tr>
-    <tr><td><code>FR-21</code></td><td><strong>Cancel</strong> an approved/booked meeting (→ <span class="pill cancelled">cancelled</span>, retained).</td></tr>
+    <tr><td><code>FR-17</code></td><td>See table of appointments: <strong>name, research group, scheduled time, status</strong>.</td></tr>
+    <tr><td><code>FR-17a</code> <em>(new)</em></td><td>Admin can <strong>add</strong> an appointment directly: requester name (required), email (optional, informational only), research group (optional), scheduled time, topic (optional). Lands as scheduled immediately.</td></tr>
+    <tr><td><code>FR-17b</code> <em>(new)</em></td><td>Admin can <strong>edit</strong> a scheduled appointment's details. <code>409</code> if already cancelled.</td></tr>
+    <tr><td><code><s>FR-18</s></code></td><td><em>(removed)</em> Approve a pending request. No review queue exists.</td></tr>
+    <tr><td><code><s>FR-19</s></code></td><td><em>(removed)</em> Decline a pending request. No review queue exists.</td></tr>
+    <tr><td><code><s>FR-20</s></code></td><td><em>(removed)</em> Manually create the Calendly event, then mark booked. No booked status or Calendly event reference exists anymore.</td></tr>
+    <tr><td><code>FR-21</code></td><td><strong>Cancel</strong> a scheduled meeting (→ <span class="pill cancelled">cancelled</span>, reason required, retained).</td></tr>
     <tr><td><code>FR-22</code></td><td>No record ever hard-deleted; cancelled items kept for audit.</td></tr>
-    <tr><td><code>FR-23</code></td><td>Status changes trigger visitor emails (received / approved / declined / cancelled).</td></tr>
+    <tr><td><code><s>FR-23</s></code></td><td><em>(removed)</em> Status changes trigger visitor emails. No email of any kind is sent by this app for appointments; the <code>notifications</code> module was deleted. Resend remains as generic infra, reserved for other future features.</td></tr>
   </table></div>
 </section>
 
@@ -309,7 +324,7 @@
     <tr><th>Category</th><th>Requirement</th></tr>
     <tr><td><strong>Performance</strong></td><td>Public pages &lt; 2s on broadband; cache/CDN where possible.</td></tr>
     <tr><td><strong>Security</strong></td><td>HTTPS everywhere; server-side validation on every form; hardened admin sessions (secure, httpOnly cookies); secrets out of client; least-privilege API.</td></tr>
-    <tr><td><strong>Spam / abuse</strong></td><td>Rate-limit form (per IP + per email); bot challenge (CAPTCHA/Turnstile); email validation.</td></tr>
+    <tr><td><strong>Spam / abuse</strong></td><td><em>(updated 2026-08-08 — later same day)</em> No public appointment-<em>writing</em> endpoint exists to spam — unchanged. But Turnstile and Upstash rate-limiting are <strong>no longer zero-callers</strong>: they now gate <em>visibility</em> of the public Calendly embed itself (<code>POST /api/turnstile/verify</code>, rate-limited by IP, called from <code>GatedCalendlyEmbed</code>) — Calendly Free has no bot protection and only one bookable event type, so an unprotected embed is a single stream a script could fill entirely. <code>guardPublicWrite</code> itself remains unused — the new route calls the rate-limiter/verifier directly.</td></tr>
     <tr><td><strong>Privacy</strong></td><td>Minimal PII (name + email); clear retention; cancelled records retained but purgeable on request; no PII in URLs.</td></tr>
     <tr><td><strong>Accessibility</strong></td><td>WCAG 2.1 AA: semantic HTML, keyboard nav, contrast, alt text.</td></tr>
     <tr><td><strong>Responsive</strong></td><td>Mobile-first; usable 320px → desktop.</td></tr>
@@ -342,6 +357,8 @@
     <tr><td>research_interests</td><td><code>text/json</code></td><td>research interests</td></tr>
     <tr><td>research_statement</td><td><code>text</code></td><td>research statement</td></tr>
     <tr><td>invited_talks</td><td><code>text/json</code></td><td>invited talks</td></tr>
+    <tr><td>linkedin_url</td><td><code>string</code></td><td>nullable — shown as a link on the public About tab <em>(added 2026-08-08)</em></td></tr>
+    <tr><td>google_scholar_url</td><td><code>string</code></td><td>nullable — shown as a link on the public About tab <em>(added 2026-08-08)</em></td></tr>
     <tr><td>updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
   <h4>Research</h4>
@@ -351,6 +368,7 @@
     <tr><td>title</td><td><code>string</code></td><td></td></tr>
     <tr><td>summary</td><td><code>text</code></td><td></td></tr>
     <tr><td>area</td><td><code>string</code></td><td>e.g. "malware analysis"</td></tr>
+    <tr><td>link</td><td><code>string</code></td><td>nullable — optional external link: project page, tool listing, artefact repo <em>(added 2026-08-08)</em></td></tr>
     <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
   </table></div>
   <h4>Publication</h4>
@@ -361,7 +379,7 @@
     <tr><td>authors</td><td><code>string</code></td><td></td></tr>
     <tr><td>venue</td><td><code>string</code></td><td>journal / conference</td></tr>
     <tr><td>year</td><td><code>int</code></td><td></td></tr>
-    <tr><td>link</td><td><code>string</code></td><td>external URL (DOI, etc.)</td></tr>
+    <tr><td>link</td><td><code>string</code></td><td><strong>nullable</strong> <em>(changed 2026-08-08)</em> — DOI/external URL when one exists; conference and book-chapter entries frequently have no stable public URL</td></tr>
   </table></div>
   <h4>ResearchGroup</h4>
   <div class="twrap"><table>
@@ -386,28 +404,28 @@
     <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
     <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
-  <h4>Appointment</h4>
+  <h4>Appointment <em>(rewritten 2026-08-08 — see §2 NG6, §10.1)</em></h4>
+  <blockquote>No review queue, no Calendly sync of any kind. <span class="pill cancelled">scheduled</span>
+  is the only creatable state; an appointment exists only because the admin declared it directly in
+  Manage Appointments. Cancelled is terminal and retained (never hard-deleted). A visitor booking
+  through the Calendly embed happens entirely on Calendly's side and never reaches this table.</blockquote>
   <div class="twrap"><table>
     <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
     <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
-    <tr><td>requester_name</td><td><code>string</code></td><td></td></tr>
-    <tr><td>requester_email</td><td><code>string</code></td><td></td></tr>
+    <tr><td>requester_name</td><td><code>string</code></td><td>who the meeting is with, entered by the admin</td></tr>
+    <tr><td>requester_email</td><td><code>string</code></td><td>nullable, informational only — no email is ever sent by this app</td></tr>
     <tr><td>research_group</td><td><code>string</code></td><td>group the requester represents (nullable)</td></tr>
-    <tr><td>requested_time</td><td><code>timestamp</code></td><td>preferred slot</td></tr>
-    <tr><td>topic</td><td><code>text</code></td><td>purpose</td></tr>
-    <tr><td>source</td><td><code>enum</code></td><td><code>direct</code> (Calendly) · <code>request</code> (admin-reviewed)</td></tr>
-    <tr><td>status</td><td><code>enum</code></td><td><span class="pill pending">pending</span> <span class="pill approved">approved</span> <span class="pill declined">declined</span> <span class="pill booked">booked</span> <span class="pill cancelled">cancelled</span></td></tr>
-    <tr><td>calendly_event_ref</td><td><code>string</code></td><td>set on direct or manual booking (nullable)</td></tr>
-    <tr><td>calendlyEventUri</td><td><code>string</code></td><td>Calendly scheduled-event URI, from REST integration / webhook (nullable)</td></tr>
-    <tr><td>calendlyInviteeUri</td><td><code>string</code></td><td>Calendly invitee URI, unique, drives webhook idempotency (nullable)</td></tr>
-    <tr><td>calendlyEventTypeUri</td><td><code>string</code></td><td>Calendly event-type URI (nullable)</td></tr>
-    <tr><td>meetingUrl</td><td><code>string</code></td><td>meeting location/join URL from Calendly (nullable)</td></tr>
-    <tr><td>scheduledAt</td><td><code>timestamp</code></td><td>Calendly-reported scheduled start time (nullable)</td></tr>
-    <tr><td>cancelledAt</td><td><code>timestamp</code></td><td>Calendly-reported cancellation time (nullable)</td></tr>
-    <tr><td>cancel_reason</td><td><code>text</code></td><td>nullable</td></tr>
-    <tr><td>cancel_token</td><td><code>string</code></td><td>unique link for visitor self-cancel</td></tr>
+    <tr><td>scheduled_at</td><td><code>timestamp</code></td><td>the meeting's start time, entered by the admin</td></tr>
+    <tr><td>topic</td><td><code>text</code></td><td>purpose (nullable)</td></tr>
+    <tr><td>status</td><td><code>enum</code></td><td><span class="pill scheduled">scheduled</span> <span class="pill cancelled">cancelled</span></td></tr>
+    <tr><td>cancel_reason</td><td><code>text</code></td><td>nullable; required input when cancelling</td></tr>
     <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
+  <blockquote><strong>Removed 2026-08-08:</strong> <code>source</code>,
+  pending/approved/booked statuses, <code>calendly_event_ref</code>,
+  <code>calendlyEventUri</code>/<code>calendlyInviteeUri</code>/<code>calendlyEventTypeUri</code>/<code>meetingUrl</code>/<code>cancelledAt</code>,
+  <code>requested_time</code> (renamed <code>scheduled_at</code>, now admin-set exactly rather than a
+  "preferred" slot), <code>cancel_token</code> (no visitor self-cancel flow exists).</blockquote>
   <h4>Admin</h4>
   <div class="twrap"><table>
     <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
@@ -415,12 +433,15 @@
     <tr><td>email</td><td><code>string</code></td><td>unique</td></tr>
     <tr><td>password_hash</td><td><code>string</code></td><td>hashed, never plaintext</td></tr>
   </table></div>
-  <h4>Setting (key/value)</h4>
+  <h4>Setting (key/value — currently only <code>upcoming_events_visible</code>)</h4>
   <div class="twrap"><table>
     <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
-    <tr><td>key</td><td><code>string</code></td><td>PK · e.g. <code>upcoming_events_visible</code>, <code>appointment_duration_minutes</code> (default 30)</td></tr>
+    <tr><td>key</td><td><code>string</code></td><td>PK</td></tr>
     <tr><td>value</td><td><code>string/json</code></td><td></td></tr>
   </table></div>
+  <blockquote><strong>Note (2026-08-08):</strong> <code>appointment_duration_minutes</code> was
+  removed — appointments no longer have a visitor-selectable slot duration; the admin enters an
+  exact <code>scheduled_at</code> per appointment.</blockquote>
 
   <h3>7.2 Relationships (ER)</h3>
   <figure>
@@ -443,8 +464,6 @@
       <text class="dtext-mono" x="615" y="43" text-anchor="middle">ADMIN</text>
       <rect class="dnode" x="540" y="120" width="150" height="40" rx="8"/>
       <text class="dtext-mono" x="615" y="145" text-anchor="middle">APPOINTMENT</text>
-      <rect class="dnode" x="540" y="200" width="150" height="40" rx="8"/>
-      <text class="dtext-mono" x="615" y="225" text-anchor="middle">SETTING</text>
 
       <path class="dline" d="M330 50 C 200 80, 130 90, 105 118"/>
       <path class="dline" d="M340 55 C 300 80, 275 95, 265 118"/>
@@ -452,47 +471,36 @@
       <text class="dmuted" x="150" y="95">has 1..N</text>
 
       <path class="dline" d="M615 58 L 615 118"/>
-      <text class="dmuted" x="622" y="92">manages</text>
-      <path class="dline" d="M615 160 L 615 198"/>
-      <text class="dmuted" x="622" y="182">gated by</text>
+      <text class="dmuted" x="622" y="92">declares directly</text>
     </svg>
-    <figcaption>Profile owns content entities · Admin manages Appointments · Settings gate visibility</figcaption>
+    <figcaption>Profile owns content entities · Admin declares Appointments directly</figcaption>
   </figure>
+  <blockquote><strong>Note (2026-08-08):</strong> the previous <code>APPOINTMENT }o--|| SETTING :
+  "gated by"</code> relationship was removed — no <code>Setting</code> governs appointment creation
+  anymore. <code>Setting</code> today only gates the public Upcoming Events tab.</blockquote>
 
   <h3>7.3 Appointment status transitions</h3>
+  <blockquote><strong>Rewritten 2026-08-08</strong> — the review-queue diagram below is retired; only
+  one transition exists now: scheduled → cancelled.</blockquote>
   <figure>
-    <svg viewBox="0 0 760 220" role="img" aria-label="Appointment status state machine">
-      <circle cx="40" cy="100" r="9" class="dnode"/>
-      <rect x="90" y="80" width="110" height="40" rx="20" class="dnode-soft"/>
-      <text class="dtext-mono" x="145" y="105" text-anchor="middle">pending</text>
-      <rect x="290" y="30" width="120" height="40" rx="20" class="dnode-soft"/>
-      <text class="dtext-mono" x="350" y="55" text-anchor="middle">approved</text>
-      <rect x="290" y="150" width="120" height="40" rx="20" class="dnode"/>
-      <text class="dtext-mono" x="350" y="175" text-anchor="middle">declined</text>
-      <rect x="500" y="30" width="120" height="40" rx="20" class="dnode-soft"/>
-      <text class="dtext-mono" x="560" y="55" text-anchor="middle">booked</text>
-      <rect x="500" y="150" width="150" height="40" rx="20" class="dnode"/>
-      <text class="dtext-mono" x="575" y="175" text-anchor="middle">cancelled</text>
+    <svg viewBox="0 0 520 160" role="img" aria-label="Appointment status state machine">
+      <circle cx="40" cy="80" r="9" class="dnode"/>
+      <rect x="90" y="60" width="140" height="40" rx="20" class="dnode-soft"/>
+      <text class="dtext-mono" x="160" y="85" text-anchor="middle">scheduled</text>
+      <rect x="330" y="60" width="140" height="40" rx="20" class="dnode"/>
+      <text class="dtext-mono" x="400" y="85" text-anchor="middle">cancelled</text>
 
-      <path class="dline" d="M49 100 L 88 100" marker-end="url(#ar)"/>
-      <path class="dline" d="M45 91 C 120 20, 400 8, 545 26" marker-end="url(#ar)" stroke-dasharray="5 4"/>
-      <text class="dmuted" x="250" y="18">book direct (Calendly)</text>
-      <path class="dline" d="M200 92 C 245 75, 265 60, 288 55" marker-end="url(#ar)"/>
-      <text class="dmuted" x="210" y="66">approve</text>
-      <path class="dline" d="M200 108 C 245 128, 265 150, 288 165" marker-end="url(#ar)"/>
-      <text class="dmuted" x="205" y="150">decline</text>
-      <path class="dline" d="M410 50 L 498 50" marker-end="url(#ar)"/>
-      <text class="dmuted" x="425" y="42">book</text>
-      <path class="dline" d="M410 62 C 450 100, 470 140, 505 158" marker-end="url(#ar)"/>
-      <path class="dline" d="M560 70 C 560 100, 575 130, 575 148" marker-end="url(#ar)"/>
-      <text class="dmuted" x="583" y="120">cancel</text>
+      <path class="dline" d="M49 80 L 88 80" marker-end="url(#ar)"/>
+      <text class="dmuted" x="55" y="112">admin declares directly</text>
+      <path class="dline" d="M230 80 L 328 80" marker-end="url(#ar)"/>
+      <text class="dmuted" x="240" y="72">cancel (reason required)</text>
       <defs>
         <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
           <path d="M0,0 L7,3 L0,6 Z" class="dfill-arrow"/>
         </marker>
       </defs>
     </svg>
-    <figcaption><span class="pill declined">declined</span> and <span class="pill cancelled">cancelled</span> are terminal but retained — never deleted</figcaption>
+    <figcaption><span class="pill cancelled">cancelled</span> is terminal but retained — never deleted; any other transition attempt is rejected with 409</figcaption>
   </figure>
 </section>
 
@@ -511,29 +519,31 @@
     <tr><td><code>GET</code></td><td><code>/api/events/upcoming</code></td><td>Public</td><td>Upcoming events (empty/403 if hidden).</td></tr>
   </table></div>
   <h3>8.2 Appointments</h3>
+  <blockquote><strong>Rewritten 2026-08-08.</strong> No public appointment-writing endpoints exist
+  anymore (<code>POST /api/appointments</code>, <code>/api/appointments/direct</code>, and the
+  token-based visitor <code>/api/appointments/{id}/cancel</code> were all removed) and no
+  review-queue actions exist on the admin side (approve/decline/book removed). The admin routes
+  below are the entire appointment API surface today.</blockquote>
   <div class="twrap"><table>
     <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
-    <tr><td><code>POST</code></td><td><code>/api/appointments</code></td><td>Public</td><td>Create request → <span class="pill pending">pending</span>. Body incl. <code>research_group</code>.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/appointments/direct</code></td><td>Public</td><td>Record direct Calendly booking → <span class="pill booked">booked</span> (source <code>direct</code>).</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/appointments/{id}/cancel</code></td><td>Public (token)</td><td>Visitor cancels via <code>cancel_token</code>.</td></tr>
-    <tr><td><code>GET</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>List all (filter by status).</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/approve</code></td><td>Admin</td><td>pending → approved.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/decline</code></td><td>Admin</td><td>pending → declined.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/book</code></td><td>Admin</td><td>approved → booked + set event ref.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/cancel</code></td><td>Admin</td><td>approved/booked → cancelled + reason.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>List all appointments (optional <code>?status=</code>).</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>Declare an appointment directly → <span class="pill scheduled">scheduled</span>. Body: requesterName, requesterEmail?, researchGroup?, scheduledAt, topic?.</td></tr>
+    <tr><td><code>PUT</code></td><td><code>/api/admin/appointments/{id}</code></td><td>Admin</td><td>Edit a scheduled appointment's details. 409 if already cancelled.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/cancel</code></td><td>Admin</td><td>scheduled → cancelled + required reason. 409 if already cancelled.</td></tr>
   </table></div>
-  <h3>8.2a Calendly REST integration</h3>
-  <blockquote>Adopted ahead of schedule (2026-08-02) as an intentional deviation from NG2 — see §14.2.
-  Server-only, PAT-authenticated; read + admin-cancel + webhook-receive only, not booking creation.</blockquote>
-  <div class="twrap"><table>
-    <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
-    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/event-types</code></td><td>Admin</td><td>List the professor's bookable Calendly event types.</td></tr>
-    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/events</code></td><td>Admin</td><td>List scheduled Calendly events (filter by status, time window).</td></tr>
-    <tr><td><code>GET</code></td><td><code>/api/integrations/calendly/availability</code></td><td>Admin</td><td>Open slots for one event type/window.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/cancel</code></td><td>Admin</td><td>Cancels a scheduled Calendly event and syncs the local appointment's status.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/book</code></td><td>Admin</td><td>Always returns <code>{ supported: false, reason, schedulingUrl }</code> — no public booking-creation API on any Calendly plan; not a real booking action.</td></tr>
-    <tr><td><code>POST</code></td><td><code>/api/integrations/calendly/webhook</code></td><td>Public (signature-verified)</td><td>Receives <code>invitee.created</code>/<code>invitee.canceled</code>, idempotent via unique <code>calendlyInviteeUri</code>.</td></tr>
-  </table></div>
+  <h3>8.2a Calendly REST integration — removed</h3>
+  <blockquote><strong>Removed 2026-08-08.</strong> This subsection previously documented a
+  server-side Calendly REST integration (PAT-authenticated client;
+  <code>/api/integrations/calendly/{event-types,events,availability,cancel,book}</code> + a
+  signature-verified <code>/api/integrations/calendly/webhook</code> receiver), adopted 2026-08-02 as
+  a deviation from NG2. All of it — routes, <code>CalendlyService</code>/<code>CalendlyClient</code>,
+  the <code>CalendlyLinkStore</code> sync port, and the webhook receiver — was deleted outright:
+  Calendly webhook <em>subscriptions</em> require the Standard tier or above, so the receiver could
+  never fire on the project's Free plan. See §2 NG2 and §14.2. The only Calendly surface left is the
+  public embed widget (<code>src/modules/integrations/calendly/calendly-embed.tsx</code>), configured
+  by one public env var, <code>NEXT_PUBLIC_CALENDLY_URL</code> — no
+  <code>CALENDLY_ACCESS_TOKEN</code>/<code>CALENDLY_USER_URI</code>/<code>CALENDLY_WEBHOOK_SIGNING_KEY</code>
+  exist anymore.</blockquote>
   <h3>8.3 Admin content &amp; auth</h3>
   <div class="twrap"><table>
     <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
@@ -564,7 +574,16 @@
   <blockquote>Overrides the original 4-tab layout (2026-08-05). Publications is now its own tab
   (previously bundled into "Researches"); Team Members is new (replaces a standalone "Research
   Groups" tab — see FR-4); Make Appointment dropped its request-form UI (see §5.2 note) and is
-  Calendly-embed only. Routed as real pages under <code>src/app/[locale]/(public)/</code>.</blockquote>
+  Calendly-embed only. Routed as real pages under <code>src/app/(public)/</code>.</blockquote>
+  <blockquote><strong>2026-08-08:</strong> the <code>[locale]</code> route segment was removed —
+  English is the only supported locale and always will be, so the multi-locale-ready URL structure
+  (<code>/en/research</code>, locale negotiation middleware, per-locale static params) was pure
+  unused overhead. Pages are routed as plain paths now (<code>src/app/(public)/research</code>, not
+  <code>src/app/[locale]/(public)/research</code>); the URLs themselves don't change (they were
+  already bare under the old <code>localePrefix: 'as-needed'</code> config). All copy still goes
+  through next-intl (<code>useTranslations</code>/<code>getTranslations</code> reading
+  <code>messages/en.json</code>) — only the routing/negotiation layer was cut, not the translation
+  layer, so no user-facing string became hardcoded.</blockquote>
   <div class="twrap"><table>
     <tr><th>Tab</th><th>Contents</th></tr>
     <tr><td><strong>About</strong></td><td>Photo, name, title; structured background — position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks.</td></tr>
@@ -572,35 +591,45 @@
     <tr><td><strong>Publications</strong></td><td>Title, authors, venue, year, external link — monospaced numbered index list.</td></tr>
     <tr><td><strong>Team Members</strong></td><td>Team members grouped by research group (CV-style: works &amp; achievements). Backed by <code>TeamMember</code> (§7.1).</td></tr>
     <tr><td><strong>Upcoming Events</strong></td><td>Next meetings + <strong>which research groups are due to meet</strong> — <strong>shown only if admin enabled visibility</strong>.</td></tr>
-    <tr><td><strong>Make Appointment</strong></td><td>Embedded <strong>Calendly</strong> widget only, for direct booking (30-min default). No request form rendered (see §5.2 note); backend request path still exists.</td></tr>
+    <tr><td><strong>Make Appointment</strong></td><td>Embedded <strong>Calendly</strong> widget only, for direct booking. <strong>Updated 2026-08-08:</strong> no request form exists anymore, frontend or backend (supersedes the 2026-08-05 "hidden but backend-live" note) — this widget is the entire tab.</td></tr>
   </table></div>
   <h3>9.2 Admin side — 2 tabs</h3>
   <div class="twrap"><table>
     <tr><th>Tab</th><th>Contents</th></tr>
-    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio, research, publications, groups, and <strong>team members</strong> (name, role, bio, photo, optional research-group assignment). Clear <strong>"Save changes"</strong>. Event-visibility toggle; default slot duration (30 min).</td></tr>
-    <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. Buttons: Approve / Decline (requests); Cancel (approved/booked); Mark booked. Direct bookings arrive already <span class="pill booked">booked</span>.</td></tr>
+    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio (incl. LinkedIn/Google Scholar links — 2026-08-08), research, publications, groups, and <strong>team members</strong> (name, role, bio, photo, optional research-group assignment). Clear <strong>"Save changes"</strong>. Event-visibility toggle. <s>Default slot duration</s> <em>(removed 2026-08-08)</em>.</td></tr>
+    <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. <strong>Rewritten 2026-08-08:</strong> an "Add" button opens a form dialog to declare an appointment directly (lands scheduled immediately); each scheduled row has Edit and Cancel actions. <s>Approve/Decline/Mark booked</s> removed — no review queue.</td></tr>
   </table></div>
   <h3>9.3 Shared UI notes</h3>
   <ul>
-    <li>Status pills: <span class="pill pending">pending</span> <span class="pill approved">approved</span> <span class="pill declined">declined</span> <span class="pill booked">booked</span> <span class="pill cancelled">cancelled</span>.</li>
+    <li>Status pills: <span class="pill scheduled">scheduled</span> <span class="pill cancelled">cancelled</span>. <s>pending/approved/declined/booked</s> removed 2026-08-08 along with the review-queue states.</li>
     <li>Consistent header/nav; sticky tab bar; responsive to mobile.</li>
-    <li>Empty states for "no requests" / "no upcoming events".</li>
+    <li>Empty states for "no appointments" / "no upcoming events".</li>
   </ul>
 </section>
 
 <!-- 10 -->
 <section id="s10">
   <h2><span class="n">10</span> Workflows</h2>
-  <h3>10.1 Appointment lifecycle</h3>
+  <h3>10.1 Appointment lifecycle (rewritten 2026-08-08)</h3>
+  <blockquote>Two flows exist and do not talk to each other (see §2 NG6).</blockquote>
+  <p><strong>A — Visitor books via Calendly embed (not recorded in this app):</strong></p>
   <ol>
-    <li><strong>Direct path:</strong> Visitor picks a slot in the embedded Calendly widget (30-min default), names their research group → recorded as <span class="pill booked">booked</span> (<code>source=direct</code>), visitor emailed. <em>(Steps below are the request path.)</em></li>
-    <li>Visitor opens <strong>Make Appointment</strong>, fills the request form (incl. research group), submits.</li>
-    <li>System stores <span class="pill pending">pending</span>, emails "request received", shows "pending".</li>
-    <li>Admin opens <strong>Manage Appointments</strong>, reviews.</li>
-    <li><strong>Approve</strong> → <span class="pill approved">approved</span>, visitor emailed. <em>or</em> <strong>Decline</strong> → <span class="pill declined">declined</span>, emailed, nothing booked.</li>
-    <li>For approved: admin <strong>manually creates the Calendly event</strong>, then <strong>Mark booked</strong> → <span class="pill booked">booked</span>, event ref saved, visitor emailed.</li>
-    <li><strong>Cancellation:</strong> admin or visitor (unique link) cancels → <span class="pill cancelled">cancelled</span>, reason recorded, emailed. Record retained.</li>
+    <li>Visitor opens <strong>Make Appointment</strong>, picks a slot in the embedded Calendly widget.</li>
+    <li>Calendly confirms the booking directly to the visitor by email. Nothing is written to this app's <code>Appointment</code> table — no webhook, polling, or capture of any kind.</li>
+    <li>If the professor wants that meeting to show up in this app, they add it manually, per flow B.</li>
   </ol>
+  <p><strong>B — Admin declares an appointment directly (the only way a row is ever created):</strong></p>
+  <ol>
+    <li>Admin opens <strong>Manage Appointments</strong>, clicks <strong>Add</strong>.</li>
+    <li>Fills requester name (required), email (optional, informational only — no email is sent), research group (optional), scheduled time, topic (optional). Saves.</li>
+    <li>System stores it as <span class="pill scheduled">scheduled</span> immediately — no approval step, no intermediate state.</li>
+    <li>Admin may <strong>Edit</strong> a scheduled appointment's details at any time.</li>
+    <li><strong>Cancellation:</strong> admin clicks <strong>Cancel</strong>, supplies a reason → <span class="pill cancelled">cancelled</span>. Record retained (never deleted); no email is sent. 409 if already cancelled.</li>
+  </ol>
+  <blockquote><strong>History:</strong> the previous design (through 2026-08-05) had visitors submit a
+  request that the admin approved/declined, then manually booked in Calendly and marked booked, with
+  a notification email at each step. That entire review-queue workflow — and the appointment
+  notification emails — were removed 2026-08-08. See §5.2, §5.4, §7.1.</blockquote>
   <h3>10.2 Content edit</h3>
   <ol>
     <li>Admin opens <strong>Set Information</strong>, edits a form.</li>
@@ -616,17 +645,18 @@
 <!-- 11 -->
 <section id="s11">
   <h2><span class="n">11</span> Permissions Matrix</h2>
+  <blockquote><strong>Updated 2026-08-08:</strong> "Submit appointment request" and "Cancel own
+  appointment (via token)" rows removed — no visitor-facing appointment record or self-service flow
+  exists anymore. "Approve / decline requests" replaced by direct create/edit.</blockquote>
   <div class="twrap"><table>
     <tr><th>Action</th><th class="center">Visitor</th><th class="center">Admin</th></tr>
-    <tr><td>View bio / research / publications / groups</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>View bio / research / publications / team members</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
     <tr><td>View upcoming events</td><td class="center yes">✅ (if enabled)</td><td class="center yes">✅</td></tr>
-    <tr><td>Book directly via embedded Calendly</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
-    <tr><td>Submit appointment request</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
-    <tr><td>Cancel own appointment (via token)</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
+    <tr><td>Book directly via embedded Calendly (Calendly-side only)</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
     <tr><td>Log in to admin panel</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
     <tr><td>Edit public content</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
-    <tr><td>Approve / decline requests</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
-    <tr><td>Mark booked / cancel any appointment</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Add / edit an appointment directly</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Cancel any appointment</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
     <tr><td>Toggle upcoming-events visibility</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
   </table></div>
 </section>
@@ -648,7 +678,7 @@
 
       <rect class="dnode" x="60" y="160" width="500" height="52" rx="8"/>
       <text class="dtext" x="310" y="182" text-anchor="middle">Service / Domain</text>
-      <text class="dmuted" x="310" y="199" text-anchor="middle">appointment lifecycle · content · settings · notifications</text>
+      <text class="dmuted" x="310" y="199" text-anchor="middle">appointment create/edit/cancel · content · settings</text>
 
       <rect class="dnode" x="60" y="236" width="500" height="44" rx="8"/>
       <text class="dtext" x="310" y="263" text-anchor="middle">Data / Repository — relational DB access</text>
@@ -657,10 +687,10 @@
       <text class="dtext" x="135" y="335" text-anchor="middle">Relational DB</text>
       <rect class="dnode" x="235" y="304" width="150" height="52" rx="8"/>
       <text class="dtext" x="310" y="330" text-anchor="middle">Object store</text>
-      <text class="dmuted" x="310" y="346" text-anchor="middle">photos</text>
+      <text class="dmuted" x="310" y="346" text-anchor="middle">Cloudflare R2 (photos)</text>
       <rect class="dnode" x="410" y="304" width="150" height="52" rx="8"/>
       <text class="dtext" x="485" y="330" text-anchor="middle">Integrations</text>
-      <text class="dmuted" x="485" y="346" text-anchor="middle">Calendly · Mail · YouTube (embed IDs)</text>
+      <text class="dmuted" x="485" y="346" text-anchor="middle">Calendly (embed) · Turnstile · Mail · YouTube</text>
 
       <path class="dline" d="M310 68 L 310 90" marker-end="url(#ar2)"/>
       <path class="dline" d="M310 136 L 310 158" marker-end="url(#ar2)"/>
@@ -677,20 +707,28 @@
     <figcaption>Stack-agnostic: SPA · REST/JSON API · relational DB + object store · external integrations</figcaption>
   </figure>
   <blockquote><strong>Note (2026-08-05):</strong> stack now concrete, not stack-agnostic aspiration —
-  see §14.1. DB is <strong>Supabase Postgres</strong>; object store is <strong>Supabase Storage</strong>
-  (buckets <code>profile</code>, <code>research</code>, <code>publications</code>, <code>events</code>
-  public-read; <code>documents</code> private/signed-URL). <strong>YouTube</strong> is the exclusive
-  video host (<code>src/modules/integrations/youtube/</code>) — no video bytes ever touch Supabase
-  Storage; the integration is built but not yet wired to any content model (no DB field stores a
+  see §14.1. DB is <strong>Supabase Postgres</strong>. <strong>YouTube</strong> is the exclusive
+  video host (<code>src/modules/integrations/youtube/</code>) — no video bytes ever touch object
+  storage; the integration is built but not yet wired to any content model (no DB field stores a
   video ID today).</blockquote>
+  <blockquote><strong>Updated 2026-08-08:</strong> object store switched from Supabase Storage to
+  <strong>Cloudflare R2</strong> — see §14.1 for full rationale (Supabase free-tier 5GB/month egress
+  cap becomes the binding bottleneck around ~650 visitors/day; R2 never charges for egress). Database
+  unaffected — Prisma still talks to Supabase Postgres directly via <code>DATABASE_URL</code>. One R2
+  bucket holds every category (<code>profile</code>/<code>research</code>/<code>publications</code>/
+  <code>events</code>/<code>documents</code>), split by folder prefix rather than one bucket per
+  category. <code>documents</code> stays private, but R2 has no per-prefix ACL the way Supabase RLS
+  did — privacy is now enforced entirely by which method application code calls
+  (<code>getSignedUrl</code> vs <code>getPublicUrl</code>), never by storage-side policy. Accepted as
+  a low-risk simplification for a single-admin site.</blockquote>
   <h3>12.2 Module boundaries</h3>
   <ul>
     <li><strong>content</strong> — profile, research, publications, research-groups (incl. TeamMember) (read public, write admin).</li>
-    <li><strong>appointments</strong> — request intake, status machine, audit trail.</li>
+    <li><strong>appointments</strong> — admin-declared create/update/cancel, audit trail. No request intake (removed 2026-08-08).</li>
     <li><strong>auth</strong> — single-admin session management (Better Auth, DB-backed cookie sessions).</li>
-    <li><strong>settings</strong> — feature flags (e.g. upcoming-events visibility).</li>
-    <li><strong>notifications</strong> — email on status transitions.</li>
-    <li><strong>integrations</strong> — Calendly (embed + server-only REST client + webhook receiver), Supabase Storage adapter, YouTube embed helper, email provider.</li>
+    <li><strong>settings</strong> — feature flags (currently just upcoming-events visibility).</li>
+    <li><s><strong>notifications</strong></s> — <strong>deleted 2026-08-08</strong> (was: email on appointment status transitions). No appointment email of any kind is sent by this app anymore.</li>
+    <li><strong>integrations</strong> — Calendly (<strong>embed-only</strong> as of 2026-08-08 — no server-side client, no webhook receiver, no PAT), Cloudflare R2 storage adapter (<em>switched from Supabase Storage 2026-08-08</em> — see §14.1), YouTube embed helper, Turnstile bot-challenge + Upstash rate limiter (<em>active as of 2026-08-08</em> — gate visibility of the public Calendly embed via <code>/api/turnstile/verify</code>), email provider (Resend; unused for appointments).</li>
   </ul>
   <h3>12.3 Cross-cutting</h3>
   <ul>
@@ -703,6 +741,10 @@
 <!-- 13 -->
 <section id="s13">
   <h2><span class="n">13</span> Implementation Milestones</h2>
+  <blockquote><strong>Note (2026-08-08):</strong> M2/M3/M4 below describe the original appointment
+  plan (review queue, manual-book step, notification emails) and are retained as historical record
+  of intent, not current behavior — see §5.4, §7.1, §10.1 for what actually shipped after the
+  2026-08-08 descope.</blockquote>
   <div class="twrap"><table>
     <tr><th>Milestone</th><th>Deliverables</th><th>Acceptance criteria</th></tr>
     <tr><td><strong>M0 — Scaffolding</strong></td><td>Repo, modular layout, CI, env config, DB schema migration.</td><td>App builds &amp; deploys a "hello" page; schema applies.</td></tr>
@@ -725,45 +767,57 @@
   for admin auth — the project kept <strong>Better Auth</strong> (single-admin, DB-backed cookie
   sessions, not JWT) to avoid running two competing auth systems, since the existing single-admin
   design already fit; <code>prisma/seed.ts</code> provisions the admin account from
-  <code>ADMIN_EMAIL</code>/<code>ADMIN_INITIAL_PASSWORD</code>. Option B's Cloudflare/R2 combination
-  was evaluated and not taken; retained below as historical record of the alternative considered.</blockquote>
+  <code>ADMIN_EMAIL</code>/<code>ADMIN_INITIAL_PASSWORD</code>.</blockquote>
+  <blockquote><strong>Update (2026-08-08) — storage reversed from Supabase Storage to Cloudflare
+  R2:</strong> the prior "Option B's Cloudflare/R2 combination was evaluated and not taken" note is
+  <strong>superseded for storage specifically</strong> — R2 is now adopted for object storage, driven
+  by a hosting-cost review (<code>HOSTING_COST.html</code>, dated 2026-08-07): Supabase Storage's free
+  tier caps egress at 5GB/month, which becomes the binding bottleneck around ~650 visitors/day even
+  though expected load is ~100/day; R2 never charges for egress. Database stays on Supabase Postgres —
+  only the object store moved, so the adopted stack is now a hybrid of Option A (DB, auth, hosting)
+  and Option B (storage only), not a full switch to B. <code>R2_PUBLIC_URL</code> is deliberately the
+  bucket's free <code>pub-&lt;hash&gt;.r2.dev</code> dev URL, not a custom domain on
+  <code>culprit.wyco-dev.com</code> — that domain's DNS zone lives in a different Cloudflare account
+  than the one holding the R2 bucket, so a custom-domain public URL would need a CNAME coordinated
+  across two separate account logins; the <code>.r2.dev</code> URL needs no DNS at all. See
+  <code>src/modules/integrations/storage/storage-adapter.ts</code>.</blockquote>
   <div class="twrap"><table>
     <tr><th>Option</th><th>Frontend</th><th>Backend / API</th><th>Database</th><th>Storage</th><th>Notes</th></tr>
-    <tr><td><strong>A (adopted)</strong></td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td>Supabase Storage</td><td>Better Auth for admin (not Supabase Auth — see note above); Prisma via <code>@prisma/adapter-pg</code>.</td></tr>
-    <tr><td>B (rejected)</td><td>Cloudflare Pages</td><td>CF Workers (Hono)</td><td>D1 (SQLite)</td><td>R2</td><td>Edge-native, low cost; not taken.</td></tr>
+    <tr><td><strong>A (adopted, DB/auth/hosting)</strong></td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td><s>Supabase Storage</s></td><td>Better Auth for admin (not Supabase Auth — see note above); Prisma via <code>@prisma/adapter-pg</code>.</td></tr>
+    <tr><td><strong>B (adopted for storage only, 2026-08-08)</strong></td><td>Cloudflare Pages <em>(not taken)</em></td><td>CF Workers (Hono) <em>(not taken)</em></td><td>D1 (SQLite) <em>(not taken)</em></td><td><strong>R2 (adopted)</strong></td><td>Storage-only adoption — see note above. Frontend/backend/DB from B were not taken, only R2.</td></tr>
     <tr><td>C</td><td>Any SPA</td><td>Any REST service</td><td>Any relational DB</td><td>Any object store</td><td>Fully generic; matches this spec.</td></tr>
   </table></div>
   <h3>14.2 Calendly capability (free vs paid)</h3>
+  <blockquote><strong>Rewritten 2026-08-08.</strong> The server-side REST integration described in the
+  prior version of this section (adopted 2026-08-02) was removed outright once its actual gating
+  became clear: Calendly webhook <em>subscriptions</em> require the <strong>Standard</strong> tier or
+  above — the <strong>Free plan has no webhook access on any tier</strong>, not even a limited one. A
+  receiver that can never be subscribed on the project's plan isn't a partial win, it's dead code
+  with real maintenance cost, so it was cut. The project stays on free tiers for every third-party
+  service (see §14.1), and Calendly is no exception.</blockquote>
   <div class="twrap"><table>
-    <tr><th>Capability</th><th class="center">Free plan</th></tr>
-    <tr><td>See upcoming meetings</td><td class="center yes">✅</td></tr>
-    <tr><td>Cancel a meeting</td><td class="center yes">✅</td></tr>
-    <tr><td>Simple booking widget (embed)</td><td class="center yes">✅</td></tr>
-    <tr><td>Read event types / availability via REST API</td><td class="center yes">✅</td></tr>
-    <tr><td>Cancel a meeting via REST API (syncs local status)</td><td class="center yes">✅</td></tr>
-    <tr><td>Receive webhooks (invitee.created / invitee.canceled)</td><td class="center yes">✅ built, ⚠️ subscribing may need paid</td></tr>
-    <tr><td>Auto-book / create a booking via API</td><td class="center no">❌ no public API on any plan</td></tr>
+    <tr><th>Capability</th><th class="center">Free plan</th><th class="center">Used by this app</th></tr>
+    <tr><td>Simple booking widget (embed)</td><td class="center yes">✅</td><td class="center yes">✅ — entire footprint today</td></tr>
+    <tr><td>See upcoming meetings via REST API</td><td class="center yes">✅</td><td class="center no">❌ removed 2026-08-08</td></tr>
+    <tr><td>Cancel a meeting via REST API</td><td class="center yes">✅</td><td class="center no">❌ removed 2026-08-08</td></tr>
+    <tr><td>Receive webhooks (invitee.created / invitee.canceled)</td><td class="center no">❌ Standard tier+ only</td><td class="center no">❌ never viable on Free</td></tr>
+    <tr><td>Auto-book / create a booking via API</td><td class="center no">❌ no public API on any plan</td><td class="center no">❌</td></tr>
   </table></div>
-  <blockquote><strong>Takeaway:</strong> direct visitor booking still uses the free embedded widget.
-  <strong>Adopted deviation (2026-08-02):</strong> a full server-side Calendly REST integration was built:
-  a PAT-authenticated client reading event types, scheduled events, and availability; an admin
-  <code>cancel</code> endpoint that also drives the local appointment state machine; and a
-  signature-verified, idempotent webhook receiver for <code>invitee.created</code>/<code>invitee.canceled</code>
-  (unique on <code>calendlyInviteeUri</code>). This supersedes NG2's "no webhooks/sync in MVP" ahead of
-  schedule, scoped to <strong>read + cancel + webhook-receive</strong>. What remains genuinely unavailable,
-  and does not change even on a paid plan, is programmatic <strong>booking creation</strong>: Calendly does
-  not expose that endpoint on any plan, so <code>createBooking()</code> honestly reports
-  <code>{ supported: false, reason, schedulingUrl }</code> instead of faking it. The in-app request path
-  (pending → approved) still requires the admin to manually book the meeting in the embedded widget and
-  mark it booked. Webhook <em>subscription</em> itself may still require a paid Calendly plan per Calendly's
-  plan matrix; the receiver is implemented and ready regardless. See
-  <code>src/modules/integrations/calendly/README.md</code> for the full capability list and rationale.</blockquote>
+  <blockquote><strong>Takeaway:</strong> all visitor-facing booking uses the free embedded widget,
+  full stop. A booking made there is entirely Calendly's — its own confirmation email, its own record
+  — and never reaches this app. If a meeting should appear in this app (Manage Appointments, Upcoming
+  Events), the admin enters it manually; see §10.1 flow B. See
+  <code>src/modules/integrations/calendly/README.md</code> for the full rationale as currently
+  documented in the codebase.</blockquote>
   <h3>14.3 Open questions</h3>
   <ul>
     <li><strong>OQ1</strong> — Delegated assistant admin at launch, or later?</li>
-    <li><strong>OQ2</strong> — Email provider / templates.</li>
+    <li><strong>OQ2</strong> — Email provider / templates. Resend is wired (<code>src/modules/integrations/email/email-client.ts</code>) but has zero current callers — what admin-facing feature (if any) should use it first?</li>
     <li><strong>OQ3</strong> — Publications: import (BibTeX/ORCID) or manual only?</li>
-    <li><strong>OQ4</strong> — Upgrade path to paid Calendly for auto-book — when, if ever?</li>
+    <li><s><strong>OQ4</strong> — Upgrade path to paid Calendly for auto-book — when, if ever?</s> <strong>Resolved 2026-08-08:</strong> moot — auto-book has no public API on any Calendly plan, so no upgrade path exists to plan for.</li>
+    <li><strong>OQ5</strong> <em>(new, 2026-08-08)</em> — Should a visitor-facing request/review queue be reintroduced (see §3 F1a)? Currently the admin is the sole entry point for every appointment record.</li>
+    <li><strong>OQ6</strong> <em>(new, 2026-08-08)</em> — Supabase's free tier has <strong>no automatic backups</strong>. Surfaced by the hosting-cost review (<code>HOSTING_COST.html</code>, Decision 1); not yet decided whether to accept that risk, set up a manual/scripted backup, or budget for a paid tier that includes them. Left open.</li>
+    <li><strong>OQ7</strong> <em>(new, 2026-08-08)</em> — Buy a custom domain, or keep the free <code>culprit.wyco-dev.com</code> subdomain? Surfaced by the hosting-cost review (Decision 2); not yet decided. Independent of the R2 public-URL decision (§14.1), which was already resolved to use the <code>.r2.dev</code> dev URL regardless of which domain the site ends up on.</li>
   </ul>
   <h3>14.4 References</h3>
   <ul>

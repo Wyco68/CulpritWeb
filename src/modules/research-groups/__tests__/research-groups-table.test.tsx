@@ -8,10 +8,7 @@ import type { ResearchGroup } from '../research-group.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
-}));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderTable(items: ResearchGroup[]) {
@@ -32,7 +29,7 @@ describe('ResearchGroupsTable', () => {
 
   it('shows the empty state when there are no groups', () => {
     renderTable([]);
-    expect(screen.getByText('admin.groups.empty')).toBeInTheDocument();
+    expect(screen.getByText('No research groups yet.')).toBeInTheDocument();
   });
 
   it('creates a research group via the Add dialog (POST)', async () => {
@@ -40,13 +37,10 @@ describe('ResearchGroupsTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'admin.common.add' }));
-    await user.type(screen.getByLabelText(/admin.groups.fields.name/, { exact: false }), 'Systems Security Lab');
-    await user.type(
-      screen.getByLabelText(/admin.groups.fields.description/, { exact: false }),
-      'A group description',
-    );
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.type(screen.getByLabelText('Name', { exact: false }), 'Systems Security Lab');
+    await user.type(screen.getByLabelText('Description', { exact: false }), 'A group description');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(

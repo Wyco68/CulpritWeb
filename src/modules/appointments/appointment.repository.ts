@@ -1,35 +1,33 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Appointment as PrismaAppointment } from '@prisma/client';
 import type { Appointment, AuditContext } from './appointment.types';
-import type { AppointmentSource, AppointmentStatus } from './appointment.schema';
+import type { AppointmentStatus } from './appointment.schema';
 
 // The ONLY place Prisma is used for appointment data. No business rules here — the service owns
 // the state machine and decides WHAT to write; the repository just persists it atomically.
 
 export type CreateAppointmentData = {
   requesterName: string;
-  requesterEmail: string;
+  requesterEmail?: string | null;
   researchGroup?: string | null;
-  requestedTime?: Date | null;
+  scheduledAt: Date;
   topic?: string | null;
-  source: AppointmentSource;
-  status: AppointmentStatus;
-  calendlyEventRef?: string | null;
-  cancelToken: string;
 };
 
 export type UpdateAppointmentData = {
-  status: AppointmentStatus;
-  calendlyEventRef?: string | null;
+  requesterName?: string;
+  requesterEmail?: string | null;
+  researchGroup?: string | null;
+  scheduledAt?: Date;
+  topic?: string | null;
+  status?: AppointmentStatus;
   cancelReason?: string | null;
 };
 
 export type ListAppointmentsFilter = {
   status?: AppointmentStatus;
-  source?: AppointmentSource;
-  /** Match any of these statuses (used by the upcoming-events read path: approved OR booked). */
   statusIn?: AppointmentStatus[];
-  /** Only appointments whose requestedTime OR scheduledAt is at/after this instant. */
+  /** Only appointments scheduled at/after this instant. */
   fromTime?: Date;
 };
 
@@ -52,23 +50,16 @@ function toDomain(row: PrismaAppointment): Appointment {
     requesterName: row.requesterName,
     requesterEmail: row.requesterEmail,
     researchGroup: row.researchGroup,
-    requestedTime: row.requestedTime,
+    scheduledAt: row.scheduledAt,
     topic: row.topic,
-    source: row.source as AppointmentSource,
     status: row.status as AppointmentStatus,
-    calendlyEventRef: row.calendlyEventRef,
     cancelReason: row.cancelReason,
-    cancelToken: row.cancelToken,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    scheduledAt: row.scheduledAt,
   };
 }
 
-function auditCreateInput(
-  audit: AuditContext,
-  entityId: string,
-): Prisma.AuditLogCreateInput {
+function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
   return {
     actor: audit.actor,
     action: audit.action,
@@ -89,17 +80,9 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       where: {
         ...(filter?.status ? { status: filter.status } : {}),
         ...(filter?.statusIn ? { status: { in: filter.statusIn } } : {}),
-        ...(filter?.source ? { source: filter.source } : {}),
-        ...(filter?.fromTime
-          ? {
-              OR: [
-                { requestedTime: { gte: filter.fromTime } },
-                { scheduledAt: { gte: filter.fromTime } },
-              ],
-            }
-          : {}),
+        ...(filter?.fromTime ? { scheduledAt: { gte: filter.fromTime } } : {}),
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { scheduledAt: 'asc' },
     });
     return rows.map(toDomain);
   }
@@ -112,14 +95,11 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       const row = await tx.appointment.create({
         data: {
           requesterName: input.data.requesterName,
-          requesterEmail: input.data.requesterEmail,
+          requesterEmail: input.data.requesterEmail ?? null,
           researchGroup: input.data.researchGroup ?? null,
-          requestedTime: input.data.requestedTime ?? null,
+          scheduledAt: input.data.scheduledAt,
           topic: input.data.topic ?? null,
-          source: input.data.source,
-          status: input.data.status,
-          calendlyEventRef: input.data.calendlyEventRef ?? null,
-          cancelToken: input.data.cancelToken,
+          status: 'scheduled',
         },
       });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
@@ -137,13 +117,13 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       const row = await tx.appointment.update({
         where: { id: input.id },
         data: {
-          status: input.data.status,
-          ...(input.data.calendlyEventRef !== undefined
-            ? { calendlyEventRef: input.data.calendlyEventRef }
-            : {}),
-          ...(input.data.cancelReason !== undefined
-            ? { cancelReason: input.data.cancelReason }
-            : {}),
+          ...(input.data.requesterName !== undefined ? { requesterName: input.data.requesterName } : {}),
+          ...(input.data.requesterEmail !== undefined ? { requesterEmail: input.data.requesterEmail } : {}),
+          ...(input.data.researchGroup !== undefined ? { researchGroup: input.data.researchGroup } : {}),
+          ...(input.data.scheduledAt !== undefined ? { scheduledAt: input.data.scheduledAt } : {}),
+          ...(input.data.topic !== undefined ? { topic: input.data.topic } : {}),
+          ...(input.data.status !== undefined ? { status: input.data.status } : {}),
+          ...(input.data.cancelReason !== undefined ? { cancelReason: input.data.cancelReason } : {}),
         },
       });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });

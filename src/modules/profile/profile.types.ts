@@ -24,6 +24,8 @@ export type Profile = {
   researchInterests: ProfileListItem[] | null;
   researchStatement: string | null;
   invitedTalks: ProfileListItem[] | null;
+  linkedinUrl: string | null;
+  googleScholarUrl: string | null;
   updatedAt: Date;
 };
 

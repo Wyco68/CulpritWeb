@@ -11,6 +11,12 @@ export type UpdateTeamMemberData = UpdateTeamMemberInput;
 
 export type ListTeamMembersFilter = {
   groupId?: string;
+  /**
+   * Only members with no research group. The public Team Members tab renders grouped members from
+   * `researchGroupRepository.list()` (which includes them), so without this it would have to pull
+   * the entire member table a second time purely to find the handful that aren't in a group.
+   */
+  ungroupedOnly?: boolean;
 };
 
 export interface TeamMemberRepository {
@@ -60,10 +66,14 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
   }
 
   async list(filter?: ListTeamMembersFilter): Promise<TeamMember[]> {
-    const rows = await prisma.teamMember.findMany({
-      where: filter?.groupId ? { researchGroupId: filter.groupId } : undefined,
-      orderBy: { sortOrder: 'asc' },
-    });
+    // `ungroupedOnly` wins if both are given — a specific group and "no group" can't both hold.
+    const where: Prisma.TeamMemberWhereInput | undefined = filter?.ungroupedOnly
+      ? { researchGroupId: null }
+      : filter?.groupId
+        ? { researchGroupId: filter.groupId }
+        : undefined;
+
+    const rows = await prisma.teamMember.findMany({ where, orderBy: { sortOrder: 'asc' } });
     return rows.map(toDomain);
   }
 

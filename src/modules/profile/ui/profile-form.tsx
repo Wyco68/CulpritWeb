@@ -3,9 +3,8 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
@@ -17,6 +16,7 @@ import { FormField } from '@/modules/shared/ui/form-field';
 import type { Profile } from '../profile.types';
 import { updateProfileSchema, type UpdateProfileInput } from '../profile.schema';
 import { ListFieldEditor } from './list-field-editor';
+import { PhotoUploadField } from './photo-upload-field';
 
 const LIST_FIELDS = [
   'education',
@@ -28,6 +28,16 @@ const LIST_FIELDS = [
   'invitedTalks',
 ] as const;
 
+const LIST_FIELD_LABELS: Record<(typeof LIST_FIELDS)[number], string> = {
+  education: 'Education',
+  fellowshipsVisiting: 'Fellowships & visiting appointments',
+  teachingRoles: 'Teaching roles',
+  teachingAwards: 'Teaching awards',
+  scholarshipsTravelAwards: 'Scholarships & travel awards',
+  researchInterests: 'Research interests',
+  invitedTalks: 'Invited talks',
+};
+
 function toFormDefaults(profile: Profile | null): UpdateProfileInput {
   return {
     fullName: profile?.fullName ?? '',
@@ -36,6 +46,8 @@ function toFormDefaults(profile: Profile | null): UpdateProfileInput {
     bio: profile?.bio ?? undefined,
     positionAffiliation: profile?.positionAffiliation ?? undefined,
     researchStatement: profile?.researchStatement ?? undefined,
+    linkedinUrl: profile?.linkedinUrl ?? undefined,
+    googleScholarUrl: profile?.googleScholarUrl ?? undefined,
     education: profile?.education ?? [],
     fellowshipsVisiting: profile?.fellowshipsVisiting ?? [],
     teachingRoles: profile?.teachingRoles ?? [],
@@ -58,8 +70,6 @@ async function saveProfile(input: UpdateProfileInput) {
 }
 
 export function ProfileForm({ profile }: { profile: Profile | null }) {
-  const t = useTranslations('admin.profile');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
 
   const form = useForm<UpdateProfileInput>({
@@ -75,11 +85,11 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
   const mutation = useMutation({
     mutationFn: saveProfile,
     onSuccess: () => {
-      toast.success(tCommon('saveSuccess'));
+      toast.success('Changes saved.');
       router.refresh();
     },
     onError: () => {
-      toast.error(tCommon('saveError'));
+      toast.error('Something went wrong. Please try again.');
     },
   });
 
@@ -91,32 +101,20 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
         className="flex flex-col gap-8"
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t('fullName')} htmlFor="fullName" required error={errors.fullName?.message}>
+          <FormField label="Full name" htmlFor="fullName" required error={errors.fullName?.message}>
             {(fieldProps) => <Input {...fieldProps} {...register('fullName')} />}
           </FormField>
-          <FormField label={t('titleField')} htmlFor="title" required error={errors.title?.message}>
+          <FormField label="Title" htmlFor="title" required error={errors.title?.message}>
             {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
           </FormField>
+          <PhotoUploadField />
+          {errors.photoUrl && (
+            <p role="alert" className="-mt-2 text-xs font-medium text-destructive sm:col-span-2">
+              {errors.photoUrl.message}
+            </p>
+          )}
           <FormField
-            label={t('photoUrl')}
-            htmlFor="photoUrl"
-            error={errors.photoUrl?.message}
-            className="sm:col-span-2"
-          >
-            {(fieldProps) => (
-              <Input
-                {...fieldProps}
-                {...register('photoUrl', {
-                  // An empty input clears the photo (`undefined`), rather than failing the
-                  // server schema's `.url()` check on `''`. Normalized before validation runs.
-                  setValueAs: (value: string) => (value === '' ? undefined : value),
-                })}
-                placeholder="https://…"
-              />
-            )}
-          </FormField>
-          <FormField
-            label={t('positionAffiliation')}
+            label="Position & affiliation"
             htmlFor="positionAffiliation"
             error={errors.positionAffiliation?.message}
             className="sm:col-span-2"
@@ -124,7 +122,7 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
             {(fieldProps) => <Textarea {...fieldProps} {...register('positionAffiliation')} />}
           </FormField>
           <FormField
-            label={t('bio')}
+            label="Short bio"
             htmlFor="bio"
             error={errors.bio?.message}
             className="sm:col-span-2"
@@ -132,7 +130,7 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
             {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={4} />}
           </FormField>
           <FormField
-            label={t('researchStatement')}
+            label="Research statement"
             htmlFor="researchStatement"
             error={errors.researchStatement?.message}
             className="sm:col-span-2"
@@ -141,17 +139,51 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
               <Textarea {...fieldProps} {...register('researchStatement')} rows={4} />
             )}
           </FormField>
+          <FormField
+            label="LinkedIn profile URL"
+            htmlFor="linkedinUrl"
+            description="Optional. Shown as links on the public About tab."
+            error={errors.linkedinUrl?.message}
+          >
+            {(fieldProps) => (
+              <Input
+                {...fieldProps}
+                {...register('linkedinUrl', {
+                  // Empty input clears the link rather than failing the server's `.url()` check.
+                  setValueAs: (value: string) => (value === '' ? undefined : value),
+                })}
+                type="url"
+                placeholder="https://www.linkedin.com/in/…"
+              />
+            )}
+          </FormField>
+          <FormField
+            label="Google Scholar profile URL"
+            htmlFor="googleScholarUrl"
+            error={errors.googleScholarUrl?.message}
+          >
+            {(fieldProps) => (
+              <Input
+                {...fieldProps}
+                {...register('googleScholarUrl', {
+                  setValueAs: (value: string) => (value === '' ? undefined : value),
+                })}
+                type="url"
+                placeholder="https://scholar.google.com/citations?user=…"
+              />
+            )}
+          </FormField>
         </div>
 
         <div className="flex flex-col gap-5">
           {LIST_FIELDS.map((field) => (
-            <ListFieldEditor key={field} name={field} heading={t(`sections.${field}`)} />
+            <ListFieldEditor key={field} name={field} heading={LIST_FIELD_LABELS[field]} />
           ))}
         </div>
 
         <div className="flex justify-end">
           <Button type="submit" size="lg" loading={isSubmitting || mutation.isPending}>
-            {tCommon('save')}
+            Save changes
           </Button>
         </div>
       </form>

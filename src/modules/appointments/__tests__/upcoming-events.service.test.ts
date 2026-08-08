@@ -10,13 +10,10 @@ function makeAppointment(overrides: Partial<Appointment> = {}): Appointment {
     requesterName: 'Dr. Rivera',
     requesterEmail: 'rivera@example.com',
     researchGroup: 'Systems Security',
-    requestedTime: new Date('2026-09-01T10:00:00Z'),
+    scheduledAt: new Date('2026-09-01T10:00:00Z'),
     topic: 'Intro call',
-    source: 'request',
-    status: 'approved',
-    calendlyEventRef: null,
+    status: 'scheduled',
     cancelReason: null,
-    cancelToken: 'secret-token',
     createdAt: new Date('2026-08-02T00:00:00Z'),
     updatedAt: new Date('2026-08-02T00:00:00Z'),
     ...overrides,
@@ -25,13 +22,9 @@ function makeAppointment(overrides: Partial<Appointment> = {}): Appointment {
 
 function makeAppointmentService(list: ReturnType<typeof vi.fn>): AppointmentService {
   return {
-    createRequest: vi.fn(),
-    createDirect: vi.fn(),
-    approve: vi.fn(),
-    decline: vi.fn(),
-    book: vi.fn(),
-    cancelByAdmin: vi.fn(),
-    cancelByToken: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    cancel: vi.fn(),
     list,
   };
 }
@@ -50,8 +43,8 @@ describe('upcoming events service', () => {
     expect(listMock).not.toHaveBeenCalled();
   });
 
-  it('queries approved+booked appointments from now when the setting is on', async () => {
-    const events = [makeAppointment({ status: 'approved' }), makeAppointment({ id: 'apt_2', status: 'booked' })];
+  it('queries scheduled appointments from now when the setting is on', async () => {
+    const events = [makeAppointment(), makeAppointment({ id: 'apt_2' })];
     const listMock = vi.fn().mockResolvedValue(ok(events));
     const now = new Date('2026-08-05T12:00:00Z');
     const service = createUpcomingEventsService({
@@ -66,7 +59,7 @@ describe('upcoming events service', () => {
       expect(result.data.visible).toBe(true);
       expect(result.data.events).toHaveLength(2);
     }
-    expect(listMock).toHaveBeenCalledWith({ statusIn: ['approved', 'booked'], fromTime: now });
+    expect(listMock).toHaveBeenCalledWith({ status: 'scheduled', fromTime: now });
   });
 
   it('propagates a repository/service failure', async () => {

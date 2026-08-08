@@ -35,7 +35,7 @@ export function createUpcomingEventsService(deps: UpcomingEventsServiceDeps): Up
         if (!visible) return ok({ visible: false, events: [] });
 
         const result = await deps.appointmentService.list({
-          statusIn: ['approved', 'booked'],
+          status: 'scheduled',
           fromTime: now(),
         });
         if (!result.ok) return result;

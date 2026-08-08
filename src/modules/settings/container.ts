@@ -23,8 +23,3 @@ export async function getSetting<K extends keyof Settings>(key: K): Promise<Sett
 export async function isUpcomingEventsVisible(): Promise<boolean> {
   return getSetting('upcomingEventsVisible');
 }
-
-/** The default appointment slot duration in minutes (default 30). */
-export async function getAppointmentDurationMinutes(): Promise<number> {
-  return getSetting('appointmentDurationMinutes');
-}

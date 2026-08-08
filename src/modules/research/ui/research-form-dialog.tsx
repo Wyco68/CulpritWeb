@@ -3,10 +3,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Dialog } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -47,8 +46,6 @@ export function ResearchFormDialog({
   /** Present for edit; absent for create. */
   research?: Research;
 }) {
-  const t = useTranslations('admin.research');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
   const isEdit = Boolean(research);
 
@@ -66,6 +63,7 @@ export function ResearchFormDialog({
       title: research?.title ?? '',
       summary: research?.summary ?? '',
       area: research?.area ?? '',
+      link: research?.link ?? '',
       sortOrder: research?.sortOrder ?? 0,
     },
   });
@@ -73,13 +71,15 @@ export function ResearchFormDialog({
   const mutation = useMutation({
     mutationFn: (input: CreateResearchInput) => submitResearch(research?.id, input),
     onSuccess: () => {
-      toast.success(isEdit ? tCommon('saveSuccess') : tCommon('createSuccess'));
+      toast.success(isEdit ? 'Changes saved.' : 'Created.');
       onOpenChange(false);
       reset();
       router.refresh();
     },
     onError: () => {
-      toast.error(isEdit ? tCommon('saveError') : tCommon('createError'));
+      toast.error(
+        isEdit ? 'Something went wrong. Please try again.' : 'Could not create. Please try again.',
+      );
     },
   });
 
@@ -87,19 +87,19 @@ export function ResearchFormDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? t('editTitle') : t('addTitle')}
-      closeLabel={tCommon('close')}
+      title={isEdit ? 'Edit research work' : 'Add research work'}
+      closeLabel="Close"
     >
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
         noValidate
         className="flex flex-col gap-4"
       >
-        <FormField label={t('fields.title')} htmlFor="research-title" required error={errors.title?.message}>
+        <FormField label="Title" htmlFor="research-title" required error={errors.title?.message}>
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
         <FormField
-          label={t('fields.area')}
+          label="Area"
           htmlFor="research-area"
           required
           error={errors.area?.message}
@@ -107,7 +107,7 @@ export function ResearchFormDialog({
           {(fieldProps) => <Input {...fieldProps} {...register('area')} />}
         </FormField>
         <FormField
-          label={t('fields.summary')}
+          label="Summary"
           htmlFor="research-summary"
           required
           error={errors.summary?.message}
@@ -115,7 +115,17 @@ export function ResearchFormDialog({
           {(fieldProps) => <Textarea {...fieldProps} {...register('summary')} rows={4} />}
         </FormField>
         <FormField
-          label={t('fields.sortOrder')}
+          label="Project link"
+          htmlFor="research-link"
+          description="Optional. A tool listing, project page, or artefact repository."
+          error={errors.link?.message}
+        >
+          {(fieldProps) => (
+            <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />
+          )}
+        </FormField>
+        <FormField
+          label="Sort order"
           htmlFor="research-sortOrder"
           error={errors.sortOrder?.message}
         >
@@ -131,10 +141,10 @@ export function ResearchFormDialog({
 
         <div className="mt-2 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {tCommon('cancel')}
+            Cancel
           </Button>
           <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            {tCommon('save')}
+            Save changes
           </Button>
         </div>
       </form>

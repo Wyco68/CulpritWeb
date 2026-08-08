@@ -27,6 +27,7 @@ function toDomain(row: PrismaResearch): Research {
     title: row.title,
     summary: row.summary,
     area: row.area,
+    link: row.link,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -64,6 +65,7 @@ export class PrismaResearchRepository implements ResearchRepository {
           title: input.data.title,
           summary: input.data.summary,
           area: input.data.area,
+          link: input.data.link ?? null,
           sortOrder: input.data.sortOrder ?? 0,
         },
       });
@@ -85,6 +87,7 @@ export class PrismaResearchRepository implements ResearchRepository {
           ...(input.data.title !== undefined ? { title: input.data.title } : {}),
           ...(input.data.summary !== undefined ? { summary: input.data.summary } : {}),
           ...(input.data.area !== undefined ? { area: input.data.area } : {}),
+          ...(input.data.link !== undefined ? { link: input.data.link ?? null } : {}),
           ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
         },
       });

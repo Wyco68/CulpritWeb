@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2, Users2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
@@ -29,8 +28,6 @@ export function TeamMembersTable({
   items: TeamMember[];
   groups: ResearchGroup[];
 }) {
-  const t = useTranslations('admin.teamMembers');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
 
@@ -41,19 +38,23 @@ export function TeamMembersTable({
   const deleteMutation = useMutation({
     mutationFn: deleteTeamMember,
     onSuccess: () => {
-      toast.success(tCommon('deleteSuccess'));
+      toast.success('Deleted.');
       setDeleting(undefined);
       router.refresh();
     },
-    onError: () => toast.error(tCommon('deleteError')),
+    onError: () => toast.error('Could not delete. Please try again.'),
   });
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Team Members
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage researchers and visiting professors.
+          </p>
         </div>
         <Button
           onClick={() => {
@@ -62,20 +63,24 @@ export function TeamMembersTable({
           }}
         >
           <Plus className="size-4" aria-hidden="true" />
-          {tCommon('add')}
+          Add
         </Button>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={Users2} title={t('empty')} description={t('emptyBody')} />
+        <EmptyState
+          icon={Users2}
+          title="No team members yet."
+          description="Add the first team member."
+        />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('columns.name')}</TableHead>
-              <TableHead>{t('columns.role')}</TableHead>
-              <TableHead>{t('columns.group')}</TableHead>
-              <TableHead className="text-right">{tCommon('actions')}</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Research group</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -95,16 +100,14 @@ export function TeamMembersTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{item.role}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {item.researchGroupId
-                    ? (groupNameById.get(item.researchGroupId) ?? tCommon('none'))
-                    : tCommon('none')}
+                  {item.researchGroupId ? (groupNameById.get(item.researchGroupId) ?? 'None') : 'None'}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1.5">
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`${tCommon('edit')}: ${item.name}`}
+                      aria-label={`Edit: ${item.name}`}
                       onClick={() => {
                         setEditing(item);
                         setFormOpen(true);
@@ -115,7 +118,7 @@ export function TeamMembersTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`${tCommon('delete')}: ${item.name}`}
+                      aria-label={`Delete: ${item.name}`}
                       className="text-destructive hover:bg-destructive/10"
                       onClick={() => setDeleting(item)}
                     >
@@ -139,10 +142,10 @@ export function TeamMembersTable({
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(undefined)}
-        title={tCommon('confirmDeleteTitle')}
-        description={tCommon('confirmDeleteBody')}
-        confirmLabel={tCommon('delete')}
-        cancelLabel={tCommon('cancel')}
+        title="Delete this item?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         loading={deleteMutation.isPending}
         onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />

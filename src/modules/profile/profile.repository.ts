@@ -37,6 +37,8 @@ function toDomain(row: PrismaProfile): Profile {
     researchInterests: toListItems(row.researchInterests),
     researchStatement: row.researchStatement,
     invitedTalks: toListItems(row.invitedTalks),
+    linkedinUrl: row.linkedinUrl,
+    googleScholarUrl: row.googleScholarUrl,
     updatedAt: row.updatedAt,
   };
 }
@@ -94,6 +96,8 @@ export class PrismaProfileRepository implements ProfileRepository {
           | undefined,
         researchStatement: input.data.researchStatement ?? null,
         invitedTalks: (input.data.invitedTalks ?? undefined) as Prisma.InputJsonValue | undefined,
+        linkedinUrl: input.data.linkedinUrl ?? null,
+        googleScholarUrl: input.data.googleScholarUrl ?? null,
       };
 
       const row = existing

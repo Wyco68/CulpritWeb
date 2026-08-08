@@ -1,16 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { YouTubeVideo } from '../youtube-video';
-
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
-    const messages: Record<string, string> = {
-      unavailableTitle: 'Video unavailable',
-      unavailableBody: "This video couldn't be loaded right now. Please check back soon.",
-    };
-    return messages[key] ?? key;
-  },
-}));
 
 describe('YouTubeVideo', () => {
   it('renders an iframe with the privacy-enhanced embed src and accessible title for a valid ID', () => {

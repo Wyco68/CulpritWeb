@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getPublicationService, updatePublicationSchema } from '@/modules/publications';
 import { requireAdmin } from '@/modules/auth';
 import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
 // Admin: update a publication.
@@ -15,7 +16,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const result = await getPublicationService().update(id, parsed.data, `admin:${admin.data.userId}`);
-    return respond(result);
+    return respond(revalidateOn(result, 'publications'));
   } catch (error) {
     return apiUnexpected(error);
   }
@@ -29,7 +30,7 @@ export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id:
 
     const { id } = await ctx.params;
     const result = await getPublicationService().remove(id, `admin:${admin.data.userId}`);
-    return respond(result);
+    return respond(revalidateOn(result, 'publications'));
   } catch (error) {
     return apiUnexpected(error);
   }

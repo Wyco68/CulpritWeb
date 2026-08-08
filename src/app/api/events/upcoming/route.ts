@@ -2,9 +2,9 @@ import { getUpcomingEventsService, toAppointmentView } from '@/modules/appointme
 import { mapResult } from '@/modules/shared/lib/result';
 import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
 
-// Public: upcoming events (approved/booked appointments in the future), gated by the admin's
-// upcoming_events_visible setting. Never 403s — when the setting is off this returns 200 with
-// `{ visible: false, events: [] }` so the public tab can render an explicit "not shown" state.
+// Public: upcoming events (admin-declared appointments, `scheduled` and in the future), gated by
+// the admin's upcoming_events_visible setting. Never 403s — when the setting is off this returns
+// 200 with `{ visible: false, events: [] }` so the public tab can render an explicit "not shown" state.
 export async function GET() {
   try {
     const result = await getUpcomingEventsService().getUpcomingEvents();

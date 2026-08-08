@@ -26,6 +26,8 @@ model Profile {
   researchInterests        Json?    @map("research_interests")
   researchStatement        String?  @map("research_statement") @db.Text
   invitedTalks             Json?    @map("invited_talks")
+  linkedinUrl              String?  @map("linkedin_url")
+  googleScholarUrl         String?  @map("google_scholar_url")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
@@ -36,6 +38,8 @@ model Research {
   title     String
   summary   String   @db.Text
   area      String
+  /// Optional external link — a project page, tool listing, or artefact repository.
+  link      String?
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -49,7 +53,8 @@ model Publication {
   authors   String
   venue     String
   year      Int
-  link      String
+  /// Nullable: conference and book-chapter entries frequently have no stable public URL.
+  link      String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -83,43 +88,33 @@ model TeamMember {
   @@map("team_member")
 }
 
+// No approve/decline/book review queue, and no Calendly sync of any kind: an appointment exists
+// ONLY because the admin declared it directly (Manage Appointments). `scheduled` is the only
+// creatable state; `cancelled` is terminal and retained (never hard-deleted). A visitor booking
+// through the Calendly embed happens entirely on Calendly's side and never reaches this table —
+// see src/modules/integrations/calendly/README.md.
 enum AppointmentStatus {
-  pending
-  approved
-  declined
-  booked
+  scheduled
   cancelled
 }
 
-enum AppointmentSource {
-  direct
-  request
-}
-
 model Appointment {
-  id               String            @id @default(cuid())
-  requesterName    String            @map("requester_name")
-  requesterEmail   String            @map("requester_email")
-  researchGroup    String?           @map("research_group")
-  requestedTime    DateTime?         @map("requested_time")
-  topic            String?           @db.Text
-  source           AppointmentSource @default(request)
-  status           AppointmentStatus @default(pending)
-  calendlyEventRef String?           @map("calendly_event_ref")
-  // Calendly REST integration metadata (association only; the app never mutates Calendly-side data).
-  calendlyEventUri     String?  @map("calendly_event_uri")
-  calendlyInviteeUri   String?  @unique @map("calendly_invitee_uri")
-  calendlyEventTypeUri String?  @map("calendly_event_type_uri")
-  meetingUrl           String?  @map("meeting_url")
-  scheduledAt          DateTime? @map("scheduled_at")
-  cancelledAt          DateTime? @map("cancelled_at")
-  cancelReason     String?           @map("cancel_reason") @db.Text
-  cancelToken      String            @unique @map("cancel_token")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
+  id            String            @id @default(cuid())
+  /// Who the meeting is with, entered by the admin.
+  requesterName String            @map("requester_name")
+  /// Optional — informational only. No email is ever sent by this app for an appointment
+  /// (Calendly sends its own confirmation for widget bookings; admin-declared entries send none).
+  requesterEmail String?          @map("requester_email")
+  researchGroup String?           @map("research_group")
+  scheduledAt   DateTime          @map("scheduled_at")
+  topic         String?           @db.Text
+  status        AppointmentStatus @default(scheduled)
+  cancelReason  String?           @map("cancel_reason") @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
 
   @@index([status])
-  @@index([createdAt])
+  @@index([scheduledAt])
   @@map("appointment")
 }
 

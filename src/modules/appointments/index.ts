@@ -1,39 +1,25 @@
-// appointments module — request intake, the status machine (service is the SOLE authority on
-// transitions; illegal → 409), Calendly metadata, audit trail. Records are never hard-deleted.
-// Cross-module code imports only from this surface.
+// appointments module — no approve/decline/book review queue and no Calendly sync of any kind: an
+// appointment exists ONLY because the admin declared it directly (Manage Appointments). The
+// service is the SOLE authority on the one remaining transition, `scheduled -> cancelled`;
+// illegal moves → 409. Records are never hard-deleted. Cross-module code imports only from here.
 
 export {
-  createAppointmentRequestSchema,
-  createDirectBookingSchema,
-  cancelByTokenSchema,
-  adminBookSchema,
-  adminCancelSchema,
-  adminDeclineSchema,
+  createAppointmentSchema,
+  updateAppointmentSchema,
+  cancelAppointmentSchema,
   listAppointmentsQuerySchema,
   appointmentStatusSchema,
-  appointmentSourceSchema,
-  type CreateAppointmentRequestInput,
-  type CreateDirectBookingInput,
-  type CancelByTokenInput,
-  type AdminBookInput,
-  type AdminCancelInput,
-  type AdminDeclineInput,
+  type CreateAppointmentInput,
+  type UpdateAppointmentInput,
+  type CancelAppointmentInput,
   type ListAppointmentsQuery,
   type AppointmentStatus,
-  type AppointmentSource,
 } from './appointment.schema';
 
-export type {
-  Appointment,
-  AppointmentAction,
-  AppointmentEmailKind,
-  AppointmentNotifier,
-  AuditContext,
-} from './appointment.types';
+export type { Appointment, AuditContext } from './appointment.types';
 
 export {
   createAppointmentService,
-  TRANSITIONS,
   type AppointmentService,
   type AppointmentServiceDeps,
 } from './appointment.service';
@@ -50,14 +36,10 @@ export {
   type UpcomingEventsResult,
 } from './upcoming-events.service';
 
-export {
-  toAppointmentView,
-  toAppointmentOwnerView,
-  type AppointmentView,
-  type AppointmentOwnerView,
-} from './appointment.serializer';
+export { toAppointmentView, type AppointmentView } from './appointment.serializer';
 
-export { getAppointmentService, getCalendlyLinkStore, getUpcomingEventsService } from './container';
+export { getAppointmentService, getUpcomingEventsService } from './container';
 
 export { UpcomingEventsList } from './ui/upcoming-events-list';
 export { AppointmentsTable } from './ui/appointments-table';
+export { AppointmentFormDialog } from './ui/appointment-form-dialog';

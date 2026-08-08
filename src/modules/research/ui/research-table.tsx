@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2, FlaskConical } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
@@ -21,8 +20,6 @@ async function deleteResearch(id: string) {
 }
 
 export function ResearchTable({ items }: { items: Research[] }) {
-  const t = useTranslations('admin.research');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -32,19 +29,21 @@ export function ResearchTable({ items }: { items: Research[] }) {
   const deleteMutation = useMutation({
     mutationFn: deleteResearch,
     onSuccess: () => {
-      toast.success(tCommon('deleteSuccess'));
+      toast.success('Deleted.');
       setDeleting(undefined);
       router.refresh();
     },
-    onError: () => toast.error(tCommon('deleteError')),
+    onError: () => toast.error('Could not delete. Please try again.'),
   });
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Research</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage the public research listing.
+          </p>
         </div>
         <Button
           onClick={() => {
@@ -53,20 +52,24 @@ export function ResearchTable({ items }: { items: Research[] }) {
           }}
         >
           <Plus className="size-4" aria-hidden="true" />
-          {tCommon('add')}
+          Add
         </Button>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={FlaskConical} title={t('empty')} description={t('emptyBody')} />
+        <EmptyState
+          icon={FlaskConical}
+          title="No research works yet."
+          description="Add the first research work to show it on the public site."
+        />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('columns.title')}</TableHead>
-              <TableHead>{t('columns.area')}</TableHead>
-              <TableHead>{t('columns.sortOrder')}</TableHead>
-              <TableHead className="text-right">{tCommon('actions')}</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Area</TableHead>
+              <TableHead>Order</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -80,7 +83,7 @@ export function ResearchTable({ items }: { items: Research[] }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`${tCommon('edit')}: ${item.title}`}
+                      aria-label={`Edit: ${item.title}`}
                       onClick={() => {
                         setEditing(item);
                         setFormOpen(true);
@@ -91,7 +94,7 @@ export function ResearchTable({ items }: { items: Research[] }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`${tCommon('delete')}: ${item.title}`}
+                      aria-label={`Delete: ${item.title}`}
                       className="text-destructive hover:bg-destructive/10"
                       onClick={() => setDeleting(item)}
                     >
@@ -110,10 +113,10 @@ export function ResearchTable({ items }: { items: Research[] }) {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(undefined)}
-        title={tCommon('confirmDeleteTitle')}
-        description={tCommon('confirmDeleteBody')}
-        confirmLabel={tCommon('delete')}
-        cancelLabel={tCommon('cancel')}
+        title="Delete this item?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         loading={deleteMutation.isPending}
         onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />

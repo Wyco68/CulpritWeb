@@ -11,6 +11,18 @@ export const createResearchSchema = z.object({
   title: safeText(300),
   summary: safeText(5000),
   area: safeText(200),
+  // Optional external artefact — a tool listing, project page or dataset. Empty string from an
+  // untouched form input means "no link", not a validation failure.
+  link: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((v) => v === '' || z.string().url().safeParse(v).success, {
+      message: 'Must be a valid URL.',
+    })
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
   sortOrder: z.coerce.number().int().min(0).max(100_000).optional(),
 });
 export type CreateResearchInput = z.infer<typeof createResearchSchema>;

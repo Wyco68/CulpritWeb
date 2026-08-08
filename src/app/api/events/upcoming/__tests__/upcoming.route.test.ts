@@ -20,7 +20,7 @@ describe('GET /api/events/upcoming', () => {
     expect(json.data).toEqual({ visible: false, events: [] });
   });
 
-  it('returns 200 with events, stripping the cancelToken secret', async () => {
+  it('returns 200 with the scheduled appointments, admin-declared only', async () => {
     const { ok } = await import('@/modules/shared/lib/result');
     getUpcomingEvents.mockResolvedValueOnce(
       ok({
@@ -31,13 +31,10 @@ describe('GET /api/events/upcoming', () => {
             requesterName: 'Dr. Rivera',
             requesterEmail: 'rivera@example.com',
             researchGroup: 'Systems Security',
-            requestedTime: new Date('2026-09-01T10:00:00Z'),
+            scheduledAt: new Date('2026-09-01T10:00:00Z'),
             topic: 'Intro call',
-            source: 'request',
-            status: 'approved',
-            calendlyEventRef: null,
+            status: 'scheduled',
             cancelReason: null,
-            cancelToken: 'secret-token',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -50,6 +47,6 @@ describe('GET /api/events/upcoming', () => {
     const json = await res.json();
     expect(json.data.visible).toBe(true);
     expect(json.data.events).toHaveLength(1);
-    expect(json.data.events[0].cancelToken).toBeUndefined();
+    expect(json.data.events[0].requesterName).toBe('Dr. Rivera');
   });
 });

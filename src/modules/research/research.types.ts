@@ -5,6 +5,7 @@ export type Research = {
   title: string;
   summary: string;
   area: string;
+  link: string | null;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;

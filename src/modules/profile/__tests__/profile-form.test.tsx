@@ -17,11 +17,7 @@ function renderWithQuery(profile: Profile | null) {
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
-}));
-
-vi.mock('@/i18n/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: refreshMock }),
 }));
 
@@ -41,16 +37,19 @@ describe('ProfileForm', () => {
     const user = userEvent.setup();
     renderWithQuery(null);
 
-    await user.type(screen.getByLabelText(/admin.profile.fullName/, { exact: false }), 'Dr. Jane Doe');
-    await user.type(screen.getByLabelText(/admin.profile.titleField/, { exact: false }), 'Professor');
+    await user.type(screen.getByLabelText('Full name', { exact: false }), 'Dr. Jane Doe');
+    await user.type(screen.getByLabelText('Title', { exact: false }), 'Professor');
 
-    const addButtons = screen.getAllByRole('button', { name: 'admin.profile.item.addItem' });
+    const addButtons = screen.getAllByRole('button', { name: 'Add item' });
     await user.click(addButtons[0]!);
 
-    const titleInputs = screen.getAllByLabelText('admin.profile.item.titleLabel', { exact: false });
-    await user.type(titleInputs[0]!, 'PhD in Computer Science');
+    // A substring/case-insensitive label match for "Title" would also catch the professor's own
+    // "Title" field and the row's "Subtitle" field (which contains "title" as a substring), so the
+    // new row's title input is targeted by its RHF-generated id instead of by label text.
+    const titleInput = document.getElementById('education.0.title') as HTMLInputElement;
+    await user.type(titleInput, 'PhD in Computer Science');
 
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [, options] = fetchMock.mock.calls[0]!;
@@ -77,12 +76,14 @@ describe('ProfileForm', () => {
       researchInterests: [],
       researchStatement: null,
       invitedTalks: [],
+      linkedinUrl: null,
+      googleScholarUrl: null,
       updatedAt: new Date(),
     });
 
     expect(screen.getByDisplayValue('Existing degree')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'admin.profile.item.removeItem' }));
+    await user.click(screen.getByRole('button', { name: 'Remove item' }));
 
     expect(screen.queryByDisplayValue('Existing degree')).not.toBeInTheDocument();
   });

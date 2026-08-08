@@ -23,22 +23,23 @@ const serverSchema = z.object({
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
-  // Supabase Storage — server-only service-role client. All uploads/deletes/signed-URL issuance
-  // happen through this key (bypasses RLS); the public buckets are readable via plain HTTPS URLs
-  // without any key, so no client-facing Supabase env is needed.
-  SUPABASE_URL: z.string().url().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  // Calendly REST integration (Personal Access Token, single professor account). All optional so
-  // dev/test boots unconfigured; when unset the integration reports "not configured" and never crashes.
-  CALENDLY_ACCESS_TOKEN: z.string().min(1).optional(),
-  CALENDLY_USER_URI: z.string().url().optional(),
-  CALENDLY_WEBHOOK_SIGNING_KEY: z.string().min(1).optional(),
+  // Cloudflare R2 — S3-compatible object storage (adopted 2026-08-08 over Supabase Storage; see
+  // PROJECT_SPEC.md §14.1/§7 — R2 never charges for egress, which was the binding bottleneck).
+  // The database has no dependency on these; DATABASE_URL/Prisma talk to Postgres directly.
+  R2_ACCOUNT_ID: z.string().min(1).optional(),
+  R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+  R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  R2_BUCKET_NAME: z.string().min(1).optional(),
+  /** Public base URL for the bucket — a custom domain, or the `pub-<hash>.r2.dev` dev URL. */
+  R2_PUBLIC_URL: z.string().url().optional(),
+  // No CALENDLY_* server vars: the app has no server-side Calendly integration at all (embed
+  // only — see modules/integrations). The public scheduling link is NEXT_PUBLIC_CALENDLY_URL.
 });
 
 // dotenv loads an unset-but-present `KEY=` line as `""`, not `undefined` — Zod's `.optional()`
 // only skips validation for `undefined`, so a blank optional secret (e.g. a not-yet-configured
-// Calendly/Resend/Turnstile key) would otherwise fail `.min(1)`/`.url()` and crash boot. Treat
-// blank env values as unset before validating.
+// Resend/Turnstile key) would otherwise fail `.min(1)`/`.url()` and crash boot. Treat blank env
+// values as unset before validating.
 const rawEnv = Object.fromEntries(
   Object.entries(process.env).map(([key, value]) => [key, value === '' ? undefined : value]),
 );

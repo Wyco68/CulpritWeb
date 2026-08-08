@@ -6,7 +6,7 @@ export type Publication = {
   authors: string;
   venue: string;
   year: number;
-  link: string;
+  link: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

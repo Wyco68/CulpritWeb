@@ -1,6 +1,6 @@
-// settings module — key/value flags (upcoming_events_visible, appointment_duration_minutes=30).
-// Cross-module code should import getSetting()/isUpcomingEventsVisible() from this surface rather
-// than reading the Setting table directly.
+// settings module — key/value flags (currently just upcoming_events_visible). Cross-module code
+// should import getSetting()/isUpcomingEventsVisible() from this surface rather than reading the
+// Setting table directly.
 
 export { updateSettingsSchema, type UpdateSettingsInput } from './setting.schema';
 
@@ -19,11 +19,6 @@ export {
 
 export type { SettingRepository } from './setting.repository';
 
-export {
-  getSettingsService,
-  getSetting,
-  isUpcomingEventsVisible,
-  getAppointmentDurationMinutes,
-} from './container';
+export { getSettingsService, getSetting, isUpcomingEventsVisible } from './container';
 
 export { SettingsForm } from './ui/settings-form';

@@ -72,7 +72,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
           authors: input.data.authors,
           venue: input.data.venue,
           year: input.data.year,
-          link: input.data.link,
+          link: input.data.link ?? null,
         },
       });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
@@ -94,7 +94,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
           ...(input.data.authors !== undefined ? { authors: input.data.authors } : {}),
           ...(input.data.venue !== undefined ? { venue: input.data.venue } : {}),
           ...(input.data.year !== undefined ? { year: input.data.year } : {}),
-          ...(input.data.link !== undefined ? { link: input.data.link } : {}),
+          ...(input.data.link !== undefined ? { link: input.data.link ?? null } : {}),
         },
       });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });

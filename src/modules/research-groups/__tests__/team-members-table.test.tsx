@@ -9,10 +9,7 @@ import type { TeamMember } from '../team-member.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
-}));
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const group: ResearchGroup = {
@@ -42,7 +39,7 @@ describe('TeamMembersTable', () => {
 
   it('shows the empty state when there are no team members', () => {
     renderTable([]);
-    expect(screen.getByText('admin.teamMembers.empty')).toBeInTheDocument();
+    expect(screen.getByText('No team members yet.')).toBeInTheDocument();
   });
 
   it('creates a team member, assigning a research group from the populated select (POST)', async () => {
@@ -50,14 +47,11 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'admin.common.add' }));
-    await user.type(screen.getByLabelText(/admin.teamMembers.fields.name/, { exact: false }), 'Dr. Alex Kim');
-    await user.type(screen.getByLabelText(/admin.teamMembers.fields.role/, { exact: false }), 'Postdoc');
-    await user.selectOptions(
-      screen.getByLabelText(/admin.teamMembers.fields.researchGroupId/, { exact: false }),
-      'g1',
-    );
-    await user.click(screen.getByRole('button', { name: 'admin.common.save' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.type(screen.getByLabelText('Name', { exact: false }), 'Dr. Alex Kim');
+    await user.type(screen.getByLabelText('Role', { exact: false }), 'Postdoc');
+    await user.selectOptions(screen.getByLabelText('Research group', { exact: false }), 'g1');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(

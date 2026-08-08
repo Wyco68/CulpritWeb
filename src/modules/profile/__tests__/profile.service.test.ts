@@ -18,6 +18,8 @@ const BLANK: Profile = {
   researchInterests: null,
   researchStatement: null,
   invitedTalks: null,
+  linkedinUrl: null,
+  googleScholarUrl: null,
   updatedAt: new Date('2026-08-02T00:00:00Z'),
 };
 

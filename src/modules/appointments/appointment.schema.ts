@@ -4,12 +4,10 @@ import { stripHtml } from '@/modules/shared/lib/sanitize';
 // Single source of truth for appointment I/O. The frontend infers its form types from these
 // schemas; the server re-parses at the boundary (client validation is UX only).
 //
-// Field names are camelCase to match the Prisma model and avoid a mapping layer. Free-text
-// fields are sanitized (HTML stripped) via `.transform` AFTER shape validation.
+// There is no approve/decline/book review queue and no Calendly sync: an appointment exists ONLY
+// because the admin declared it directly. See appointment.service.ts.
 
 const safeText = (max: number) => z.string().trim().min(1).max(max).transform(stripHtml);
-// Optional free text: sanitize, and treat blank/whitespace as absent. `.optional()` stays outermost
-// so the object key is genuinely optional (`field?: string`), not required-with-undefined.
 const optionalSafeText = (max: number) =>
   z
     .string()
@@ -17,70 +15,43 @@ const optionalSafeText = (max: number) =>
     .max(max)
     .transform((v) => stripHtml(v) || undefined)
     .optional();
+const optionalEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(200)
+  .refine((v) => v === '' || z.string().email().safeParse(v).success, {
+    message: 'Must be a valid email address.',
+  })
+  .transform((v) => v || undefined)
+  .optional();
 
-// Domain enums owned here (not imported from Prisma) so nothing leaks across the service boundary.
-export const appointmentStatusSchema = z.enum([
-  'pending',
-  'approved',
-  'declined',
-  'booked',
-  'cancelled',
-]);
-export const appointmentSourceSchema = z.enum(['direct', 'request']);
-
+// Domain enum owned here (not imported from Prisma) so nothing leaks across the service boundary.
+export const appointmentStatusSchema = z.enum(['scheduled', 'cancelled']);
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
-export type AppointmentSource = z.infer<typeof appointmentSourceSchema>;
 
-/** Public: create a free-form meeting request → pending. */
-export const createAppointmentRequestSchema = z.object({
+/** Admin: declare an appointment directly — the only way one is ever created. */
+export const createAppointmentSchema = z.object({
   requesterName: safeText(120),
-  requesterEmail: z.string().trim().toLowerCase().email().max(200),
+  requesterEmail: optionalEmail,
   researchGroup: optionalSafeText(160),
-  requestedTime: z.coerce.date().optional(),
+  scheduledAt: z.coerce.date(),
   topic: optionalSafeText(2000),
-  turnstileToken: z.string().min(1).max(4096),
 });
-export type CreateAppointmentRequestInput = z.infer<typeof createAppointmentRequestSchema>;
+export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 
-/** Public: record a direct Calendly booking → booked (source=direct). */
-export const createDirectBookingSchema = z.object({
-  requesterName: safeText(120),
-  requesterEmail: z.string().trim().toLowerCase().email().max(200),
-  researchGroup: optionalSafeText(160),
-  calendlyEventRef: safeText(300),
-  requestedTime: z.coerce.date(),
-  turnstileToken: z.string().min(1).max(4096),
-});
-export type CreateDirectBookingInput = z.infer<typeof createDirectBookingSchema>;
+/** Admin: edit a scheduled appointment's details (not its status — `cancel` is a separate action). */
+export const updateAppointmentSchema = createAppointmentSchema.partial();
+export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
 
-/** Public (token): visitor self-cancels their own appointment. `id` comes from the route path. */
-export const cancelByTokenSchema = z.object({
-  cancelToken: z.string().trim().min(1).max(200),
-  reason: optionalSafeText(1000),
-});
-export type CancelByTokenInput = z.infer<typeof cancelByTokenSchema>;
-
-/** Admin: mark an approved request booked; the Calendly event reference is required. */
-export const adminBookSchema = z.object({
-  calendlyEventRef: safeText(300),
-});
-export type AdminBookInput = z.infer<typeof adminBookSchema>;
-
-/** Admin: cancel an approved/booked appointment; a reason is required for the audit trail. */
-export const adminCancelSchema = z.object({
+/** Admin: cancel a scheduled appointment; a reason is required for the audit trail. */
+export const cancelAppointmentSchema = z.object({
   reason: safeText(1000),
 });
-export type AdminCancelInput = z.infer<typeof adminCancelSchema>;
-
-/** Admin: decline a pending request; reason optional. */
-export const adminDeclineSchema = z.object({
-  reason: optionalSafeText(1000),
-});
-export type AdminDeclineInput = z.infer<typeof adminDeclineSchema>;
+export type CancelAppointmentInput = z.infer<typeof cancelAppointmentSchema>;
 
 /** Admin: list filter (query string). */
 export const listAppointmentsQuerySchema = z.object({
   status: appointmentStatusSchema.optional(),
-  source: appointmentSourceSchema.optional(),
 });
 export type ListAppointmentsQuery = z.infer<typeof listAppointmentsQuerySchema>;

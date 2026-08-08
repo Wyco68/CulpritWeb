@@ -1,12 +1,9 @@
-import { useTranslations } from 'next-intl';
 import { ExternalLink } from 'lucide-react';
 import type { Publication } from '@/modules/publications';
 
 // Monospaced two-digit numbered index (01, 02, …), per the Figma prototype's numbered-list
 // pattern for publications.
 export function PublicationsList({ items }: { items: Publication[] }) {
-  const t = useTranslations('publications');
-
   return (
     <ol className="divide-y divide-border border-t border-border">
       {items.map((item, index) => (
@@ -27,16 +24,18 @@ export function PublicationsList({ items }: { items: Publication[] }) {
               {' · '}
               <span className="font-mono">{item.year}</span>
             </p>
-            <a
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1 rounded text-sm font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              {t('viewLink')}
-              <ExternalLink className="size-3.5" aria-hidden="true" />
-              <span className="sr-only"> ({t('opensInNewTab')})</span>
-            </a>
+            {item.link && (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 rounded text-sm font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                View publication
+                <ExternalLink className="size-3.5" aria-hidden="true" />
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            )}
           </div>
         </li>
       ))}

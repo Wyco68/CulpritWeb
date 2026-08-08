@@ -3,10 +3,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter } from 'next/navigation';
 import { Dialog } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -47,8 +46,6 @@ export function TeamMemberFormDialog({
   member?: TeamMember;
   groups: ResearchGroup[];
 }) {
-  const t = useTranslations('admin.teamMembers');
-  const tCommon = useTranslations('admin.common');
   const router = useRouter();
   const isEdit = Boolean(member);
 
@@ -87,20 +84,23 @@ export function TeamMemberFormDialog({
   const mutation = useMutation({
     mutationFn: (input: CreateTeamMemberInput) => submitTeamMember(member?.id, input),
     onSuccess: () => {
-      toast.success(isEdit ? tCommon('saveSuccess') : tCommon('createSuccess'));
+      toast.success(isEdit ? 'Changes saved.' : 'Created.');
       onOpenChange(false);
       reset();
       router.refresh();
     },
-    onError: () => toast.error(isEdit ? tCommon('saveError') : tCommon('createError')),
+    onError: () =>
+      toast.error(
+        isEdit ? 'Something went wrong. Please try again.' : 'Could not create. Please try again.',
+      ),
   });
 
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? t('editTitle') : t('addTitle')}
-      closeLabel={tCommon('close')}
+      title={isEdit ? 'Edit team member' : 'Add team member'}
+      closeLabel="Close"
     >
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
@@ -108,15 +108,15 @@ export function TeamMemberFormDialog({
         className="flex flex-col gap-4"
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t('fields.name')} htmlFor="member-name" required error={errors.name?.message}>
+          <FormField label="Name" htmlFor="member-name" required error={errors.name?.message}>
             {(fieldProps) => <Input {...fieldProps} {...register('name')} />}
           </FormField>
-          <FormField label={t('fields.role')} htmlFor="member-role" required error={errors.role?.message}>
+          <FormField label="Role" htmlFor="member-role" required error={errors.role?.message}>
             {(fieldProps) => <Input {...fieldProps} {...register('role')} />}
           </FormField>
         </div>
         <FormField
-          label={t('fields.researchGroupId')}
+          label="Research group"
           htmlFor="member-group"
           error={errors.researchGroupId?.message}
         >
@@ -127,7 +127,7 @@ export function TeamMemberFormDialog({
                 setValueAs: (value: string) => (value === '' ? null : value),
               })}
             >
-              <option value="">{t('fields.noGroup')}</option>
+              <option value="">No group</option>
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
                   {group.name}
@@ -136,7 +136,7 @@ export function TeamMemberFormDialog({
             </Select>
           )}
         </FormField>
-        <FormField label={t('fields.photoUrl')} htmlFor="member-photoUrl" error={errors.photoUrl?.message}>
+        <FormField label="Photo URL" htmlFor="member-photoUrl" error={errors.photoUrl?.message}>
           {(fieldProps) => (
             <Input
               {...fieldProps}
@@ -147,14 +147,10 @@ export function TeamMemberFormDialog({
             />
           )}
         </FormField>
-        <FormField label={t('fields.bio')} htmlFor="member-bio" error={errors.bio?.message}>
+        <FormField label="Bio" htmlFor="member-bio" error={errors.bio?.message}>
           {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={3} />}
         </FormField>
-        <FormField
-          label={t('fields.sortOrder')}
-          htmlFor="member-sortOrder"
-          error={errors.sortOrder?.message}
-        >
+        <FormField label="Sort order" htmlFor="member-sortOrder" error={errors.sortOrder?.message}>
           {(fieldProps) => (
             <Input
               {...fieldProps}
@@ -167,10 +163,10 @@ export function TeamMemberFormDialog({
 
         <div className="mt-2 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {tCommon('cancel')}
+            Cancel
           </Button>
           <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            {tCommon('save')}
+            Save changes
           </Button>
         </div>
       </form>

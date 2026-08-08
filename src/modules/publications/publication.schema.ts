@@ -12,7 +12,18 @@ export const createPublicationSchema = z.object({
   authors: safeText(1000),
   venue: safeText(400),
   year: z.coerce.number().int().min(1900).max(2100),
-  link: z.string().trim().min(1).max(2000).url(),
+  // Optional: many conference papers and book chapters have no stable public URL. An empty string
+  // from an untouched form input means "no link", not a validation failure.
+  link: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((v) => v === '' || z.string().url().safeParse(v).success, {
+      message: 'Must be a valid URL.',
+    })
+    .transform((v) => v || null)
+    .nullable()
+    .optional(),
 });
 export type CreatePublicationInput = z.infer<typeof createPublicationSchema>;
 

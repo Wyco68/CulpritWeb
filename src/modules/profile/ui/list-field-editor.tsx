@@ -2,7 +2,6 @@
 
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import type { UpdateProfileInput } from '../profile.schema';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -25,7 +24,6 @@ type ListFieldName = Extract<
 >;
 
 export function ListFieldEditor({ name, heading }: { name: ListFieldName; heading: string }) {
-  const t = useTranslations('admin.profile.item');
   const {
     control,
     register,
@@ -39,7 +37,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
     <fieldset className="rounded-lg border border-border p-4">
       <legend className="px-1 text-sm font-semibold text-foreground">{heading}</legend>
 
-      {fields.length === 0 && <p className="text-sm text-muted-foreground">{t('empty')}</p>}
+      {fields.length === 0 && <p className="text-sm text-muted-foreground">No items yet.</p>}
 
       <ol className="flex flex-col gap-4">
         {fields.map((field, index) => {
@@ -48,7 +46,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
             <li key={field.id} className="rounded-md border border-border/70 bg-muted/20 p-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <FormField
-                  label={t('titleLabel')}
+                  label="Title"
                   htmlFor={`${name}.${index}.title`}
                   required
                   error={rowError?.title?.message}
@@ -58,7 +56,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   )}
                 </FormField>
                 <FormField
-                  label={t('yearLabel')}
+                  label="Year"
                   htmlFor={`${name}.${index}.year`}
                   error={rowError?.year?.message}
                 >
@@ -67,7 +65,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   )}
                 </FormField>
                 <FormField
-                  label={t('subtitleLabel')}
+                  label="Subtitle"
                   htmlFor={`${name}.${index}.subtitle`}
                   error={rowError?.subtitle?.message}
                   className="sm:col-span-2"
@@ -77,7 +75,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   )}
                 </FormField>
                 <FormField
-                  label={t('descriptionLabel')}
+                  label="Description"
                   htmlFor={`${name}.${index}.description`}
                   error={rowError?.description?.message}
                   className="sm:col-span-2"
@@ -98,7 +96,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   size="icon"
                   disabled={index === 0}
                   onClick={() => move(index, index - 1)}
-                  aria-label={t('moveUp')}
+                  aria-label="Move up"
                 >
                   <ArrowUp className="size-4" aria-hidden="true" />
                 </Button>
@@ -108,7 +106,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   size="icon"
                   disabled={index === fields.length - 1}
                   onClick={() => move(index, index + 1)}
-                  aria-label={t('moveDown')}
+                  aria-label="Move down"
                 >
                   <ArrowDown className="size-4" aria-hidden="true" />
                 </Button>
@@ -117,7 +115,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                   variant="ghost"
                   size="icon"
                   onClick={() => remove(index)}
-                  aria-label={t('removeItem')}
+                  aria-label="Remove item"
                   className="text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
@@ -136,7 +134,7 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
         onClick={() => append({ title: '', subtitle: '', year: '', description: '' })}
       >
         <Plus className="size-4" aria-hidden="true" />
-        {t('addItem')}
+        Add item
       </Button>
     </fieldset>
   );
