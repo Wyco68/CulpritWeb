@@ -10,4 +10,10 @@ export const authClient = createAuthClient({
   baseURL: publicEnv.appUrl || undefined,
 });
 
-export const { signIn, signOut, useSession } = authClient;
+// Explicit named exports (not a destructuring re-export): Turbopack's client-boundary export
+// tracing can't statically resolve `export const { a, b } = obj`, so a Server Component that
+// imports this module transitively (via the ./index.ts barrel) silently fails to bind these,
+// breaking client hydration on every admin page with no visible error.
+export const signIn = authClient.signIn;
+export const signOut = authClient.signOut;
+export const useSession = authClient.useSession;
