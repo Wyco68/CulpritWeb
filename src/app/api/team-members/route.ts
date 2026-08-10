@@ -3,6 +3,11 @@ import { getTeamMemberService, listTeamMembersQuerySchema } from '@/modules/rese
 import { apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
 
 // Public: list team members, ordered by sortOrder. Optional `?groupId=` filter.
+// NOT cached: reading `request.nextUrl.searchParams` forces this route dynamic (confirmed via
+// `next build` — "Dynamic server usage: ... used `nextUrl.searchParams`"), so no `export const
+// revalidate` here. Every request hits the DB. `revalidatePath('/api/team-members')` in
+// modules/shared/lib/revalidate stays a harmless no-op purge target (correct if this route is
+// ever restructured to only read searchParams conditionally and becomes cacheable again).
 export async function GET(request: NextRequest) {
   try {
     const params = Object.fromEntries(request.nextUrl.searchParams);
