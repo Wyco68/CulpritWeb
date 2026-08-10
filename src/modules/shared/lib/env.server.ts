@@ -21,8 +21,6 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
-  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   // Cloudflare R2 — S3-compatible object storage (adopted 2026-08-08 over Supabase Storage; see
   // PROJECT_SPEC.md §14.1/§7 — R2 never charges for egress, which was the binding bottleneck).
   // The database has no dependency on these; DATABASE_URL/Prisma talk to Postgres directly.
