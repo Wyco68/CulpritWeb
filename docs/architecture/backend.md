@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
+last_updated: 2026-08-10
 related_modules: [appointments, auth, integrations, shared]
-related_decisions: [ADR-004, ADR-005]
+related_decisions: [ADR-004, ADR-005, ADR-007]
 ---
 
 # Backend architecture
@@ -106,3 +106,30 @@ Written by the **repository**, not the service — see
 [architecture/overview.md](overview.md#layers) for why this deviates from the original design
 doc. Every repository that mutates state writes an `AuditLog` row in the same Prisma
 `$transaction` as the domain mutation.
+
+## Caching
+
+Two layers, both native Next.js — no Redis app-cache, no CDN, no cache-tag system (see
+[ADR-007](../decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md)).
+
+- **Full Route Cache for public pages.** Every `(public)` page is a prerendered Server Component
+  served from Next's Full Route Cache (`x-nextjs-cache: HIT`, ~5ms).
+- **ISR-style caching on five of the six public GET API routes** (`/api/profile`,
+  `/api/research`, `/api/publications`, `/api/groups`, `/api/events/upcoming`) via
+  `export const revalidate` on each route module — the same on-demand cache Next already manages
+  for pages, not a separate mechanism. `/api/events/upcoming` uses 300s (time-sensitive: a
+  scheduled appointment can pass into the past between invalidations); the rest use 3600s.
+  **`/api/team-members` is the exception and stays uncached** — it reads
+  `request.nextUrl.searchParams` for its optional `?groupId=` filter, which `next build` confirms
+  forces the route dynamic (`ƒ /api/team-members`, not `○ Static`); every request hits the DB. See
+  [ADR-007](../decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md#correction-2026-08-10-same-day-apiteam-members-does-not-cache).
+- **On-demand invalidation via `revalidatePath`**, triggered only from admin mutation route
+  handlers (`revalidateOn()` / `revalidatePublic()` in
+  `src/modules/shared/lib/revalidate.ts`) — those handlers are already `requireAdmin()`-gated, so
+  this satisfies "admin-only invalidation" by construction; there is no separate purge endpoint.
+  Each `PublicArea` maps to both its public page path and its mirrored public API route(s), so one
+  admin write purges both.
+- **3600s/300s `export const revalidate` values are ceilings, not the primary freshness path** —
+  they only bound how long a change made *outside* the app (direct DB edit, re-seed, restored
+  backup) could sit invisible behind the cache. Same rationale as the public layout's existing
+  `export const revalidate = 3600` safety net.
