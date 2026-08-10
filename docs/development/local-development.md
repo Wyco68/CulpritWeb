@@ -30,7 +30,6 @@ Grouped by concern in `.env.example` (the committed template — no secrets):
 | Auth | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_INITIAL_PASSWORD` | Secret required in production (≥32 chars); optional in dev |
 | Email | `RESEND_API_KEY`, `EMAIL_FROM` | Optional — unused for appointments |
 | Bot defense | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional — no-ops (always passes) when unset |
-| Rate limiting | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional — no-op (always allows) when unset |
 | Storage | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` | Optional — no-op (logs + returns an error Result) when unset |
 | Calendly | `NEXT_PUBLIC_CALENDLY_URL` | Optional — embed shows a graceful empty state when unset |
 
@@ -47,9 +46,11 @@ leftover values for those keys from an earlier checkout, they're inert — the a
 
 ## Every integration has a no-op fallback
 
-Turnstile, the rate limiter, and object storage all boot cleanly with unset env — they log a
-warning and either always-pass (Turnstile/rate-limit) or return a typed `IntegrationError`
-(storage), so local dev never needs every third-party account configured just to run the app.
+Turnstile and object storage boot cleanly with unset env — they log a warning and either
+always-pass (Turnstile) or return a typed `IntegrationError` (storage), so local dev never needs
+every third-party account configured just to run the app. Rate limiting has no env dependency at
+all: it's an in-process fallback limiter (no Upstash/Redis — see
+[ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)), always active, nothing to configure.
 
 ## Useful scripts
 

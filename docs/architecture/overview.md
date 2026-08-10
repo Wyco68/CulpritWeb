@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
+last_updated: 2026-08-10
 related_modules: [shared, auth, appointments, integrations]
-related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006]
+related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008]
 ---
 
 # Architecture overview
@@ -25,7 +25,7 @@ related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006]
 | Object storage | Cloudflare R2, S3-compatible API via `@aws-sdk/client-s3` — see [ADR-002](../decisions/ADR-002-object-storage-r2.md) |
 | Scheduling | Calendly, embed-only — see [ADR-005](../decisions/ADR-005-calendly-embed-only.md) |
 | Bot defense | Cloudflare Turnstile |
-| Rate limiting | Upstash Redis (`@upstash/ratelimit`) |
+| Rate limiting | Cloudflare WAF Rate Limiting Rule (edge, auth login) + in-process fallback limiter (Vercel) — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) |
 | Email | Resend + React Email — wired but has zero current callers |
 | Video | YouTube embeds (`src/modules/integrations/youtube/`) — built, not yet wired to any content model |
 | i18n | **None.** English-only, literal strings — see [ADR-006](../decisions/ADR-006-remove-i18n-and-locale-routing.md) |
@@ -65,8 +65,9 @@ not extend to "no audit writes in repositories."
   model. No request intake.
 - **settings** — feature flags (currently just `upcoming_events_visible`).
 - **integrations** — Calendly embed (no server-side client), Cloudflare R2 storage adapter,
-  YouTube embed helper, Turnstile verifier, Upstash rate limiter, `guardPublicWrite` composite
-  guard, Resend email client (unused for appointments).
+  YouTube embed helper, Turnstile verifier, in-process rate limiter (fallback behind the
+  Cloudflare edge rule — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)),
+  `guardPublicWrite` composite guard, Resend email client (unused for appointments).
 - **shared** — `Result`/error types, structured logger, API response envelope, Prisma client
   singleton, UI primitives (`shared/ui/*`), `query-client.ts`.
 
@@ -82,6 +83,8 @@ src/app/
 └── api/         # route handlers — see architecture/backend.md
 ```
 
-No `middleware.ts` exists anywhere in the project. The admin section is guarded by a single
-server-side `requireAdmin()` check in `src/app/(admin)/admin/layout.tsx`, re-evaluated on every
-request — see [architecture/authentication.md](authentication.md).
+`src/middleware.ts` exists (added 2026-08-10, ADR-008) but is scoped to rate-limit fallback on
+`/api/auth/*` and mutating `/api/admin/*` only — it makes no auth decision and doesn't touch page
+routes. The admin **page** section is guarded separately by a single server-side `requireAdmin()`
+check in `src/app/(admin)/admin/layout.tsx`, re-evaluated on every request — see
+[architecture/authentication.md](authentication.md).

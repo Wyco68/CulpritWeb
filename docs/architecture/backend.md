@@ -3,7 +3,7 @@ status: current
 source_of_truth: false
 last_updated: 2026-08-10
 related_modules: [appointments, auth, integrations, shared]
-related_decisions: [ADR-004, ADR-005, ADR-007]
+related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008]
 ---
 
 # Backend architecture
@@ -11,7 +11,8 @@ related_decisions: [ADR-004, ADR-005, ADR-007]
 ## API routes
 
 REST/JSON under `src/app/api/`. `Auth`: **Public** = no auth, **Admin** = admin session required
-(checked in the handler via `requireAdmin()`, not just middleware — there is no `middleware.ts`).
+(checked in the handler via `requireAdmin()` — `src/middleware.ts` exists, ADR-008, but only as a
+rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decides authorization).
 
 ### Public content reads
 
@@ -47,7 +48,7 @@ outright) and **no Calendly integration route exists** (no `/api/integrations/ca
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/turnstile/verify` | Confirms a Turnstile token before the client reveals the public Calendly embed. IP-rate-limited via Upstash. Not a form-submission endpoint — nothing is written. |
+| POST | `/api/turnstile/verify` | Confirms a Turnstile token before the client reveals the public Calendly embed. IP-rate-limited via the in-process fallback limiter (see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)). Not a form-submission endpoint — nothing is written. |
 
 ## Route handler contract
 
