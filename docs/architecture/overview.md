@@ -1,0 +1,87 @@
+---
+status: current
+source_of_truth: false
+last_updated: 2026-08-08
+related_modules: [shared, auth, appointments, integrations]
+related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006]
+---
+
+# Architecture overview
+
+> Verified against the actual codebase (`src/`, `prisma/schema.prisma`, `package.json`) as of
+> 2026-08-08, not against the idealized design in `.claude/skills/fullstack-nextjs-starter/`
+> (which predates several of these changes — see [Known contradictions](../README.md#known-contradictions--gaps)).
+
+## Stack (adopted, running)
+
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind v4 |
+| Hosting | Vercel |
+| Backend | Next.js Route Handlers (`src/app/api/**/route.ts`) |
+| ORM | Prisma 7, driver adapter (`@prisma/adapter-pg`) over a plain `pg` `Pool` |
+| Database | Supabase Postgres (pooled connection, port 6543/pgbouncer) — see [ADR-001](../decisions/ADR-001-database.md) |
+| Auth | Better Auth — DB-backed cookie sessions, single admin, **not JWT** — see [ADR-003](../decisions/ADR-003-authentication.md) |
+| Object storage | Cloudflare R2, S3-compatible API via `@aws-sdk/client-s3` — see [ADR-002](../decisions/ADR-002-object-storage-r2.md) |
+| Scheduling | Calendly, embed-only — see [ADR-005](../decisions/ADR-005-calendly-embed-only.md) |
+| Bot defense | Cloudflare Turnstile |
+| Rate limiting | Upstash Redis (`@upstash/ratelimit`) |
+| Email | Resend + React Email — wired but has zero current callers |
+| Video | YouTube embeds (`src/modules/integrations/youtube/`) — built, not yet wired to any content model |
+| i18n | **None.** English-only, literal strings — see [ADR-006](../decisions/ADR-006-remove-i18n-and-locale-routing.md) |
+
+## Layers
+
+Data flows one direction; each layer depends only on the one below it.
+
+```
+┌───────────────────────────────────────────────────────────┐
+│ Boundary   — route handlers (src/app/api/**/route.ts)      │  auth → parse/validate → call service → respond
+├───────────────────────────────────────────────────────────┤
+│ Service    — domain logic (src/modules/*/*.service.ts)     │  appointment lifecycle, business rules
+├───────────────────────────────────────────────────────────┤
+│ Repository — the ONLY place Prisma is imported             │  typed CRUD + audit-log write, in one transaction
+├───────────────────────────────────────────────────────────┤
+│ Prisma 7 / Supabase PostgreSQL                              │
+└───────────────────────────────────────────────────────────┘
+```
+
+**Deviation from the original design doc:** the audit-log write happens **inside the repository**
+(`createWithAudit`/`updateWithAudit`, same DB transaction as the mutation), not in the service
+layer as `.claude/skills/fullstack-nextjs-starter/references/{data-model,security}.md` describe.
+Verified across every repository that mutates state (`appointment`, `research`, `publications`,
+`profile`, `settings`, `research-group`, `team-member`). This is intentional — it makes the audit
+entry atomic with the mutation — but it means "no business logic in repositories" (CLAUDE.md) does
+not extend to "no audit writes in repositories."
+
+## Module boundaries (`src/modules/*`)
+
+- **auth** — Better Auth config, single-admin session management, `requireAdmin()`.
+- **profile** — the professor's singleton profile.
+- **research** — research works CRUD.
+- **publications** — publications CRUD.
+- **research-groups** — research groups + `TeamMember` (relational, not a JSON blob).
+- **appointments** — admin-declared create/update/cancel, audit trail, the Upcoming Events read
+  model. No request intake.
+- **settings** — feature flags (currently just `upcoming_events_visible`).
+- **integrations** — Calendly embed (no server-side client), Cloudflare R2 storage adapter,
+  YouTube embed helper, Turnstile verifier, Upstash rate limiter, `guardPublicWrite` composite
+  guard, Resend email client (unused for appointments).
+- **shared** — `Result`/error types, structured logger, API response envelope, Prisma client
+  singleton, UI primitives (`shared/ui/*`), `query-client.ts`.
+
+There is **no `notifications` module** — it was deleted along with the appointment review-queue
+workflow. There is **no `i18n`/`messages` directory** — fully removed, not just the routing layer.
+
+## Route groups
+
+```
+src/app/
+├── (public)/    # About, research, publications, team, events, appointment — flat paths, no [locale]
+├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,appointments,settings}, login
+└── api/         # route handlers — see architecture/backend.md
+```
+
+No `middleware.ts` exists anywhere in the project. The admin section is guarded by a single
+server-side `requireAdmin()` check in `src/app/(admin)/admin/layout.tsx`, re-evaluated on every
+request — see [architecture/authentication.md](authentication.md).
