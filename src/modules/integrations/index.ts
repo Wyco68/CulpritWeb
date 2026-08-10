@@ -1,5 +1,6 @@
 // integrations module — edges behind interfaces: EmailClient (Resend), TurnstileVerifier
-// (Cloudflare), RateLimiter (Upstash), StorageAdapter (Supabase Storage). Each has a real
+// (Cloudflare), RateLimiter (in-process, defense-in-depth behind the Cloudflare edge WAF rate
+// limit — see ADR-008), StorageAdapter (Supabase Storage). Each has a real
 // adapter + a graceful no-op when its env is unset, so dev/test never crash. No domain logic
 // lives here.
 //
@@ -39,7 +40,7 @@ export {
   type RateLimiter,
   type RateLimitResult,
   NoopRateLimiter,
-  UpstashRateLimiter,
+  InMemoryRateLimiter,
   getRateLimiter,
 } from './rate-limit/rate-limiter';
 

@@ -1,6 +1,3 @@
-import { env } from '@/modules/shared/lib/env.server';
-import { logger } from '@/modules/shared/lib/logger';
-
 export interface RateLimitResult {
   success: boolean;
   remaining: number;
@@ -8,12 +5,13 @@ export interface RateLimitResult {
   reset: number;
 }
 
-// Sliding-window limiter for public mutating routes (keyed by IP + email + route).
+// Fixed/sliding-window limiter for public mutating routes (keyed by IP + email + route) and for
+// the middleware fallback layer (keyed by IP + route).
 export interface RateLimiter {
   limit(key: string): Promise<RateLimitResult>;
 }
 
-/** No-op limiter for dev/test when Upstash env is unset — always allows. */
+/** No-op limiter — always allows. Kept exported for tests to inject explicitly via `deps`. */
 export class NoopRateLimiter implements RateLimiter {
   async limit(): Promise<RateLimitResult> {
     return { success: true, remaining: Number.MAX_SAFE_INTEGER, reset: Date.now() };
@@ -21,59 +19,50 @@ export class NoopRateLimiter implements RateLimiter {
 }
 
 /**
- * Upstash sliding-window limiter with a small in-process cache in front to absorb bursts and
- * cut Redis round-trips. Constructed lazily so the SDK only loads when configured.
+ * In-process fixed-window limiter. Defense-in-depth behind the Cloudflare edge WAF rate-limiting
+ * rule (see ADR-008), not the primary control — per-instance (non-shared) state is an accepted
+ * limitation for this traffic profile (single admin, low volume).
  */
-export class UpstashRateLimiter implements RateLimiter {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @upstash/ratelimit instance; typed via dynamic import
-  private ratelimitPromise: Promise<any> | undefined;
+export class InMemoryRateLimiter implements RateLimiter {
+  private readonly buckets = new Map<string, { count: number; resetAt: number }>();
 
-  constructor(
-    private readonly url: string,
-    private readonly token: string,
-    private readonly options: { limit: number; windowSeconds: number } = { limit: 5, windowSeconds: 3600 },
-  ) {}
-
-  private async getRatelimit() {
-    if (!this.ratelimitPromise) {
-      this.ratelimitPromise = (async () => {
-        const [{ Ratelimit }, { Redis }] = await Promise.all([
-          import('@upstash/ratelimit'),
-          import('@upstash/redis'),
-        ]);
-        const redis = new Redis({ url: this.url, token: this.token });
-        return new Ratelimit({
-          redis,
-          limiter: Ratelimit.slidingWindow(this.options.limit, `${this.options.windowSeconds} s`),
-          ephemeralCache: new Map(),
-          prefix: 'culprit:rl',
-        });
-      })();
-    }
-    return this.ratelimitPromise;
-  }
+  constructor(private readonly options: { limit: number; windowSeconds: number }) {}
 
   async limit(key: string): Promise<RateLimitResult> {
-    try {
-      const ratelimit = await this.getRatelimit();
-      const { success, remaining, reset } = await ratelimit.limit(key);
-      return { success, remaining, reset };
-    } catch (cause) {
-      // Fail OPEN on limiter outage: never block a legitimate request because Redis is down.
-      logger.error('ratelimit_unavailable', { key: 'redacted' });
-      void cause;
-      return { success: true, remaining: 0, reset: Date.now() };
+    const now = Date.now();
+    const windowMs = this.options.windowSeconds * 1000;
+    const bucket = this.buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      // Lazily evict/replace expired entries on access instead of a background sweep timer.
+      this.buckets.set(key, { count: 1, resetAt: now + windowMs });
+      return { success: true, remaining: this.options.limit - 1, reset: now + windowMs };
     }
+
+    if (bucket.count >= this.options.limit) {
+      return { success: false, remaining: 0, reset: bucket.resetAt };
+    }
+
+    bucket.count += 1;
+    return { success: true, remaining: this.options.limit - bucket.count, reset: bucket.resetAt };
   }
 }
 
-let cached: RateLimiter | undefined;
+// Default matches the previous Upstash default (see git history) so existing callers
+// (turnstile route, public-write-guard) keep the same effective behavior unchanged.
+const DEFAULT_OPTIONS = { limit: 5, windowSeconds: 3600 };
 
-export function getRateLimiter(): RateLimiter {
-  if (cached) return cached;
-  cached =
-    env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-      ? new UpstashRateLimiter(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN)
-      : new NoopRateLimiter();
-  return cached;
+// One singleton per distinct {limit, windowSeconds} config, so different call sites (e.g. the
+// auth sign-in vs admin-mutation categories in middleware.ts) each get a stable, independently
+// windowed limiter without reintroducing env-gated branching.
+const instances = new Map<string, RateLimiter>();
+
+export function getRateLimiter(options: { limit: number; windowSeconds: number } = DEFAULT_OPTIONS): RateLimiter {
+  const cacheKey = `${options.limit}:${options.windowSeconds}`;
+  let limiter = instances.get(cacheKey);
+  if (!limiter) {
+    limiter = new InMemoryRateLimiter(options);
+    instances.set(cacheKey, limiter);
+  }
+  return limiter;
 }
