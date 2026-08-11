@@ -28,11 +28,16 @@ has a single audience (an individual professor's academic site).
 
 Remove the i18n layer **entirely** — not just the locale-routing segment. There is no
 `next-intl` dependency (confirmed absent from `package.json`), no `messages/` directory, no
-`src/i18n/` directory, and no `middleware.ts` of any kind (locale-negotiation or otherwise) in the
-current codebase. Every component uses literal English strings directly, confirmed in
-`src/app/layout.tsx` and `src/app/providers.tsx`'s own header comments: "no next-intl, no message
-catalogue, no locale routing." Routes are flat (`src/app/(public)/research`, not
-`src/app/[locale]/(public)/research`).
+`src/i18n/` directory, and — **as of this ADR's date, 2026-08-08** — no `middleware.ts` of any
+kind (locale-negotiation or otherwise) in the codebase. Every component uses literal English
+strings directly, confirmed in `src/app/layout.tsx` and `src/app/providers.tsx`'s own header
+comments: "no next-intl, no message catalogue, no locale routing." Routes are flat
+(`src/app/(public)/research`, not `src/app/[locale]/(public)/research`).
+
+> **Note (2026-08-10):** `src/middleware.ts` was later added by
+> [ADR-008](ADR-008-cloudflare-rate-limiting.md), for edge rate limiting — unrelated to locale
+> negotiation. It does not reintroduce anything this ADR removed; see ADR-008 and
+> [architecture/authentication.md](../architecture/authentication.md).
 
 ## Alternatives considered
 

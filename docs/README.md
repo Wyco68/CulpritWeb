@@ -74,9 +74,13 @@ an agent doesn't trust the wrong source, and a human can decide what (if anythin
    admin gate. None of that exists in `src/` today. `docs/architecture/*` and the ADRs in this
    tree are the corrected replacement; the skill's reference files were not updated after the
    2026-08-08 rewrite.
-3. **No `middleware.ts` exists anywhere in the project.** The admin route guard is a single
-   server-side `requireAdmin()` check in `src/app/(admin)/admin/layout.tsx`, not a middleware
-   layer. See [architecture/authentication.md](architecture/authentication.md).
+3. ~~No `middleware.ts` exists anywhere in the project~~ — **partially superseded 2026-08-10**:
+   `src/middleware.ts` now exists, added by
+   [ADR-008](decisions/ADR-008-cloudflare-rate-limiting.md) as a rate-limit fallback on
+   `/api/auth/*` and mutating `/api/admin/*`. It still makes **no authorization decision** — the
+   admin route guard remains a separate, single server-side `requireAdmin()` check in
+   `src/app/(admin)/admin/layout.tsx` (pages) and inside each admin route handler (API). See
+   [architecture/authentication.md](architecture/authentication.md).
 4. **Audit-log writes happen in the repository layer, not the service layer**, contradicting the
    skill docs' explicit claim ("written in the service layer... not in repositories"). Verified
    across all seven repositories that mutate state. See

@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
-related_modules: [auth]
-related_decisions: [ADR-003]
+last_updated: 2026-08-10
+related_modules: [auth, integrations]
+related_decisions: [ADR-003, ADR-008]
 ---
 
 # Authentication
@@ -45,8 +45,11 @@ export const auth = betterAuth({
 
 ## Authorization boundary
 
-**There is no `middleware.ts` in this project.** The admin guard is a single server-side check in
-`src/app/(admin)/admin/layout.tsx`:
+**`src/middleware.ts` exists (added 2026-08-10), but it does not guard admin auth** — it applies
+only an in-process rate-limit fallback to `/api/auth/*` and mutating `/api/admin/*` requests, see
+[ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) and
+[architecture/backend.md](backend.md). The admin **page** guard is a separate, single server-side
+check in `src/app/(admin)/admin/layout.tsx`:
 
 ```ts
 const session = await requireAdmin();
@@ -58,10 +61,11 @@ whole section, re-evaluated on every navigation (Server Components aren't cached
 client-side route guard would be). This differs from
 `.claude/skills/fullstack-nextjs-starter/references/security.md`'s description of a
 `middleware.ts`-based gate "re-checked" in each handler as a second layer — in the shipped app,
-the layout check **is** the only server-side gate for page routes; admin **API routes**
+the layout check **is** the only server-side gate for admin **page** routes; admin **API routes**
 additionally call `requireAdmin()` themselves (see `architecture/backend.md`), so the "re-check at
-the boundary, not just middleware" principle still holds — there's just no middleware layer to
-begin with.
+the boundary, not just middleware" principle still holds. `src/middleware.ts` (ADR-008) runs on
+`/api/admin/*` too, but only as a rate-limit fallback — it never makes an authorization decision;
+`requireAdmin()` inside each route handler remains the only thing that does.
 
 Single-admin MVP: any authenticated Better Auth user is treated as the admin. `requireAdmin()`'s
 own comment notes where a `role === 'admin'` check would go if a second admin role is ever added —
