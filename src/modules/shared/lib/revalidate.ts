@@ -23,7 +23,15 @@ import type { Result } from './result';
 const AREA_PATHS = {
   research: ['/research', '/api/research'],
   publications: ['/publications', '/api/publications'],
-  /** Research groups and their members share the Team Members tab. */
+  /**
+   * Research groups and their members share the Team Members tab. Only the unfiltered
+   * `/api/team-members` route is purged here — its per-group sibling
+   * `/api/team-members/group/{groupId}` (see ADR-007's addendum) has no fixed path to target,
+   * since the id is only known at request time, so it isn't covered by on-demand invalidation.
+   * That's an accepted gap, not an oversight: it relies on its own 3600s `revalidate` ceiling
+   * alone, same tradeoff already made for `/api/events/upcoming`'s time-sensitivity, just longer
+   * because group membership changes are rare and low-stakes if briefly stale.
+   */
   team: ['/team', '/api/groups', '/api/team-members'],
   /** Upcoming Events: both the appointment list and the admin visibility toggle. */
   events: ['/events', '/api/events/upcoming'],

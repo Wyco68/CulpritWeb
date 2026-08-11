@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createTeamMemberSchema,
-  listTeamMembersQuerySchema,
+  teamMemberGroupIdSchema,
   updateTeamMemberSchema,
 } from '../team-member.schema';
 
@@ -42,14 +42,18 @@ describe('createTeamMemberSchema', () => {
   });
 });
 
-describe('listTeamMembersQuerySchema', () => {
-  it('accepts an empty query', () => {
-    expect(listTeamMembersQuerySchema.safeParse({}).success).toBe(true);
+describe('teamMemberGroupIdSchema', () => {
+  it('accepts a non-empty groupId', () => {
+    const result = teamMemberGroupIdSchema.safeParse('group_1');
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toBe('group_1');
   });
 
-  it('accepts a groupId filter', () => {
-    const result = listTeamMembersQuerySchema.safeParse({ groupId: 'group_1' });
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data.groupId).toBe('group_1');
+  it('rejects an empty groupId', () => {
+    expect(teamMemberGroupIdSchema.safeParse('').success).toBe(false);
+  });
+
+  it('rejects a groupId over 200 characters', () => {
+    expect(teamMemberGroupIdSchema.safeParse('g'.repeat(201)).success).toBe(false);
   });
 });

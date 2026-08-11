@@ -23,10 +23,9 @@ export {
   createTeamMemberSchema,
   updateTeamMemberSchema,
   teamMemberIdSchema,
-  listTeamMembersQuerySchema,
+  teamMemberGroupIdSchema,
   type CreateTeamMemberInput,
   type UpdateTeamMemberInput,
-  type ListTeamMembersQuery,
 } from './team-member.schema';
 
 export type { TeamMember } from './team-member.types';

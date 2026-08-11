@@ -31,8 +31,5 @@ export type UpdateTeamMemberInput = z.infer<typeof updateTeamMemberSchema>;
 /** Admin: identify a team member by id (PUT/DELETE path param, re-validated at the boundary). */
 export const teamMemberIdSchema = z.string().trim().min(1).max(200);
 
-/** Public: optional `?groupId=` filter on the list endpoint. */
-export const listTeamMembersQuerySchema = z.object({
-  groupId: z.string().trim().min(1).max(200).optional(),
-});
-export type ListTeamMembersQuery = z.infer<typeof listTeamMembersQuerySchema>;
+/** Public: `groupId` path param on the filtered list route (`/api/team-members/group/[groupId]`). */
+export const teamMemberGroupIdSchema = z.string().trim().min(1).max(200);
