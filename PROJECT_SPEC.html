@@ -515,7 +515,8 @@
     <tr><td><code>GET</code></td><td><code>/api/research</code></td><td>Public</td><td>List research works.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/publications</code></td><td>Public</td><td>List publications.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/groups</code></td><td>Public</td><td>List research groups.</td></tr>
-    <tr><td><code>GET</code></td><td><code>/api/team-members</code></td><td>Public</td><td>List team members, ordered by sort_order. Optional <code>?groupId=</code> filter.</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/team-members</code></td><td>Public</td><td>List ALL team members, ordered by sort_order (unfiltered, cached).</td></tr>
+    <tr><td><code>GET</code></td><td><code>/api/team-members/group/{groupId}</code></td><td>Public</td><td>List team members in one research group, ordered by sort_order (filtered, cached). Unknown groupId returns an empty list, not 404. The old <code>?groupId=</code> query-string form 307-redirects here.</td></tr>
     <tr><td><code>GET</code></td><td><code>/api/events/upcoming</code></td><td>Public</td><td>Upcoming events (empty/403 if hidden).</td></tr>
   </table></div>
   <h3>8.2 Appointments</h3>

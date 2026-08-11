@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: true
-last_updated: 2026-08-10
+last_updated: 2026-08-11
 related_modules: [shared]
 related_decisions: [ADR-006]
 ---
@@ -92,6 +92,66 @@ constraint (see `CLAUDE.md`), and Upstash Redis in this project is scoped to rat
 repurposing it as an app cache would blur that boundary for no measured benefit. A cache-tag layer
 would add real complexity (tag naming, `unstable_cache` wrapping) to solve a problem `revalidatePath`
 already solves at the current scale (a handful of public routes, single admin, low write volume).
+
+## Addendum (2026-08-11): `/api/team-members` restructured to cache
+
+The Correction above left the door open: "correct if the route is later restructured (e.g. two
+route modules, filtered vs. unfiltered) to be cacheable." That restructure is now done.
+
+**Why it was safe to change the route's shape.** Before touching anything, a repo-wide grep
+confirmed `/api/team-members` has zero internal consumers — the public `(public)/team/page.tsx`
+and every admin page call `getTeamMemberService().list(...)` directly through the service layer
+(this project's public pages read through services, not their own internal HTTP API), same as the
+other five public GET routes. `/api/team-members` is a standalone public API surface with no code
+in this repo depending on its exact request shape, so changing `?groupId=` to a path segment is
+not a breaking change for anything that ships with the app.
+
+Correction to an earlier draft of this addendum: it claimed "the spec doesn't promise API
+stability for this optional filter." That was false — `PROJECT_SPEC.md` (and its `.html` render)
+did document `GET /api/team-members ... Optional ?groupId= filter` as a stable row, and
+CLAUDE.md is explicit that the spec wins over instinct. This was, honestly, a deliberate
+spec-breaking change to the request shape, accepted because this is a personal academic site with
+no real external API consumers of this optional filter (only this repo's own — now-removed —
+internal caller of the query-string form, per the grep above). Two things keep it from being a
+silent break: (1) `PROJECT_SPEC.md`/`PROJECT_SPEC.html` were updated in the same change to
+document the new two-route shape, so the spec and the code agree again; (2)
+`/api/team-members?groupId=X` still resolves correctly via a `307` redirect to
+`/api/team-members/group/X` rather than silently returning the wrong (unfiltered) data, so even a
+hypothetical caller still on the old contract keeps working, just via one extra hop.
+
+**The restructure.** Two route modules replace the one:
+
+- `src/app/api/team-members/route.ts` — unfiltered list only. No `NextRequest` parameter, no
+  `searchParams`, no query-schema parse. `export const revalidate = 3600`, same as the other five
+  now-cached routes.
+- `src/app/api/team-members/group/[groupId]/route.ts` (new) — filtered-by-group list, `groupId`
+  read from the async route `params` (Next 15 route-handler `params` are a `Promise`, same as
+  every `[id]` admin route in this codebase, e.g. `src/app/api/admin/research/[id]/route.ts`),
+  validated with `teamMemberGroupIdSchema` (extracted from the now-removed
+  `listTeamMembersQuerySchema.shape.groupId` — same `z.string().trim().min(1).max(200)`
+  constraint, just no longer wrapped in an object shape meant for a query string).
+  `export const revalidate = 3600` here too. An unmatched/nonexistent `groupId` still returns
+  `200 { ok: true, data: [] }` — the repository only filters, it never verifies the group exists —
+  so this preserves the old route's semantics exactly, just over a path segment instead of a query
+  string.
+
+A dynamic path segment (`[groupId]`) does not force a route handler dynamic the way reading
+`request.nextUrl.searchParams` does; Next generates/caches each resolved `groupId` path on-demand
+the same way it does for a dynamic *page* segment. `next build`'s route table confirms both new
+route shapes are no longer forced dynamic by request-input access (see the PR/task that shipped
+this addendum for the exact table output).
+
+`revalidate.ts`'s `team` area still only lists the unfiltered `/api/team-members` in its
+`revalidatePath` purge targets. The filtered route's `groupId` is only known per-request, so there
+is no fixed path an admin mutation handler could purge ahead of time without hand-rolling a
+purge-all-known-group-ids loop — deliberately not built, per this ADR's own rejection (above) of
+adding invalidation infrastructure beyond `revalidatePath`. The filtered route instead relies
+solely on its 3600s `revalidate` ceiling as the freshness bound, the same accepted tradeoff this
+ADR already made for `/api/events/upcoming`'s 300s ceiling, just longer because a team member's
+group assignment changing is rarer and lower-stakes if briefly stale.
+
+`listTeamMembersQuerySchema` and its test cases were removed as dead code (confirmed via grep: no
+remaining importer once the query-string route was gone) rather than left unused.
 
 ## Consequences
 

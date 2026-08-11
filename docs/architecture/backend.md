@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-10
+last_updated: 2026-08-11
 related_modules: [appointments, auth, integrations, shared]
 related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008]
 ---
@@ -18,7 +18,7 @@ rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decid
 
 | Method | Path |
 |---|---|
-| GET | `/api/profile`, `/api/research`, `/api/publications`, `/api/groups`, `/api/team-members` (optional `?groupId=`) |
+| GET | `/api/profile`, `/api/research`, `/api/publications`, `/api/groups`, `/api/team-members` (unfiltered), `/api/team-members/group/{groupId}` (filtered) |
 | GET | `/api/events/upcoming` (empty/403 if visibility off) |
 
 ### Appointments — admin only, entire surface
@@ -115,15 +115,22 @@ Two layers, both native Next.js — no Redis app-cache, no CDN, no cache-tag sys
 
 - **Full Route Cache for public pages.** Every `(public)` page is a prerendered Server Component
   served from Next's Full Route Cache (`x-nextjs-cache: HIT`, ~5ms).
-- **ISR-style caching on five of the six public GET API routes** (`/api/profile`,
-  `/api/research`, `/api/publications`, `/api/groups`, `/api/events/upcoming`) via
+- **ISR-style caching on all six public GET API routes** (`/api/profile`, `/api/research`,
+  `/api/publications`, `/api/groups`, `/api/team-members`, `/api/events/upcoming`) via
   `export const revalidate` on each route module — the same on-demand cache Next already manages
   for pages, not a separate mechanism. `/api/events/upcoming` uses 300s (time-sensitive: a
   scheduled appointment can pass into the past between invalidations); the rest use 3600s.
-  **`/api/team-members` is the exception and stays uncached** — it reads
-  `request.nextUrl.searchParams` for its optional `?groupId=` filter, which `next build` confirms
-  forces the route dynamic (`ƒ /api/team-members`, not `○ Static`); every request hits the DB. See
-  [ADR-007](../decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md#correction-2026-08-10-same-day-apiteam-members-does-not-cache).
+  `/api/team-members` was restructured (see
+  [ADR-007's addendum](../decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md#addendum-2026-08-11-apiteam-members-restructured-to-cache))
+  into two route modules to get here: the unfiltered `/api/team-members` route no longer reads
+  `searchParams` at all, and the group filter moved to its own path-param route,
+  `/api/team-members/group/{groupId}` — a dynamic path segment does not force a route dynamic the
+  way a search param does, so both are `○ Static`/ISR-eligible. The per-group route isn't covered
+  by `revalidatePath` (its id is only known per-request); it relies on the 3600s ceiling alone. A
+  request to the old `/api/team-members?groupId=X` contract still lands on the unfiltered route
+  (Next doesn't route on query string) — that one branch checks `searchParams` and `307`-redirects
+  to `/api/team-members/group/X` rather than silently returning the unfiltered list; the common
+  no-query-string request never touches `searchParams`, so it stays cacheable.
 - **On-demand invalidation via `revalidatePath`**, triggered only from admin mutation route
   handlers (`revalidateOn()` / `revalidatePublic()` in
   `src/modules/shared/lib/revalidate.ts`) — those handlers are already `requireAdmin()`-gated, so
