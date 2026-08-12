@@ -33,8 +33,6 @@
   .sitenav a:hover{color:#fff; background:rgba(255,255,255,.07)}
   .sitenav a.active{color:var(--sidebar-active); font-weight:600; background:rgba(63,182,201,.12)}
   .sitenav .spacer{flex:1 1 auto}
-  .sitenav .dl{color:#0f1420; background:var(--sidebar-active); font-weight:700}
-  .sitenav .dl:hover{color:#0f1420; background:#5ccadb}
 
   header.cover{background:linear-gradient(140deg,#101a3a 0%,#1f3a8a 55%,#2f5fd0 100%); color:#fff; padding:48px 56px 40px}
   .eyebrow{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#c3d2f5; margin:0 0 14px}
@@ -97,9 +95,10 @@
   .note{border:1px solid #c8d5f5; background:#f4f7ff; padding:16px 20px; border-radius:10px; margin:18px 0}
   .note.warn{border-color:#e8cf9a; background:var(--warn-bg)}
   .note.ok{border-color:#b6ddc9; background:var(--ok-bg)}
+  .note.bad{border-color:#e3b3b3; background:var(--bad-bg)}
   .note p:last-child{margin-bottom:0}
   .note .lbl{display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--brand); margin-bottom:6px}
-  .note.warn .lbl{color:var(--warn)} .note.ok .lbl{color:var(--ok)}
+  .note.warn .lbl{color:var(--warn)} .note.ok .lbl{color:var(--ok)} .note.bad .lbl{color:var(--bad)}
 
   .bignum{display:flex; flex-wrap:wrap; gap:14px; margin:24px 0 6px}
   .bignum > div{flex:1 1 190px; border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:#fff}
@@ -111,6 +110,7 @@
   .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; margin:22px 0 8px}
   .card{border:1px solid var(--line); border-radius:12px; padding:18px; background:#fff}
   .card.best{border-color:var(--brand-2); box-shadow:0 0 0 3px #e8eeff}
+  .card.blocked{border-color:#e3b3b3; background:#fffafa}
   .card .tag{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:6px; min-height:30px}
   .card .price{font-size:27px; font-weight:700; letter-spacing:-.02em; margin:2px 0}
   .card .price small{font-size:14px; font-weight:500; color:var(--ink-3)}
@@ -179,23 +179,23 @@
     <a href="./deployment.html">Deployment</a>
     <a href="./hosting-cost.html" class="active">Hosting Cost</a>
     <span class="spacer"></span>
-    <a class="dl" href="./hosting-cost.pdf" download>Download PDF</a>
   </div>
 </nav>
 
 <div class="page">
 
 <header class="cover">
-  <p class="eyebrow">Infrastructure cost analysis</p>
+  <p class="eyebrow">Infrastructure cost analysis · revision 2</p>
   <h1>Hosting&nbsp;&amp; Running Cost Report</h1>
   <p class="sub">What it costs to put the website and appointment system online and keep it there.
-  Three options, priced line by line against each supplier's published price, in US dollars and Thai
-  baht.</p>
+  This revision replaces the 7 August report: Option 1 was attempted and blocked, Option 2 is now
+  the live setup, and a third path (a dedicated server with its own database) is added and
+  recommended.</p>
   <div class="meta">
     <div><span>Application</span>culprit-web</div>
     <div><span>Expected traffic</span>up to 100 visitors per day</div>
-    <div><span>Report date</span>7 August 2026</div>
-    <div><span>Exchange rate used</span>$1 = ฿33.10, computed 7 Aug 2026</div>
+    <div><span>Report date</span>11 August 2026</div>
+    <div><span>Exchange rate used</span>$1 = ฿33.10, carried from the 7 Aug 2026 report; reconfirm before invoicing</div>
   </div>
 </header>
 
@@ -235,37 +235,39 @@
 <!-- ============================================================= -->
 <h2 id="s1"><span class="n">1</span>Our recommendation, and what it costs</h2>
 
-<p class="lead">The website is not one product you buy. It is a set of suppliers, each doing one job,
-and most are free at the size this site will run at. <strong>We recommend Option 2, a share of the
-existing server, at roughly $7 to $10 a month (฿232 to ฿331).</strong></p>
+<p class="lead">Since the last report, Option 1 was tried and failed for a reason no amount of
+rebuilding fixes. Option 2 is now live and working. But running it safely, with the daily
+backups the current database doesn't have, turns out to cost more than the option we didn't pick
+last time. <strong>We now recommend Option 3, a dedicated server with its own database, at
+roughly $19 to $25 a month (฿629 to ฿827).</strong></p>
 
 <div class="bignum">
-  <div><div class="k">Recommended cost</div><div class="v">$7–10 <small>/month</small></div><div class="s">฿232–331 per month</div></div>
-  <div><div class="k">First year</div><div class="v">$84–120</div><div class="s">฿2,780–3,972</div></div>
-  <div><div class="k">Visitors supported</div><div class="v">~3,000–5,000 <small>/day</small></div><div class="s">Against 100 expected</div></div>
-  <div><div class="k">Suppliers charging us</div><div class="v">2 of 10</div><div class="s">The server, and the domain</div></div>
+  <div><div class="k">Recommended cost</div><div class="v">$19–25 <small>/month</small></div><div class="s">฿629–827 per month</div></div>
+  <div><div class="k">First year</div><div class="v">$228–300</div><div class="s">฿7,547–9,930</div></div>
+  <div><div class="k">vs. Option 2 made equally safe</div><div class="v">$32–35 <small>/month</small></div><div class="s">Option 2 + Supabase Pro backups</div></div>
+  <div><div class="k">Suppliers charging us</div><div class="v">2 of 9</div><div class="s">The server, and the domain</div></div>
 </div>
 
-<h3>Why this one</h3>
+<h3>Why this one, now</h3>
 <ul>
-  <li><b>Nothing gets rebuilt.</b> The site ships exactly as designed. Option 1 saves a few dollars but
-  costs weeks of development and weakens how the bio and publications pages appear in Google.</li>
-  <li><b>The server already exists and already runs.</b> We pay a share of something running anyway
-  rather than starting a second bill.</li>
-  <li><b>It leaves room to grow.</b> At 100 visitors a day the site uses about a fiftieth of what the
-  arrangement can carry. If it ever outgrows the shared machine, moving to its own server is a
-  deployment task, not a redesign.</li>
-  <li><b>Only two suppliers ever send an invoice</b>, and one of them is a $12 a year domain.</li>
-</ul>
-
-<h3>Three things go with it, all free</h3>
-<ul>
-  <li><b>Photos and PDFs on Cloudflare R2</b> rather than Supabase. R2 never charges for sending files to
-  visitors, which lifts the site's ceiling from about 650 visitors a day to several thousand. Section 7.</li>
-  <li><b>A human check in front of the booking calendar.</b> Calendly's free plan has no protection of its
-  own and allows only one appointment type, so a bot could fill the professor's real calendar. Section 6.</li>
-  <li><b>Bookings copied into the admin panel by hand</b>, about thirty a month, because the automatic
-  version is a paid Calendly feature. Section 6.</li>
+  <li><b>Option 1 is not available at any price we'd recommend paying.</b> The repository now lives
+  under the <code>culpritteam</code> GitHub organisation. Vercel refused to import it under the free
+  Hobby plan: deploying a repo owned by an organisation requires being a member of a paid Vercel
+  Team, from $20 a month. That's on top of the browser rebuild the first report already priced in.
+  We stopped pursuing it. Detail in section 2.</li>
+  <li><b>Option 2 works, but its free database has two real gaps.</b> Supabase's free plan takes no
+  automatic backups, and a project with <b>no traffic for a week pauses</b> until someone manually
+  resumes it. Closing both gaps costs <b>$25 a month</b> for Supabase Pro, at which point Option 2's
+  price advantage over a dedicated server has mostly disappeared.</li>
+  <li><b>A dedicated server gets its own database, and the backup comes free with it.</b> Postgres
+  runs on the same machine as the app; a nightly <code>pg_dump</code> to the same Cloudflare R2 bucket
+  already wired up for photo storage costs $0 in fees, because the app already ships the S3 client that
+  writes to it. No pause-on-inactivity rule applies to a database you run yourself.</li>
+  <li><b>Nothing gets rebuilt, again.</b> Option 3 runs the exact same Docker image and deploy script
+  already built for Option 2: moving from one to the other is a bigger server and a one-time database
+  migration, not new development.</li>
+  <li><b>Only two suppliers ever send an invoice</b>, and one of them is a $12-a-year domain. Supabase
+  drops off the bill entirely.</li>
 </ul>
 
 <div class="signoff">
@@ -273,91 +275,93 @@ existing server, at roughly $7 to $10 a month (฿232 to ฿331).</strong></p>
   <div class="bd">
     <div class="row">
       <span class="box"></span>
-      <span class="txt"><b>1 · Free database, no automatic backups</b>
-      <span>Low risk. The admin re-types content if it is ever lost. Only the record of past bookings
-      could not be re-created. Full detail in section 3.</span></span>
-      <span class="amt free">$0<small>+$25/mo later if you want backups</small></span>
+      <span class="txt"><b>1 · Move to a dedicated server with its own Postgres database</b>
+      <span>Removes the free-tier pause-on-inactivity risk and the missing-backups gap, at a cost
+      already lower than making Option 2 equally safe. Full detail in section 3.</span></span>
+      <span class="amt">$19–25<small>/mo · ฿629–827</small></span>
     </div>
     <div class="row">
       <span class="box"></span>
-      <span class="txt"><b>2 · Buy one domain, used for both the address and the email</b>
-      <span>Gives the admin login codes a sending allowance of their own. The only paid line besides the
-      server.</span></span>
-      <span class="amt">~$12<small>฿397 per year</small></span>
-    </div>
-    <div class="row">
-      <span class="box"></span>
-      <span class="txt"><b>3 · Store photos and PDFs on Cloudflare R2</b>
-      <span>Free, ten times the space, and no charge for sending files. Costs developer time, not money.</span></span>
+      <span class="txt"><b>2 · Keep photos and PDFs on Cloudflare R2</b>
+      <span>Already free, already built, unlimited free sending to visitors. The dedicated server
+      could store files locally instead, but that trades a durable, already-working setup for one
+      invoice, not worth it on the numbers. Section 7.</span></span>
       <span class="amt free">$0</span>
     </div>
     <div class="row">
       <span class="box"></span>
-      <span class="txt"><b>And agree the server share with its owner</b>
-      <span>A share of the running cost of a server that is already in place, to be agreed. Option 3 in section 2 is the reference price for comparison.</span></span>
-      <span class="amt">$6–9<small>฿199–298 per month</small></span>
+      <span class="txt"><b>3 · Buy one domain, used for both the address and the email</b>
+      <span>Unchanged from the last report; still the only other paid line.</span></span>
+      <span class="amt">~$12<small>฿397 per year</small></span>
+    </div>
+    <div class="row">
+      <span class="box"></span>
+      <span class="txt"><b>4 · Drop Option 1 (Vercel) from consideration</b>
+      <span>Blocked without a paid Vercel Team membership, and would still need the browser rebuild
+      on top. No further action unless that changes.</span></span>
+      <span class="amt">—</span>
     </div>
   </div>
 </div>
 
-<p><b>If you disagree with any of the three</b>, the alternative and its price are set out beside each one
-in section 3. Nothing here locks anything in: every paid upgrade in this report can be switched on later
-without changing the site.</p>
+<p><b>If you disagree with any of the three</b>, the alternative and its price are set out beside each
+one in section 3. Nothing here locks anything in: the domain and file-storage choices can change later
+without touching the running site.</p>
 
 <!-- ============================================================= -->
 <h2 id="s2"><span class="n">2</span>The three options at a glance</h2>
 
 <div class="cards">
-  <div class="card">
-    <div class="tag">Option 1 · Vercel</div>
-    <div class="price">$1<small> /month</small></div>
-    <div class="yr">฿33 /month · ฿397 /year</div>
+  <div class="card blocked">
+    <div class="tag">Option 1 · Vercel <span class="pill p-bad">Blocked</span></div>
+    <div class="price">N/A</div>
+    <div class="yr">$20/mo (฿662) minimum just to unblock it, before the rebuild</div>
     <ul>
-      <li>Website hosted free by Vercel</li>
-      <li>Requires rebuilding parts of the site to run in the visitor's browser</li>
-      <li>Free plan is <b>personal, non-commercial only</b></li>
-      <li>Search-engine visibility weakens on rebuilt pages</li>
+      <li>Deploy attempted, rejected: the repo is owned by the <code>culpritteam</code> organisation</li>
+      <li>Vercel's free Hobby plan cannot deploy an organisation-owned repo</li>
+      <li>Requires a paid Vercel Team (from $20/seat/month) just to be allowed to import it</li>
+      <li>Would <b>still</b> require rebuilding parts of the site for the browser, priced in the last report</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="tag">Option 2 · Shared VPS <span class="pill p-info">Current setup</span></div>
+    <div class="price">$7–10<small> /month</small></div>
+    <div class="yr">฿232–331 /month · already live</div>
+    <ul>
+      <li>Live today: a CI-built Docker image, pulled and run on a shared VPS</li>
+      <li>Database is Supabase's free plan: <b>pauses after 7 days with no traffic</b>, no backups</li>
+      <li>Shares the machine's processor and memory with another application</li>
+      <li>Making the database as safe as Option 3's costs <b>+$25/mo</b> (Supabase Pro)</li>
     </ul>
   </div>
   <div class="card best">
-    <div class="tag">Option 2 · Shared server <span class="pill p-info">Recommended</span></div>
-    <div class="price">$7–10<small> /month</small></div>
-    <div class="yr">฿232–331 /month · ฿2,780–3,972 /year</div>
+    <div class="tag">Option 3 · Dedicated VPS <span class="pill p-info">Recommended</span></div>
+    <div class="price">$19–25<small> /month</small></div>
+    <div class="yr">฿629–827 /month · ฿7,547–9,930 /year</div>
     <ul>
-      <li>Runs on the existing DigitalOcean server beside the other application</li>
-      <li>Share of the cost <b>to be agreed with the owner</b></li>
-      <li>No rebuilding: ships exactly as designed</li>
-      <li>The two applications share processor and memory</li>
-    </ul>
-  </div>
-  <div class="card">
-    <div class="tag">Option 3 · Own server</div>
-    <div class="price">$13–19<small> /month</small></div>
-    <div class="yr">฿430–629 /month · ฿5,164–7,547 /year</div>
-    <ul>
-      <li>A DigitalOcean server used by this site alone</li>
-      <li>No rebuilding, nothing shared, nothing to interfere</li>
-      <li>Spam protection moves onto the same machine</li>
-      <li>Upgrading later is a slider, not a rebuild</li>
+      <li>Same Docker image and deploy script as Option 2, no rebuild</li>
+      <li>Runs its own Postgres database; no other tenant, no pause-on-inactivity rule</li>
+      <li>Nightly backups via a free script, not a $25/mo upgrade</li>
+      <li>Nothing else on the machine to compete for its processor or memory</li>
     </ul>
   </div>
 </div>
 
 <div class="tw">
 <table>
-<thead><tr><th>Question</th><th>1 · Vercel</th><th>2 · Shared server</th><th>3 · Own server</th></tr></thead>
+<thead><tr><th>Question</th><th>1 · Vercel</th><th>2 · Shared VPS</th><th>3 · Dedicated VPS</th></tr></thead>
 <tbody>
-  <tr><td><b>Cost per month</b></td><td class="num">$1 <span class="thb">฿33</span></td><td class="num">$7–10 <span class="thb">฿232–331</span></td><td class="num">$13–19 <span class="thb">฿430–629</span></td></tr>
-  <tr><td><b>Cost per year</b></td><td class="num">$12 <span class="thb">฿397</span></td><td class="num">$84–120 <span class="thb">฿2,780–3,972</span></td><td class="num">$156–228 <span class="thb">฿5,164–7,547</span></td></tr>
-  <tr><td><b>Visitors a day supported</b></td><td class="num">~1,100</td><td class="num">~3,000–5,000</td><td class="num">~3,000–5,000</td></tr>
-  <tr><td>Does the site need rebuilding?</td><td><span class="pill p-bad">Yes</span></td><td><span class="pill p-ok">No</span></td><td><span class="pill p-ok">No</span></td></tr>
-  <tr><td>Good for Google search ranking?</td><td>Weaker</td><td><span class="pill p-ok">Full</span></td><td><span class="pill p-ok">Full</span></td></tr>
-  <tr><td>Any licence restriction?</td><td><span class="pill p-bad">Personal only</span></td><td>None</td><td>None</td></tr>
-  <tr><td>Can another app slow it down?</td><td>No</td><td><span class="pill p-warn">Yes</span></td><td>No</td></tr>
-  <tr><td>Is the price fixed?</td><td>Yes</td><td><span class="pill p-warn">Needs negotiating</span></td><td>Yes</td></tr>
-  <tr><td>Who maintains the database?</td><td>Supabase</td><td>Supabase</td><td>Supabase</td></tr>
+  <tr><td><b>Cost per month</b></td><td class="num">N/A <span class="pill p-bad">Blocked</span></td><td class="num">$7–10 <span class="thb">฿232–331</span></td><td class="num">$19–25 <span class="thb">฿629–827</span></td></tr>
+  <tr><td><b>Cost per year</b></td><td class="num">—</td><td class="num">$84–120 <span class="thb">฿2,780–3,972</span></td><td class="num">$228–300 <span class="thb">฿7,547–9,930</span></td></tr>
+  <tr><td><b>Cost made equally safe</b><br><small>with daily backups</small></td><td class="num">—</td><td class="num">$32–35 <span class="thb">฿1,059–1,158</span></td><td class="num"><b>$19–25</b> <span class="thb">฿629–827</span> <span class="pill p-ok">backups included</span></td></tr>
+  <tr><td>Can we even deploy it?</td><td><span class="pill p-bad">No — org repo, no Team plan</span></td><td><span class="pill p-ok">Yes, live today</span></td><td><span class="pill p-ok">Yes</span></td></tr>
+  <tr><td>Does the site need rebuilding?</td><td>Yes, and still blocked anyway</td><td><span class="pill p-ok">No</span></td><td><span class="pill p-ok">No</span></td></tr>
+  <tr><td>Does the database ever pause itself?</td><td>—</td><td><span class="pill p-bad">Yes, after 7 idle days</span></td><td><span class="pill p-ok">No</span></td></tr>
+  <tr><td>Automatic backups included?</td><td>—</td><td><span class="pill p-bad">No, +$25/mo for Pro</span></td><td><span class="pill p-ok">Yes, free script</span></td></tr>
+  <tr><td>Can another app slow it down?</td><td>—</td><td><span class="pill p-warn">Yes</span></td><td><span class="pill p-ok">No</span></td></tr>
+  <tr><td>Who maintains the database?</td><td>—</td><td>Supabase</td><td>You / your developer</td></tr>
   <tr><td>Who keeps the server updated?</td><td>Vercel</td><td>You / your developer</td><td>You / your developer</td></tr>
-  <tr><td>Effort to set up</td><td>High, the rebuild</td><td><span class="pill p-ok">Low</span></td><td>Medium</td></tr>
+  <tr><td>Effort to move to it from today</td><td>N/A</td><td><span class="pill p-ok">Already done</span></td><td>Resize + one database migration</td></tr>
 </tbody>
 </table>
 </div>
@@ -367,9 +371,9 @@ without changing the site.</p>
 <table>
 <thead><tr><th>If your priority is…</th><th>Choose</th><th class="num">Per month</th></tr></thead>
 <tbody>
-  <tr><td>The lowest possible bill, and the site is strictly personal</td><td><b>Option 1</b>, accepting weeks of rebuilding</td><td class="num">$1 <span class="thb">฿33</span></td></tr>
-  <tr class="pick"><td><b>Best value without compromising the build</b></td><td><b>Option 2</b> <span class="pill p-info">Recommended</span></td><td class="num">$7–10 <span class="thb">฿232–331</span></td></tr>
-  <tr><td>Nothing else able to affect the site, and a fixed predictable price</td><td><b>Option 3</b></td><td class="num">$13–19 <span class="thb">฿430–629</span></td></tr>
+  <tr><td>The lowest bill, and you accept the database can pause itself and has no backups</td><td><b>Option 2</b>, as it runs today</td><td class="num">$7–10 <span class="thb">฿232–331</span></td></tr>
+  <tr class="pick"><td><b>A safe, fully-owned setup, at a price close to Option 2 made equally safe</b></td><td><b>Option 3</b> <span class="pill p-info">Recommended</span></td><td class="num">$19–25 <span class="thb">฿629–827</span></td></tr>
+  <tr><td>Vercel specifically, regardless of cost</td><td>Not available: <b>Option 1 is blocked</b> without a paid Vercel Team</td><td class="num">$20+ <span class="thb">฿662+</span></td></tr>
 </tbody>
 </table>
 </div>
@@ -379,69 +383,70 @@ without changing the site.</p>
   <span class="plain">Each one states what we propose, what it risks, and what the alternative costs.</span></h2>
 
 <div class="ask">
-  <div class="q"><span class="box"></span>Decision 1 &nbsp;·&nbsp; Run the database on the free plan, with no automatic backups?</div>
-  <p>The free Supabase plan holds all the site's content and booking records at no cost, but it takes
-  <b>no automatic backups</b>. If the data were ever lost, there would be no copy to restore from.</p>
-  <p><b>What that means in practice.</b> One person, the admin, enters all of the content. Recovering
-  from a loss means that person re-typing the bio, research entries, publications, groups and events.
-  The only thing that could not be re-created is the <b>record of past bookings</b>. The chance is low,
-  and it drops further with a manual export now and then.</p>
-  <div class="verdict"><b>We propose:</b> stay free. <b>If you would rather not:</b> Supabase Pro adds
-  daily backups kept for seven days, at <b>$25 a month (฿828)</b>, and can be switched on at any time
-  without changing the site.</div>
+  <div class="q"><span class="box"></span>Decision 1 &nbsp;·&nbsp; Move the database off Supabase's free plan and onto the dedicated server itself?</div>
+  <p>Today's database (Option 2, live) is Supabase's free plan. It takes <b>no automatic backups</b>,
+  and, separately, a Supabase project with <b>no traffic for a week pauses itself</b> until manually
+  resumed from the dashboard. Neither is a hypothetical: it's stated on Supabase's own free-tier terms.</p>
+  <p><b>What moving fixes.</b> A self-hosted Postgres database on the dedicated server has no such
+  pause rule; the server runs whether or not anyone visits that week. A nightly backup job
+  (<code>pg_dump</code>, piped to the same Cloudflare R2 bucket already configured for photo storage
+  via the app's existing S3 client) costs $0 in fees. Reaching the same safety on Supabase costs
+  <b>$25 a month (฿828)</b> forever, via Supabase Pro.</p>
+  <div class="verdict"><b>We propose:</b> move to Option 3. <b>What it costs:</b> the $12–15/mo gap
+  between the two servers, minus the $25/mo Supabase Pro would otherwise cost to reach equal safety.
+  Net, this is the cheaper way to get a backed-up database, not the more expensive one.
+  <b>If you would rather not:</b> stay on Option 2 and accept the pause risk, or pay $25/mo for
+  Supabase Pro on top of Option 2's server cost.</div>
 </div>
 
 <div class="ask">
-  <div class="q"><span class="box"></span>Decision 2 &nbsp;·&nbsp; Buy one domain, used for both the web address and the email?</div>
-  <p>A single domain at about <b>$12 a year (฿397)</b> does two jobs: it is the address visitors type, and
-  it is the "from" address on the emails the site itself sends.</p>
-  <p><b>Why the email side matters.</b> The site's own email is short but critical: the
-  <b>verification code the admin needs to log in</b>. Resend's free plan allows 3,000 emails a month tied
-  to <b>one domain per account</b>, so any sending account without its own domain has to share that
-  allowance. On a shared account a busy day elsewhere can exhaust it, this site's emails stop being
-  delivered, and <b>the admin cannot get into the admin panel</b>. A domain of our own gets its own
-  registration, its own key and its own 3,000 emails.</p>
-  <div class="verdict"><b>We propose:</b> buy one domain. <b>If you would rather not:</b> the site can run
-  free on <code>culprit.wyco-dev.com</code>, a sub-address of a domain already owned, and the email would
-  need a second free Resend account registered against it. That works and costs nothing, but it is two
-  accounts to keep track of instead of one domain.</div>
+  <div class="q"><span class="box"></span>Decision 2 &nbsp;·&nbsp; Keep photos and PDFs on Cloudflare R2, or move them onto the dedicated server's own disk?</div>
+  <p>R2 is already built, already free, and never charges for sending files to visitors. The full
+  comparison is in section 7. A dedicated server <i>can</i> hold files on its own disk instead, which
+  is what "its own database and its own storage" means as a capability. Whether to actually use that
+  capability for files is a separate question from whether to use it for the database.</p>
+  <div class="verdict"><b>We propose:</b> keep files on R2. <b>Why:</b> it costs nothing today, it's
+  already integrated, and self-hosting file storage would mean building our own backup and delivery
+  path for something R2 already does free, with no visitor-facing benefit. <b>If you'd rather
+  consolidate to one provider anyway:</b> moving is possible later without touching the database
+  decision; they're independent.</div>
 </div>
 
 <div class="ask">
-  <div class="q"><span class="box"></span>Decision 3 &nbsp;·&nbsp; Store the photos and PDFs on Cloudflare R2 rather than Supabase?</div>
-  <p>Both are free. R2 gives ten times the space and, crucially, <b>never charges for sending files to
-  visitors</b>, so the site's ceiling rises from about 650 visitors a day to several thousand. Section 7
-  has the comparison in full.</p>
-  <div class="verdict"><b>We propose:</b> use R2. <b>Cost:</b> $0 in fees, one new storage module in
-  developer time, because the application already keeps file storage behind a swappable interface.
-  <b>If you would rather not:</b> Supabase works today and the limit only bites above roughly 650
-  visitors a day, at which point the fix is $25 a month (฿828).</div>
+  <div class="q"><span class="box"></span>Decision 3 &nbsp;·&nbsp; Buy one domain, used for both the web address and the email?</div>
+  <p>Unchanged from the last report. A single domain at about <b>$12 a year (฿397)</b> does two jobs:
+  the address visitors type, and the "from" address on the emails the site itself sends, most
+  importantly the <b>verification code the admin needs to log in</b>. Resend's free plan ties 3,000
+  emails a month to <b>one domain per account</b>; without our own, that allowance is shared with
+  whatever else runs on the same account.</p>
+  <div class="verdict"><b>We propose:</b> buy one domain. <b>If you would rather not:</b> the site can
+  run free on a sub-address of a domain already owned, with a second free Resend account registered
+  against it.</div>
 </div>
 
 <!-- ============================================================= -->
 <h2 id="s4"><span class="n">4</span>Who we pay, and what for
-  <span class="plain">Ten suppliers, eight of them free. This is the whole bill in one table.</span></h2>
+  <span class="plain">Nine suppliers, seven of them free. This is the whole bill in one table, on the recommended Option 3.</span></h2>
 
 <div class="tw">
 <table>
 <thead><tr><th>Supplier</th><th>What it does, in plain terms</th><th class="num">Cost / month</th></tr></thead>
 <tbody>
-  <tr><td><b>The server</b><br><small>DigitalOcean or Vercel</small></td><td>The computer that actually runs the website and answers visitors</td><td class="num">$0–18<br><span class="thb">฿0–596</span></td></tr>
-  <tr><td><b>Domain name</b></td><td>The web address, and the "from" address on the site's own emails. One domain covers both</td><td class="num">$1<br><span class="thb">฿33</span></td></tr>
-  <tr><td><b>Supabase</b></td><td>Stores the content: profile, research, publications, groups, and the record of bookings</td><td class="num free">Free</td></tr>
-  <tr><td><b>Cloudflare R2</b></td><td>Holds the photos and PDFs the site shows. Free, and free to send to visitors no matter how many look at them</td><td class="num free">Free</td></tr>
+  <tr><td><b>The server</b><br><small>DigitalOcean, dedicated</small></td><td>Runs the app and its own Postgres database</td><td class="num">$18–24<br><span class="thb">฿596–794</span></td></tr>
+  <tr><td><b>Domain name</b></td><td>The web address, and the "from" address on the site's own emails</td><td class="num">$1<br><span class="thb">฿33</span></td></tr>
+  <tr><td><b>Database</b></td><td>Self-hosted Postgres on the same server. Content, bookings, backups, all in one place</td><td class="num free">Included</td></tr>
+  <tr><td><b>Cloudflare R2</b></td><td>Holds the photos and PDFs the site shows, and doubles as the nightly database backup destination</td><td class="num free">Free</td></tr>
   <tr><td><b>Cloudflare</b></td><td>Points the web address at the server, speeds the site up worldwide, provides the padlock (HTTPS), absorbs attacks</td><td class="num free">Free</td></tr>
-  <tr><td><b>Cloudflare Turnstile</b></td><td>The "are you human?" check on the admin login and, newly, on the booking page so bots cannot fill the calendar</td><td class="num free">Free</td></tr>
-  <tr><td><b>Resend</b></td><td>Sends the admin login verification code and any other notice the site itself generates. <b>Booking emails are not sent by us</b>, Calendly sends those</td><td class="num free">Free</td></tr>
-  <tr><td><b>Upstash</b></td><td>Stops one person hammering the login or the booking page hundreds of times</td><td class="num free">Free</td></tr>
-  <tr><td><b>Calendly</b></td><td>The booking calendar embedded in the "Make Appointment" tab. Visitors book directly inside it, and Calendly emails both sides</td><td class="num free">Free</td></tr>
-  <tr><td><b>YouTube</b></td><td>Holds any videos. Videos never touch our own storage, which is why they cost nothing</td><td class="num free">Free</td></tr>
+  <tr><td><b>Cloudflare Turnstile</b></td><td>The "are you human?" check on the admin login and the booking page</td><td class="num free">Free</td></tr>
+  <tr><td><b>Resend</b></td><td>Sends the admin login verification code. <b>Booking emails are not sent by us</b>, Calendly sends those</td><td class="num free">Free</td></tr>
+  <tr><td><b>Calendly</b></td><td>The booking calendar embedded in the "Make Appointment" tab</td><td class="num free">Free</td></tr>
+  <tr><td><b>YouTube</b></td><td>Holds any videos. Never touches our own storage or server</td><td class="num free">Free</td></tr>
 </tbody>
 </table>
 </div>
 
-<p><b>That is the decision.</b> Everything below is the working behind these numbers: where each figure
-came from, screenshots of the suppliers' own pricing pages, and what happens if the site grows.</p>
+<p><b>That is the decision.</b> Everything below is the working behind these numbers, including what
+actually happened when Option 1 was tried, and where the Option 2 vs. Option 3 numbers come from.</p>
 
 <div class="partbar">
   <b>Part B</b>
@@ -450,26 +455,21 @@ came from, screenshots of the suppliers' own pricing pages, and what happens if 
 
 <!-- ============================================================= -->
 <h2 id="s5"><span class="n">5</span>How many visitors each option supports
-  <span class="plain">Why we say the site has room to grow. Expected traffic is up to 100 visitors a day.</span></h2>
-
-<p>A "visit" means one person looking at about three pages. None of these numbers is a point at which
-the site breaks; they are the points at which a free allowance runs out and a bill starts.</p>
+  <span class="plain">Expected traffic is up to 100 visitors a day. None of these numbers is where the site breaks; they're where a free allowance runs out.</span></h2>
 
 <div class="tw">
 <table>
 <thead><tr><th>Allowance</th><th class="num">Included free</th><th class="num">Visitors per day it covers</th><th>Applies to</th></tr></thead>
 <tbody>
-  <tr><td><b>Supabase downloads</b><br><small>if photos and PDFs are stored there</small></td><td class="num">5 GB / month</td>
-      <td class="num"><b>~650</b><br>~1,650 with caching</td><td><span class="pill p-bad">The bottleneck</span> unless R2 is used</td></tr>
-  <tr><td><b>Cloudflare R2 downloads</b><br><small>if photos and PDFs are stored there</small></td><td class="num free">unlimited, no charge</td>
-      <td class="num free">no limit</td><td><span class="pill p-ok">Removes the bottleneck</span></td></tr>
+  <tr><td><b>Supabase downloads</b><br><small>only relevant if the database is still Supabase</small></td><td class="num">5 GB / month</td>
+      <td class="num"><b>~650</b><br>~1,650 with caching</td><td>Option 2 only, and only if files were on Supabase (they aren't; R2 is already used)</td></tr>
+  <tr><td>Cloudflare R2 downloads</td><td class="num free">unlimited, no charge</td>
+      <td class="num free">no limit</td><td>All options</td></tr>
   <tr><td>Cloudflare R2 storage</td><td class="num">10 GB</td><td class="num">years of content</td><td>All options</td></tr>
-  <tr><td>Vercel requests</td><td class="num">1,000,000 / month</td><td class="num">~1,100</td><td>Option 1 only</td></tr>
   <tr><td>Resend emails</td><td class="num">100 / day</td><td class="num">no practical limit</td><td>All options</td></tr>
-  <tr><td>Upstash operations</td><td class="num">500,000 / month</td><td class="num">~8,000</td><td>Options 1 and 2</td></tr>
-  <tr><td>DigitalOcean data transfer</td><td class="num">2,000–3,000 GB / month</td><td class="num">tens of thousands</td><td>Options 2 and 3</td></tr>
+  <tr><td>DigitalOcean data transfer</td><td class="num">2,000–4,000 GB / month</td><td class="num">tens of thousands</td><td>Options 2 and 3</td></tr>
   <tr><td>DigitalOcean processing power</td><td class="num">1–2 processors</td><td class="num">~3,000–5,000 <small>estimate</small></td><td>Options 2 and 3</td></tr>
-  <tr><td>Supabase database size</td><td class="num">500 MB</td><td class="num">years of content</td><td>All options</td></tr>
+  <tr><td>Self-hosted Postgres (Option 3)</td><td class="num">bounded by disk, not a quota</td><td class="num">years of content</td><td>Option 3 only</td></tr>
 </tbody>
 </table>
 </div>
@@ -478,123 +478,112 @@ the site breaks; they are the points at which a free allowance runs out and a bi
 <table>
 <thead><tr><th>Option</th><th class="num">Expected</th><th class="num">Supported free</th><th class="num">Headroom</th><th>What runs out first</th></tr></thead>
 <tbody>
-  <tr><td><b>1 · Vercel</b>, files on Supabase</td><td class="num">100 /day</td><td class="num">~650 /day</td><td class="num">6×</td><td>Supabase downloads</td></tr>
-  <tr><td><b>1 · Vercel</b>, files on R2</td><td class="num">100 /day</td><td class="num">~1,100 /day</td><td class="num">11×</td><td>Vercel's request allowance</td></tr>
-  <tr><td><b>2 · Shared server</b>, files on Supabase</td><td class="num">100 /day</td><td class="num">~650 /day</td><td class="num">6×</td><td>Supabase downloads</td></tr>
-  <tr class="pick"><td><b>2 · Shared server</b>, files on R2 <span class="pill p-info">Recommended</span></td><td class="num">100 /day</td><td class="num">~3,000–5,000 /day</td><td class="num">30–50×</td><td>The server itself, long before any bill</td></tr>
-  <tr><td><b>3 · Own server</b>, files on R2</td><td class="num">100 /day</td><td class="num">~3,000–5,000 /day</td><td class="num">30–50×</td><td>The server itself</td></tr>
+  <tr><td><b>2 · Shared VPS</b> (current, files on R2)</td><td class="num">100 /day</td><td class="num">~3,000–5,000 /day</td><td class="num">30–50×</td><td>The shared server's spare capacity</td></tr>
+  <tr class="pick"><td><b>3 · Dedicated VPS</b> <span class="pill p-info">Recommended</span></td><td class="num">100 /day</td><td class="num">~3,000–5,000 /day</td><td class="num">30–50×</td><td>The server itself, long before any bill changes</td></tr>
 </tbody>
 </table>
 </div>
-<p><b>Read that as:</b> at 100 visitors a day the site uses roughly a sixth of the free allowances if
-files sit on Supabase, and about a fiftieth if they sit on R2. Moving the files is free and it is the
-single most effective change in this report.</p>
+<p><b>Read that as:</b> at 100 visitors a day, both live options run at roughly a fiftieth of what
+they can carry. The choice between them is about database safety and shared-machine risk, not
+capacity; both have plenty.</p>
 
 <!-- ============================================================= -->
 <h2 id="s6"><span class="n">6</span>How the appointment system works
-  <span class="plain">Confirmed against the built application, because it decides what has to be paid for and what has to be protected.</span></h2>
+  <span class="plain">Unchanged by the hosting decision, confirmed against the built application.</span></h2>
 
 <ol class="flow">
   <li><b>The visitor books inside Calendly.</b> The "Make Appointment" tab shows Calendly's own booking
-  calendar embedded in the page. There is no separate request form and no approval step. The booking is
-  made and confirmed by Calendly directly.</li>
-  <li><b>Calendly handles all the booking email.</b> The confirmation to the visitor, the notice to the
-  professor, reminders and cancellation notices all come from Calendly. <b>Our site sends none of it</b>,
-  which is why the appointment flow costs nothing in email.</li>
-  <li><b>A copy of the booking is recorded in our database.</b> This is what the admin panel reads, and
-  what the public "Upcoming Events" tab draws from.</li>
-  <li><b>The admin decides what the public sees.</b> Settings has a switch for the Upcoming Events tab.
-  On, future bookings appear publicly. Off, nothing is shown. It is off by default.</li>
-  <li><b>Cancellations flow back.</b> A cancelled booking is marked cancelled rather than deleted, so the
-  history stays intact.</li>
+  calendar embedded in the page. There is no separate request form and no approval step.</li>
+  <li><b>Calendly handles all the booking email.</b> Confirmation, professor notice, reminders and
+  cancellations all come from Calendly. Our site sends none of it.</li>
+  <li><b>The admin records the booking in the admin panel by hand.</b> Automatic sync into our database
+  is a paid Calendly feature (Standard, $10/mo); the free plan needs the admin to enter it, roughly
+  thirty times a month.</li>
+  <li><b>The admin decides what the public sees.</b> A settings switch controls whether the public
+  "Upcoming Events" tab shows anything. Off by default.</li>
+  <li><b>Cancellations flow back as a status change, never a delete</b>, so history stays intact.</li>
 </ol>
 
-<div class="note warn">
-  <span class="lbl">What the free Calendly plan means for step 3</span>
-  <p>The automatic copying of a booking into our database is a paid Calendly feature. It sits on
-  <b>Calendly Standard at $10 a month (฿331)</b>, not on the free plan.</p>
-  <p style="margin-top:10px"><b>On the free plan the admin types each booking into the admin panel by
-  hand.</b> Calendly emails the admin whenever someone books, so nothing is missed. It is one short form
-  per booking, at roughly thirty bookings a month. Everything downstream, the admin table, the Upcoming
-  Events tab, the cancellation history, works exactly the same once the entry is made.</p>
-  <p style="margin-top:10px">Switching on the automatic version later is a subscription and a settings
-  change, not a rebuild. It is priced as an optional line in section 9.</p>
-</div>
-
-<div class="note ok">
-  <span class="lbl">Proposed addition · costs nothing</span>
-  <p><b>Put a Cloudflare Turnstile check in front of the booking calendar.</b> Right now the Calendly
-  widget loads for anyone who opens the page, including automated scripts. Calendly's free plan has no
-  abuse protection of its own, and it allows only one appointment type, so a bot making fake bookings
-  would <b>fill the professor's real calendar</b> and block genuine visitors.</p>
-  <p style="margin-top:10px">Turnstile shows a quick "are you human?" check, and the booking calendar
-  only loads once it passes. Most visitors see nothing more than a brief tick. The same service is
-  already planned for the admin login, so this uses the setup twice.</p>
-  <p style="margin-top:10px"><b>Cost: $0.</b> Cloudflare Turnstile is free for all accounts. The work is a
-  small change to one page.</p>
-</div>
-
-<p><b>What our own email is for, then.</b> Not bookings. Resend carries the
-<b>verification code the admin needs to sign in</b>, and any future notice the site itself generates.
-That is a small volume but a critical one: if it fails, nobody can reach the admin panel. It is the
-reason Decision 2 matters more than its $12 price suggests.</p>
+<p>This behaviour is identical on Option 2 and Option 3; it lives in the application, not the
+server. It would also have been identical on Option 1, had Option 1 been reachable.</p>
 
 <!-- ============================================================= -->
 <h2 id="s7"><span class="n">7</span>File storage: Cloudflare R2 against Supabase
-  <span class="plain">Where the profile photos, research images and publication PDFs live. Both are free; one is far less limited.</span></h2>
-
-<p>The site's files have to sit somewhere and be sent to every visitor who loads a page. Two free
-choices exist, and they run out in very different ways.</p>
+  <span class="plain">Confirms Decision 2: why files stay on R2 even on the dedicated server.</span></h2>
 
 <div class="tw">
 <table>
-<thead><tr><th>&nbsp;</th><th>Supabase Storage <small>free plan</small></th><th>Cloudflare R2 <small>free plan</small></th></tr></thead>
+<thead><tr><th>&nbsp;</th><th>Supabase Storage <small>free plan</small></th><th>Cloudflare R2 <small>free plan, in use today</small></th></tr></thead>
 <tbody>
   <tr><td><b>Price</b></td><td class="free">$0</td><td class="free">$0</td></tr>
   <tr><td><b>Space for files</b></td><td>1 GB</td><td><b>10 GB</b>, ten times more</td></tr>
   <tr><td><b>Sending files to visitors</b></td><td><span class="pill p-bad">5 GB a month, then charged</span></td><td><span class="pill p-ok">Unlimited, never charged</span></td></tr>
-  <tr><td><b>Visitors a day before charges</b></td><td>~650, or ~1,650 with caching</td><td><b>No storage-imposed limit</b></td></tr>
-  <tr><td><b>Reads included</b></td><td>counted against the 5 GB</td><td>10 million a month, we would use ~15,000</td></tr>
-  <tr><td><b>If we outgrow the free tier</b></td><td>$25/mo (฿828), then $0.09/GB (฿3) sent</td><td>$0.015/GB (฿0.50) stored a month, sending still free</td></tr>
-  <tr><td><b>Runs on the same account as</b></td><td>the database</td><td>the web address, CDN and Turnstile</td></tr>
-  <tr><td><b>Work to switch</b></td><td>already built</td><td><span class="pill p-warn">One small module</span>, the app already separates storage behind a swappable interface</td></tr>
+  <tr><td><b>Reads included</b></td><td>counted against the 5 GB</td><td>10 million a month, we use ~15,000</td></tr>
+  <tr><td><b>Runs on the same account as</b></td><td>the database (if still Supabase)</td><td>the web address, CDN and Turnstile</td></tr>
+  <tr><td><b>Doubles as</b></td><td>—</td><td>Option 3's nightly database backup destination</td></tr>
 </tbody>
 </table>
 </div>
 
 <figure>
   <img src="./hosting-cost-assets/cloudflare-r2-pricing.png" alt="Cloudflare R2 pricing documentation showing storage at $0.015 per GB-month, Class A operations $4.50 per million, Class B $0.36 per million, egress free, and a free tier of 10 GB-month storage, 1 million Class A and 10 million Class B operations per month" />
-  <figcaption><b>Screenshot: developers.cloudflare.com/r2/pricing</b>, captured 7 Aug 2026. Egress, meaning sending files to visitors, is listed as <b>Free</b> on every storage class. Free tier: 10 GB storage, 1 million Class A and 10 million Class B operations a month.</figcaption>
+  <figcaption><b>Screenshot: developers.cloudflare.com/r2/pricing</b>, captured 7 Aug 2026. Egress, meaning sending files to visitors, is listed as <b>Free</b> on every storage class.</figcaption>
 </figure>
 
 <div class="note ok">
-  <span class="lbl">Why we recommend it</span>
-  <p><b>Put the photos and PDFs on Cloudflare R2 and keep the database on Supabase.</b> Each supplier then
-  does the thing it is best at, both stay free, and the site's ceiling stops depending on how many people
-  look at the professor's photograph.</p>
-  <p style="margin-top:10px">The practical difference: on Supabase the site is comfortable to about
-  <b>650 visitors a day</b>; on R2 the limit moves to the server itself, several thousand a day. Against
-  an expectation of 100 a day, that is the difference between six times headroom and fifty.</p>
-  <p style="margin-top:10px">It also settles the database question. With the download limit gone, the free
-  Supabase plan comfortably covers everything this site stores, so there is no case for running and
-  maintaining a database ourselves.</p>
+  <span class="lbl">Why R2 stays, even on a dedicated server</span>
+  <p>Once a server is dedicated to this site alone, there's a natural instinct to put everything on
+  it: database <i>and</i> files. The database side earns its move: it closes a real gap (backups,
+  the pause rule) that costs $25/mo to close any other way. The file-storage side doesn't earn the
+  same move: R2 already has no cost, no traffic ceiling, and a working integration. Moving files to
+  local disk would only add a second thing to back up, for no visitor-facing gain.</p>
 </div>
 
 <!-- ============================================================= -->
 <h2 id="s8"><span class="n">8</span>What each supplier charges
-  <span class="plain">Every price read from the supplier's own pricing page on 7 August 2026, with a screenshot as proof. Baht converted at $1 = ฿33.10.</span></h2>
+  <span class="plain">Prices read from each supplier's own pricing page on 7 August 2026, screenshots as proof, carried forward. Recheck before committing. Baht converted at $1 = ฿33.10.</span></h2>
 
-<h3>8.1 The server</h3>
+<h3>8.1 Vercel: what actually happened</h3>
+<div class="note bad">
+  <span class="lbl">Deployment attempt, 11 August 2026</span>
+  <p>The repository is connected to two GitHub remotes: a personal one, and <code>culpritteam/web</code>,
+  the organisation the project now lives under. Importing the org-owned repo into Vercel failed:
+  Vercel's free <b>Hobby</b> plan only deploys repositories owned by the individual account doing the
+  deploying. A repo owned by a GitHub organisation requires the deploying account to be a member of a
+  paid <b>Vercel Team</b>.</p>
+  <p style="margin-top:10px">This is not a line item on Vercel's public pricing page. It's a
+  consequence of who owns the repository, discovered by attempting the import, so there is no
+  screenshot to cite here the way the rest of this section does. It is, however, consistent with
+  Vercel's published Team pricing, reproduced below for reference.</p>
+</div>
 
-<h4>DigitalOcean, used in Options 2 and 3</h4>
+<div class="tw">
+<table>
+<thead><tr><th>Plan</th><th class="num">Per month</th><th>Included</th><th>Catch</th></tr></thead>
+<tbody>
+  <tr><td><b>Hobby</b></td><td class="num free">$0</td><td>1 million requests, 1 million function calls, 4 processor-hours</td>
+      <td><span class="pill p-bad">Personal repos only.</span> Cannot deploy an organisation-owned repo.</td></tr>
+  <tr><td><b>Team</b></td><td class="num">$20 <small>/seat</small><br><span class="thb">฿662</span></td><td>Deploys organisation-owned repos, commercial use permitted, $20 of usage credit</td>
+      <td>Required just to unblock the import, before pricing in the browser rebuild the first report already costed</td></tr>
+</tbody>
+</table>
+</div>
+<figure>
+  <img src="./hosting-cost-assets/vercel-pricing.png" alt="Vercel pricing page showing Hobby at $0 per month, Pro at $20 per month and Enterprise as custom" />
+  <figcaption><b>Screenshot: vercel.com/pricing</b>, captured 7 Aug 2026. Reused from the prior report. The Team-membership requirement itself was found during the deploy attempt, not on this page.</figcaption>
+</figure>
+<p><b>Verdict: not pursued further.</b> Between a $20/seat/month floor and a still-pending browser
+rebuild, Option 1 no longer competes with Options 2 or 3 on either price or effort.</p>
+
+<h3>8.2 The server</h3>
 <div class="tw">
 <table>
 <thead><tr><th>Size</th><th>Specification</th><th class="num">Transfer</th><th class="num">Per month</th><th>Verdict for this site</th></tr></thead>
 <tbody>
-  <tr><td>Basic</td><td>1 processor · 1 GB memory · 25 GB disk</td><td class="num">1,000 GB</td><td class="num">$6.00<br><span class="thb">฿199</span></td><td>Too small</td></tr>
-  <tr><td><b>Basic</b></td><td>1 processor · 2 GB memory · 50 GB disk</td><td class="num">2,000 GB</td><td class="num"><b>$12.00</b><br><span class="thb">฿397</span></td><td><span class="pill p-ok">Option 3 minimum</span></td></tr>
-  <tr><td><b>Basic</b></td><td>2 processors · 2 GB memory · 60 GB disk</td><td class="num">3,000 GB</td><td class="num"><b>$18.00</b><br><span class="thb">฿596</span></td><td><span class="pill p-ok">Option 3 comfortable</span>, room for traffic spikes</td></tr>
-  <tr><td>Basic</td><td>2 processors · 4 GB memory · 80 GB disk</td><td class="num">4,000 GB</td><td class="num">$24.00<br><span class="thb">฿794</span></td><td>More than this site will use</td></tr>
+  <tr><td>Basic</td><td>1 processor · 1 GB memory · 25 GB disk</td><td class="num">1,000 GB</td><td class="num">$6.00<br><span class="thb">฿199</span></td><td>App only, too tight for a co-located database</td></tr>
+  <tr><td><b>Basic</b></td><td>1 processor · 2 GB memory · 50 GB disk</td><td class="num">2,000 GB</td><td class="num"><b>$12.00</b><br><span class="thb">฿397</span></td><td>Option 2's reference size</td></tr>
+  <tr><td><b>Basic</b></td><td>2 processors · 2 GB memory · 60 GB disk</td><td class="num">3,000 GB</td><td class="num"><b>$18.00</b><br><span class="thb">฿596</span></td><td><span class="pill p-ok">Option 3 minimum</span>: app + Postgres, this site's data is under 100MB</td></tr>
+  <tr><td><b>Basic</b></td><td>2 processors · 4 GB memory · 80 GB disk</td><td class="num">4,000 GB</td><td class="num"><b>$24.00</b><br><span class="thb">฿794</span></td><td><span class="pill p-ok">Option 3 comfortable</span>, headroom for traffic spikes and backup jobs</td></tr>
 </tbody>
 </table>
 </div>
@@ -602,45 +591,22 @@ choices exist, and they run out in very different ways.</p>
   <img src="./hosting-cost-assets/digitalocean-droplets.png" alt="DigitalOcean Basic Droplets pricing table showing 512 MiB at $4, 1 GiB at $6, 2 GiB with 1 vCPU at $12, 2 GiB with 2 vCPUs at $18 and 4 GiB at $24 per month" />
   <figcaption><b>Screenshot: digitalocean.com/pricing/droplets</b>, captured 7 Aug 2026. Basic Droplets, regular processors.</figcaption>
 </figure>
-<p><b>On the shared server (Option 2).</b> The existing machine is already paid for by its owner, so this
-site adds no new bill, but it does consume part of something someone else pays for. The report uses
-<b>$6 to $9 a month (฿199 to ฿298)</b>, roughly half a dedicated server, as a placeholder for whatever
-is agreed. Option 3 below, at $12 to $18 a month (฿397 to ฿596), is the natural reference point: a
-share priced above a dedicated server of our own would not be worth taking. If the machine ever needs
-upsizing to carry both applications, that step is $6 a month (฿199).</p>
+<p><b>On the shared server (Option 2, live today).</b> Already paid for by its owner; this site adds
+no new bill but does share processor and memory with another application on the same box.
+<b>On the dedicated server (Option 3).</b> The $18 tier is the floor for app + database together;
+the $24 tier is the comfortable choice and the one this report prices as the recommendation.</p>
 
-<h4>Vercel, used in Option 1 only</h4>
-<div class="tw">
-<table>
-<thead><tr><th>Plan</th><th class="num">Per month</th><th>Included</th><th>Catch</th></tr></thead>
-<tbody>
-  <tr><td><b>Hobby</b></td><td class="num free">$0</td><td>1 million requests, 1 million function calls, 4 processor-hours, 5,000 image conversions a month</td>
-      <td><span class="pill p-bad">Personal, non-commercial use only.</span> Going over a limit pauses that feature for up to 30 days.</td></tr>
-  <tr><td><b>Pro</b></td><td class="num">$20<br><span class="thb">฿662</span></td><td>$20 of usage credit, 10 million requests, 1 TB transfer, commercial use permitted</td>
-      <td>Beyond the allowance: $2.00 to $3.20 (฿66 to ฿106) per extra million requests.</td></tr>
-</tbody>
-</table>
-</div>
-<figure>
-  <img src="./hosting-cost-assets/vercel-pricing.png" alt="Vercel pricing page showing Hobby at $0 per month, Pro at $20 per month and Enterprise as custom" />
-  <figcaption><b>Screenshot: vercel.com/pricing</b>, captured 7 Aug 2026. Hobby $0, Pro $20/mo (฿662).</figcaption>
-</figure>
-<p>At 100 visitors a day the site makes about <b>90,000 requests a month against an allowance of
-1,000,000</b>, roughly 9%. The rebuild that Option 1 requires is a safety margin rather than a necessity.
-The real obstacles on the free plan are the personal-use restriction and the 30-day pause if any limit
-is ever reached.</p>
-
-<h3>8.2 Supabase, the database</h3>
+<h3>8.3 Supabase, the database Option 2 uses today</h3>
 <div class="tw">
 <table>
 <thead><tr><th>Plan</th><th class="num">Per month</th><th>Included</th><th>Limitations</th></tr></thead>
 <tbody>
-  <tr><td><b>Free</b><br><span class="pill p-info">Chosen</span></td><td class="num free">$0</td>
-      <td>500 MB database, 1 GB file storage, 5 GB of downloads a month, 50,000 monthly users</td>
-      <td><span class="pill p-bad">No backups.</span> A project with no traffic for a week pauses until resumed.</td></tr>
+  <tr><td><b>Free</b><br><span class="pill p-info">Option 2, current</span></td><td class="num free">$0</td>
+      <td>500 MB database, 5 GB of downloads a month, 50,000 monthly users</td>
+      <td><span class="pill p-bad">No backups. Pauses after 7 idle days.</span></td></tr>
   <tr><td><b>Pro</b></td><td class="num">$25<br><span class="thb">฿828</span></td>
-      <td>8 GB database, 100 GB file storage, 250 GB downloads, <b>daily backups kept 7 days</b></td>
-      <td>Beyond the allowance: $0.09 (฿3) per extra GB downloaded</td></tr>
+      <td>8 GB database, <b>daily backups kept 7 days</b>, no idle-pause rule</td>
+      <td>The like-for-like comparison against Option 3's included backups</td></tr>
 </tbody>
 </table>
 </div>
@@ -648,209 +614,141 @@ is ever reached.</p>
   <img src="./hosting-cost-assets/supabase-pricing.png" alt="Supabase pricing page showing Free at $0 per month, Pro from $25, Team $599 and Enterprise custom" />
   <figcaption><b>Screenshot: supabase.com/pricing</b>, captured 7 Aug 2026. Free $0, Pro from $25/mo (฿828).</figcaption>
 </figure>
-<p>The site holds well under 100 MB of data, so the database allowance is not the constraint. With the
-files moved to R2, the 5 GB download allowance stops mattering too. What remains is the absence of
-backups, which is Decision 1. The one-week pause rule will not trigger on a live public site, because
-visitor traffic counts as activity.</p>
+<p>The site holds well under 100 MB of data. Supabase's storage allowance was never the constraint.
+The two things that are: no backups, and the idle-pause rule. Both are exactly what moving to a
+self-hosted database on Option 3 removes, and Supabase Pro is the cost of removing them <i>without</i>
+moving.</p>
 
-<h3>8.3 Cloudflare, the address, the shield and the file store</h3>
+<h3>8.4 Cloudflare, the address, the shield and the file store</h3>
 <div class="tw">
 <table>
 <thead><tr><th>Service</th><th class="num">Per month</th><th>What it gives this site</th></tr></thead>
 <tbody>
-  <tr><td>Cloudflare <b>Free</b></td><td class="num free">$0</td><td>Runs the web address, caches the site worldwide so it loads fast everywhere, issues the HTTPS padlock, absorbs attacks</td></tr>
-  <tr><td><b>R2 storage</b></td><td class="num free">$0</td><td>10 GB of space for photos and PDFs, unlimited free sending to visitors, 10 million reads a month. Beyond that: $0.015 (฿0.50) per GB stored, sending still free</td></tr>
-  <tr><td><b>Turnstile</b></td><td class="num free">$0</td><td>The human check on the admin login and, newly, in front of the booking calendar</td></tr>
-  <tr><td>Cloudflare <b>Pro</b></td><td class="num">$20 <small>annual</small><br><span class="thb">฿662</span></td><td>Firewall rules and image optimisation. <b>Not needed here.</b></td></tr>
+  <tr><td>Cloudflare <b>Free</b></td><td class="num free">$0</td><td>Web address, worldwide caching, HTTPS padlock, attack absorption</td></tr>
+  <tr><td><b>R2 storage</b></td><td class="num free">$0</td><td>10 GB for photos and PDFs, unlimited free sending, and Option 3's backup destination</td></tr>
+  <tr><td><b>Turnstile</b></td><td class="num free">$0</td><td>The human check on the admin login and the booking page</td></tr>
 </tbody>
 </table>
 </div>
 <div class="figrow">
   <figure>
     <img src="./hosting-cost-assets/cloudflare-plans.png" alt="Cloudflare plans page showing Free at $0 per month, Pro at $20 per month billed annually and Business at $200" />
-    <figcaption><b>Screenshot: cloudflare.com/plans</b>, 7 Aug 2026. Free $0, Pro $20/mo annual (฿662).</figcaption>
+    <figcaption><b>Screenshot: cloudflare.com/plans</b>, 7 Aug 2026.</figcaption>
   </figure>
   <figure>
     <img src="./hosting-cost-assets/cloudflare-turnstile.png" alt="Cloudflare Turnstile product page" />
-    <figcaption><b>Screenshot: Cloudflare Turnstile</b>, 7 Aug 2026. Free for all accounts, used on the login and the booking page.</figcaption>
+    <figcaption><b>Screenshot: Cloudflare Turnstile</b>, 7 Aug 2026. Free for all accounts.</figcaption>
   </figure>
 </div>
-<p><b>One account, four jobs.</b> Address, caching, file storage and bot protection all sit in the same
-free Cloudflare account, which is one less supplier relationship to manage and one less bill that could
-appear later.</p>
 
-<h3>8.4 Resend, the site's own email</h3>
+<h3>8.5 Resend, the site's own email</h3>
 <div class="tw">
 <table>
 <thead><tr><th>Plan</th><th class="num">Per month</th><th>Included</th></tr></thead>
 <tbody>
-  <tr><td><b>Free</b><br><span class="pill p-info">Chosen, on our own domain</span></td><td class="num free">$0</td><td>3,000 emails a month, 100 a day, <b>one domain per account</b>, 30 days of history</td></tr>
-  <tr><td><b>Pro</b></td><td class="num">$20<br><span class="thb">฿662</span></td><td>50,000 emails a month, or 100,000 for $35 (฿1,159), multiple domains</td></tr>
+  <tr><td><b>Free</b><br><span class="pill p-info">Chosen, on our own domain</span></td><td class="num free">$0</td><td>3,000 emails a month, 100 a day, one domain per account</td></tr>
 </tbody>
 </table>
 </div>
 <figure>
   <img src="./hosting-cost-assets/resend-pricing.png" alt="Resend pricing page showing the Free and Pro plans" />
-  <figcaption><b>Screenshot: resend.com/pricing</b>, 7 Aug 2026. Free 3,000 emails a month, Pro $20/mo (฿662).</figcaption>
+  <figcaption><b>Screenshot: resend.com/pricing</b>, 7 Aug 2026.</figcaption>
 </figure>
-<p><b>Resend never carries booking email.</b> Calendly does all of that. What Resend sends is the
-<b>admin login verification code</b> and any future site-generated notice, which is a handful of messages
-a month against an allowance of 3,000. Volume will never be the problem here. The problem worth guarding
-against is a shared sending allowance running out on the day the admin needs to log in, which is exactly
-what Decision 2 fixes.</p>
-
-<h3>8.5 Upstash, the spam brake</h3>
-<div class="tw">
-<table>
-<thead><tr><th>Plan</th><th class="num">Per month</th><th>Included</th></tr></thead>
-<tbody>
-  <tr><td><b>Free</b><br><span class="pill p-info">Chosen for Options 1 and 2</span></td><td class="num free">$0</td><td>500,000 operations a month, 256 MB, 10 GB transfer</td></tr>
-  <tr><td>Pay as you go</td><td class="num">$0.20 <small>/100K ops</small><br><span class="thb">฿6.62</span></td><td>No monthly cap</td></tr>
-  <tr><td>Fixed 250 MB</td><td class="num">$10<br><span class="thb">฿331</span></td><td>Flat price, unlimited operations</td></tr>
-</tbody>
-</table>
-</div>
-<figure>
-  <img src="./hosting-cost-assets/upstash-redis-pricing.png" alt="Upstash Redis pricing page showing Free at $0, Pay as you go at $0.2 per 100K commands and Fixed 250MB at $10 per month" />
-  <figcaption><b>Screenshot: upstash.com/pricing/redis</b>, 7 Aug 2026. Free 500,000 operations a month.</figcaption>
-</figure>
-<p>Expected use is well under 10,000 operations a month, about <b>2% of the free allowance</b>. In Option 3
-this moves onto our own server and Upstash is dropped, which saves nothing because it was already free.
-The reasons are independence and slightly faster responses.</p>
+<p>Resend never carries booking email. Calendly does that. Resend sends the admin login
+verification code and any future site-generated notice: a handful of messages a month against an
+allowance of 3,000.</p>
 
 <h3>8.6 Calendly, the booking calendar</h3>
 <div class="tw">
 <table>
 <thead><tr><th>Plan</th><th class="num">Per month</th><th>What you get</th><th>Fit</th></tr></thead>
 <tbody>
-  <tr><td><b>Free</b><br><span class="pill p-info">Chosen</span></td><td class="num free">$0</td><td>One appointment type, one linked calendar, the embedded booking page, and all booking email to both sides</td>
+  <tr><td><b>Free</b><br><span class="pill p-info">Chosen</span></td><td class="num free">$0</td><td>One appointment type, embedded booking page, all booking email to both sides</td>
       <td><span class="pill p-warn">Bookings copied into the admin panel by hand</span></td></tr>
-  <tr><td><b>Standard</b></td><td class="num">$10 <small>/person, yearly</small><br><span class="thb">฿331</span></td><td>Unlimited appointment types, multiple calendars, automatic copying of each booking into our system</td>
-      <td>Removes the manual step. Optional, priced in section 9</td></tr>
-  <tr><td>Teams</td><td class="num">$16<br><span class="thb">฿530</span></td><td>Team routing and admin controls</td><td>Not needed, single admin</td></tr>
+  <tr><td><b>Standard</b></td><td class="num">$10 <small>/person, yearly</small><br><span class="thb">฿331</span></td><td>Automatic copying of each booking into our system</td>
+      <td>Optional, unaffected by the hosting decision</td></tr>
 </tbody>
 </table>
 </div>
 <figure>
   <img src="./hosting-cost-assets/calendly-pricing.png" alt="Calendly pricing page showing Free as always free, Standard at $10 per seat per month, Teams at $16 and Enterprise from $15,000 per year" />
-  <figcaption><b>Screenshot: calendly.com/pricing</b>, 7 Aug 2026. The free plan lists <em>1 event type</em>; automatic sync appears first on Standard.</figcaption>
+  <figcaption><b>Screenshot: calendly.com/pricing</b>, 7 Aug 2026.</figcaption>
 </figure>
-<p>Because the free plan allows only one appointment type, the professor's calendar has a single stream of
-bookable slots. That is what makes the Turnstile check in section 6 worth doing: with no protection, a
-handful of automated bookings could occupy the whole of it.</p>
 
 <h3>8.7 YouTube, the videos</h3>
-<div class="tw">
-<table>
-<thead><tr><th>Service</th><th class="num">Per month</th><th>Notes</th></tr></thead>
-<tbody>
-  <tr><td>YouTube upload and playback</td><td class="num free">$0</td>
-      <td>Unlimited free uploads and unlimited viewing. The site stores only a link and shows the video in a
-      privacy-friendly player. No video file is ever stored or served by us, which is the single largest
-      cost avoided in the whole design.</td></tr>
-</tbody>
-</table>
-</div>
+<p>Unlimited free uploads and viewing. The site stores only a link and shows the video in a
+privacy-friendly player. No video file is ever stored or served by us, on any option.</p>
 <figure>
   <img src="./hosting-cost-assets/youtube.png" alt="YouTube creators page" />
   <figcaption><b>Screenshot: youtube.com/creators</b>, 7 Aug 2026. Uploading and hosting remain free.</figcaption>
 </figure>
 
 <h3>8.8 The domain name</h3>
-<div class="tw">
-<table>
-<thead><tr><th>Choice</th><th class="num">Cost</th><th>Notes</th></tr></thead>
-<tbody>
-  <tr><td><b>One new domain</b><br><span class="pill p-info">Chosen</span></td><td class="num">~$12 / year<br><span class="thb">~฿397</span></td>
-      <td>Serves as both the website address and the sender address for the site's own email. One registration, one Resend key, one thing to renew.</td></tr>
-  <tr><td><code>culprit.wyco-dev.com</code></td><td class="num free">$0</td>
-      <td>A sub-address of a domain already owned. Free, and a perfectly good website address. Email would need a second free Resend account registered against it.</td></tr>
-</tbody>
-</table>
-</div>
+<p>Unchanged: about <b>$12 a year (฿397)</b> for one domain serving as both the site's address and
+its email sender identity; see Decision 3.</p>
 
 <!-- ============================================================= -->
 <h2 id="s9"><span class="n">9</span>Full cost breakdown per option
-  <span class="plain">All three assume files on Cloudflare R2 and the Turnstile check on the booking page, both free.</span></h2>
+  <span class="plain">Both assume files stay on Cloudflare R2, already free and already built.</span></h2>
 
-<h3>Option 1 · Vercel, with parts of the site rebuilt for the browser</h3>
-<div class="tw">
-<table>
-<thead><tr><th>Item</th><th>Plan</th><th class="num">Per month</th><th class="num">Per year</th></tr></thead>
-<tbody>
-  <tr><td>Website hosting</td><td>Vercel Hobby</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td><b>Domain</b></td><td>One domain, address and email</td><td class="num">$1.00 <span class="thb">฿33</span></td><td class="num">$12 <span class="thb">฿397</span></td></tr>
-  <tr><td>Database</td><td>Supabase Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Photos and PDFs</td><td>Cloudflare R2 Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>CDN, HTTPS, attack protection</td><td>Cloudflare Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Human check, login and booking page</td><td>Cloudflare Turnstile</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Spam brake</td><td>Upstash Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Admin login codes and site notices</td><td>Resend Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Booking calendar and its email</td><td>Calendly Free, manual copy into admin</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Video hosting</td><td>YouTube</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr class="total"><td colspan="2">Total to run</td><td class="num">$1.00 <span class="thb">฿33</span></td><td class="num">$12 <span class="thb">฿397</span></td></tr>
-  <tr class="sub"><td colspan="4">Optional, add any time</td></tr>
-  <tr><td>Daily database backups</td><td>Supabase Pro</td><td class="num">$25.00 <span class="thb">฿828</span></td><td class="num">$300 <span class="thb">฿9,930</span></td></tr>
-  <tr><td>Automatic booking sync</td><td>Calendly Standard</td><td class="num">$10.00 <span class="thb">฿331</span></td><td class="num">$120 <span class="thb">฿3,972</span></td></tr>
-  <tr><td>Commercial-use licence</td><td>Vercel Pro, if the site is judged commercial</td><td class="num">$20.00 <span class="thb">฿662</span></td><td class="num">$240 <span class="thb">฿7,944</span></td></tr>
-</tbody>
-</table>
+<h3>Option 1 · Vercel, not costed further</h3>
+<div class="note bad">
+  <span class="lbl">Blocked</span>
+  <p>No breakdown to give: the deploy itself does not succeed under the free plan, and the paid tier
+  that would unblock it ($20/seat/month) still leaves the browser-rebuild cost from the prior report
+  unpaid. This option is not part of the recommendation.</p>
 </div>
-<p><b>The cost that is not on this invoice:</b> rebuilding the public pages so they render in the
-visitor's browser instead of on the server. Development work measured in weeks, and it weakens how well
-search engines read the bio and publications pages, which are the pages that most need to be found.</p>
 
-<h3>Option 2 · A share of the existing DigitalOcean server <span class="pill p-info">Recommended</span></h3>
+<h3>Option 2 · Shared VPS <span class="pill p-info">Current setup</span></h3>
 <div class="tw">
 <table>
 <thead><tr><th>Item</th><th>Plan</th><th class="num">Per month</th><th class="num">Per year</th></tr></thead>
 <tbody>
-  <tr><td><b>Website hosting</b></td><td>Agreed share of the existing server <span class="pill p-warn">Estimate</span></td><td class="num">$6.00–9.00 <span class="thb">฿199–298</span></td><td class="num">$72–108 <span class="thb">฿2,383–3,575</span></td></tr>
+  <tr><td><b>Website hosting</b></td><td>Agreed share of an existing server <span class="pill p-warn">Estimate</span></td><td class="num">$6.00–9.00 <span class="thb">฿199–298</span></td><td class="num">$72–108 <span class="thb">฿2,383–3,575</span></td></tr>
   <tr><td><b>Domain</b></td><td>One domain, address and email</td><td class="num">$1.00 <span class="thb">฿33</span></td><td class="num">$12 <span class="thb">฿397</span></td></tr>
-  <tr><td>Database</td><td>Supabase Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>Database</td><td>Supabase Free — <span class="pill p-bad">no backups, pauses idle</span></td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>Photos and PDFs</td><td>Cloudflare R2 Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>CDN, HTTPS, attack protection</td><td>Cloudflare Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Human check, login and booking page</td><td>Cloudflare Turnstile</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Spam brake</td><td>Upstash Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Admin login codes and site notices</td><td>Resend Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Booking calendar and its email</td><td>Calendly Free, manual copy into admin</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Video hosting</td><td>YouTube</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr class="total"><td colspan="2">Total to run</td><td class="num">$7.00–10.00 <span class="thb">฿232–331</span></td><td class="num">$84–120 <span class="thb">฿2,780–3,972</span></td></tr>
-  <tr class="sub"><td colspan="4">Optional, add any time</td></tr>
-  <tr><td>Daily database backups</td><td>Supabase Pro</td><td class="num">$25.00 <span class="thb">฿828</span></td><td class="num">$300 <span class="thb">฿9,930</span></td></tr>
-  <tr><td>Automatic booking sync</td><td>Calendly Standard</td><td class="num">$10.00 <span class="thb">฿331</span></td><td class="num">$120 <span class="thb">฿3,972</span></td></tr>
-</tbody>
-</table>
-</div>
-<p><b>What you accept for the lower price:</b> this site and the existing application share one machine's
-processor, memory and disk. If either misbehaves, both are affected, and updating either carries a
-little risk for the other. Managed in practice by giving each application its own memory ceiling. A
-normal arrangement for two low-traffic sites.</p>
-
-<h3>Option 3 · A DigitalOcean server for this site alone</h3>
-<div class="tw">
-<table>
-<thead><tr><th>Item</th><th>Plan</th><th class="num">Per month</th><th class="num">Per year</th></tr></thead>
-<tbody>
-  <tr><td><b>Website hosting</b></td><td>DigitalOcean Basic, 1 processor / 2 GB</td><td class="num">$12.00 <span class="thb">฿397</span></td><td class="num">$144 <span class="thb">฿4,766</span></td></tr>
-  <tr><td><i>or</i> website hosting</td><td>DigitalOcean Basic, 2 processors / 2 GB</td><td class="num">$18.00 <span class="thb">฿596</span></td><td class="num">$216 <span class="thb">฿7,150</span></td></tr>
-  <tr><td><b>Domain</b></td><td>One domain, address and email</td><td class="num">$1.00 <span class="thb">฿33</span></td><td class="num">$12 <span class="thb">฿397</span></td></tr>
-  <tr><td>Database</td><td>Supabase Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Photos and PDFs</td><td>Cloudflare R2 Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr><td>Spam brake</td><td>On the same server, Upstash dropped</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>CDN, HTTPS, attack protection</td><td>Cloudflare Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>Human check, login and booking page</td><td>Cloudflare Turnstile</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>Admin login codes and site notices</td><td>Resend Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>Booking calendar and its email</td><td>Calendly Free, manual copy into admin</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
   <tr><td>Video hosting</td><td>YouTube</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
-  <tr class="total"><td colspan="2">Total to run</td><td class="num">$13.00–19.00 <span class="thb">฿430–629</span></td><td class="num">$156–228 <span class="thb">฿5,164–7,547</span></td></tr>
-  <tr class="sub"><td colspan="4">Optional, add any time</td></tr>
-  <tr><td>Daily database backups</td><td>Supabase Pro</td><td class="num">$25.00 <span class="thb">฿828</span></td><td class="num">$300 <span class="thb">฿9,930</span></td></tr>
-  <tr><td>Automatic booking sync</td><td>Calendly Standard</td><td class="num">$10.00 <span class="thb">฿331</span></td><td class="num">$120 <span class="thb">฿3,972</span></td></tr>
-  <tr><td>Weekly server snapshots</td><td>DigitalOcean backup add-on, 20% of the server price</td><td class="num">$2.40–3.60 <span class="thb">฿79–119</span></td><td class="num">$29–43 <span class="thb">฿960–1,423</span></td></tr>
+  <tr class="total"><td colspan="2">Total to run, as-is (unsafe database)</td><td class="num">$7.00–10.00 <span class="thb">฿232–331</span></td><td class="num">$84–120 <span class="thb">฿2,780–3,972</span></td></tr>
+  <tr><td>Daily database backups, to close the gap above</td><td>Supabase Pro</td><td class="num">$25.00 <span class="thb">฿828</span></td><td class="num">$300 <span class="thb">฿9,930</span></td></tr>
+  <tr class="total"><td colspan="2">Total to run, made as safe as Option 3</td><td class="num">$32.00–35.00 <span class="thb">฿1,059–1,158</span></td><td class="num">$384–420 <span class="thb">฿12,710–13,902</span></td></tr>
 </tbody>
 </table>
 </div>
+<p><b>What you accept at the lower, unsafe price:</b> the database can pause itself after a quiet
+week and has nothing to restore from if it's ever lost. This site and another application also share
+one machine's processor, memory and disk.</p>
+
+<h3>Option 3 · Dedicated VPS, own database <span class="pill p-info">Recommended</span></h3>
+<div class="tw">
+<table>
+<thead><tr><th>Item</th><th>Plan</th><th class="num">Per month</th><th class="num">Per year</th></tr></thead>
+<tbody>
+  <tr><td><b>Website hosting</b></td><td>DigitalOcean Basic, 2 processors / 2 GB (floor)</td><td class="num">$18.00 <span class="thb">฿596</span></td><td class="num">$216 <span class="thb">฿7,150</span></td></tr>
+  <tr><td><i>or</i> website hosting</td><td>DigitalOcean Basic, 2 processors / 4 GB (recommended)</td><td class="num">$24.00 <span class="thb">฿794</span></td><td class="num">$288 <span class="thb">฿9,533</span></td></tr>
+  <tr><td><b>Domain</b></td><td>One domain, address and email</td><td class="num">$1.00 <span class="thb">฿33</span></td><td class="num">$12 <span class="thb">฿397</span></td></tr>
+  <tr><td>Database</td><td>Self-hosted Postgres, same server, <span class="pill p-ok">nightly backups to R2</span></td><td class="num free">Included</td><td class="num free">Included</td></tr>
+  <tr><td>Photos and PDFs</td><td>Cloudflare R2 Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>CDN, HTTPS, attack protection</td><td>Cloudflare Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>Human check, login and booking page</td><td>Cloudflare Turnstile</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>Admin login codes and site notices</td><td>Resend Free</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>Booking calendar and its email</td><td>Calendly Free, manual copy into admin</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr><td>Video hosting</td><td>YouTube</td><td class="num">$0.00 <span class="thb">฿0</span></td><td class="num">$0 <span class="thb">฿0</span></td></tr>
+  <tr class="total"><td colspan="2">Total to run, backups included</td><td class="num">$19.00–25.00 <span class="thb">฿629–827</span></td><td class="num">$228–300 <span class="thb">฿7,547–9,930</span></td></tr>
+  <tr class="sub"><td colspan="4">Optional, add any time</td></tr>
+  <tr><td>Automatic booking sync</td><td>Calendly Standard</td><td class="num">$10.00 <span class="thb">฿331</span></td><td class="num">$120 <span class="thb">฿3,972</span></td></tr>
+  <tr><td>Weekly whole-server snapshots</td><td>DigitalOcean backup add-on, 20% of server price</td><td class="num">$3.60–4.80 <span class="thb">฿119–159</span></td><td class="num">$43–58 <span class="thb">฿1,423–1,919</span></td></tr>
+</tbody>
+</table>
+</div>
+<p><b>Read against Option 2 made equally safe</b> ($32–35/mo), Option 3 is <b>$7–13 a month cheaper</b>
+while also removing the shared-machine risk Option 2 keeps either way. Read against Option 2 as it
+runs today, unsafe, Option 3 costs $12–15 a month more for a database that doesn't pause itself and
+backs itself up.</p>
 
 <!-- ============================================================= -->
 <h2 id="s10"><span class="n">10</span>Risks and what would raise the bill</h2>
@@ -858,15 +756,14 @@ normal arrangement for two low-traffic sites.</p>
 <table>
 <thead><tr><th>What could happen</th><th>Effect</th><th>Likelihood</th><th class="num">Cost to fix</th></tr></thead>
 <tbody>
-  <tr><td>Bots book fake appointments in Calendly</td><td>The professor's only bookable calendar fills with rubbish</td><td><span class="pill p-warn">Medium</span></td><td class="num free">$0 · Turnstile</td></tr>
-  <tr><td>Site email runs on a shared sending account</td><td>The admin login verification code never arrives and nobody can reach the admin panel</td><td><span class="pill p-warn">Medium</span></td><td class="num">$12/yr <span class="thb">฿397</span></td></tr>
-  <tr><td>Server-share negotiation lands high</td><td>Option 2 loses its advantage over a dedicated server</td><td><span class="pill p-warn">Medium</span></td><td class="num">Switch to Option 3<br><span class="thb">$13–19 · ฿430–629</span></td></tr>
-  <tr><td>Admin forgets to copy a Calendly booking</td><td>That booking is missing from the admin table and Upcoming Events</td><td><span class="pill p-warn">Medium</span></td><td class="num">$10/mo <span class="thb">฿331</span></td></tr>
-  <tr><td>Database lost with no backup</td><td>Content re-entered by the admin; past booking history unrecoverable</td><td><span class="pill p-ok">Low</span></td><td class="num">$25/mo <span class="thb">฿828</span></td></tr>
-  <tr><td>Files left on Supabase and traffic grows past ~650 a day</td><td>Download allowance exhausted</td><td><span class="pill p-ok">Low</span></td><td class="num free">$0 · move to R2</td></tr>
-  <tr><td>Vercel judges the site commercial (Option 1)</td><td>Forced upgrade</td><td><span class="pill p-warn">Medium</span></td><td class="num">$20/mo <span class="thb">฿662</span></td></tr>
-  <tr><td>Visitors exceed roughly 1,100 a day (Option 1)</td><td>Site paused for up to 30 days</td><td><span class="pill p-ok">Low</span></td><td class="num">$20/mo <span class="thb">฿662</span></td></tr>
-  <tr><td>The other application on the shared server spikes (Option 2)</td><td>Both sites slow down together</td><td><span class="pill p-warn">Medium</span></td><td class="num">$6/mo <span class="thb">฿199</span> upsize</td></tr>
+  <tr><td>Vercel needed after all (e.g. a second, personally-owned repo)</td><td>Re-evaluate; still needs the browser rebuild</td><td><span class="pill p-ok">Low</span></td><td class="num">$0/mo on Hobby, if repo ownership changes</td></tr>
+  <tr><td>Supabase project goes quiet for a week (Option 2)</td><td>Database pauses; admin must manually resume it before the site works again</td><td><span class="pill p-warn">Medium</span></td><td class="num">Move to Option 3, or $25/mo Supabase Pro</td></tr>
+  <tr><td>Supabase database lost, no backup (Option 2, as-is)</td><td>Content re-entered by hand; booking history unrecoverable</td><td><span class="pill p-ok">Low</span></td><td class="num">$25/mo <span class="thb">฿828</span></td></tr>
+  <tr><td>Bots book fake appointments in Calendly</td><td>The professor's only bookable calendar fills with rubbish</td><td><span class="pill p-warn">Medium</span></td><td class="num free">$0 · Turnstile, already planned</td></tr>
+  <tr><td>Site email runs on a shared sending account</td><td>Admin login code never arrives; nobody can reach the admin panel</td><td><span class="pill p-warn">Medium</span></td><td class="num">$12/yr <span class="thb">฿397</span></td></tr>
+  <tr><td>Admin forgets to copy a Calendly booking</td><td>Missing from the admin table and Upcoming Events</td><td><span class="pill p-warn">Medium</span></td><td class="num">$10/mo <span class="thb">฿331</span></td></tr>
+  <tr><td>Server-share negotiation lands high (Option 2)</td><td>Loses its price advantage over Option 3 outright</td><td><span class="pill p-warn">Medium</span></td><td class="num">Move to Option 3</td></tr>
+  <tr><td>Traffic outgrows the dedicated server's disk/RAM (Option 3)</td><td>Slower responses under load</td><td><span class="pill p-ok">Low</span></td><td class="num">$6/mo <span class="thb">฿199</span> upsize</td></tr>
   <tr><td>Exchange rate moves</td><td>Baht figures shift; dollar figures do not</td><td><span class="pill p-info">Certain</span></td><td class="num">Re-convert at the time</td></tr>
 </tbody>
 </table>
@@ -874,9 +771,10 @@ normal arrangement for two low-traffic sites.</p>
 
 <!-- ============================================================= -->
 <h2 id="s11"><span class="n">11</span>Sources and assumptions</h2>
-<p>Every price was read from the supplier's own public pricing page on <b>7 August 2026</b>, and the
-screenshots were captured from those live pages on the same day. Prices change without notice, so
-re-check before committing.</p>
+<p>Supplier prices were read from each supplier's own public pricing page on <b>7 August 2026</b>, and
+carried forward unchanged into this revision. Reconfirm before committing, since prices change
+without notice. The Vercel Team-membership finding in section 8.1 is new to this revision, dated
+<b>11 August 2026</b>, and came from attempting the deploy rather than from a pricing page.</p>
 <ul>
   <li><a href="https://www.digitalocean.com/pricing/droplets">digitalocean.com/pricing/droplets</a></li>
   <li><a href="https://vercel.com/pricing">vercel.com/pricing</a> and <a href="https://vercel.com/docs/plans/hobby">the Hobby plan limits</a></li>
@@ -884,11 +782,10 @@ re-check before committing.</p>
   <li><a href="https://developers.cloudflare.com/r2/pricing/">developers.cloudflare.com/r2/pricing</a></li>
   <li><a href="https://www.cloudflare.com/plans/">cloudflare.com/plans</a> and <a href="https://www.cloudflare.com/application-services/products/turnstile/">Turnstile</a></li>
   <li><a href="https://resend.com/pricing">resend.com/pricing</a></li>
-  <li><a href="https://upstash.com/pricing/redis">upstash.com/pricing/redis</a></li>
   <li><a href="https://calendly.com/pricing">calendly.com/pricing</a></li>
   <li>Exchange rate <b>$1 = ฿33.10</b>, computed 7 August 2026 from
       <a href="https://wise.com/us/currency-converter/usd-to-thb-rate/history">Wise</a> (฿33.12) and
-      <a href="https://www.investing.com/currencies/usd-thb-historical-data">Investing.com</a> (฿33.08)</li>
+      <a href="https://www.investing.com/currencies/usd-thb-historical-data">Investing.com</a> (฿33.08); not re-verified for this revision</li>
 </ul>
 
 <h4>Traffic assumed throughout</h4>
@@ -898,7 +795,6 @@ re-check before committing.</p>
 <tbody>
   <tr><td>Visitors</td><td class="num"><b>100</b></td><td class="num">3,000</td><td>The expected maximum</td></tr>
   <tr><td>Pages viewed</td><td class="num">300</td><td class="num">9,000</td><td>About three pages per visit</td></tr>
-  <tr><td>Requests reaching the server</td><td class="num">~3,000</td><td class="num">~90,000</td><td>About ten per page, counting images, styles and scripts</td></tr>
   <tr><td>Bookings made</td><td class="num">~1</td><td class="num">~30</td><td>Roughly one per working day. All their email is Calendly's</td></tr>
   <tr><td>Emails sent by us</td><td class="num">&lt; 1</td><td class="num">~20</td><td>Admin login verification codes only</td></tr>
   <tr><td>Files sent to visitors</td><td class="num">~25 MB</td><td class="num">~750 MB</td><td>Photos and PDFs, less once cached</td></tr>
@@ -907,33 +803,25 @@ re-check before committing.</p>
 </table>
 </div>
 
-<h4>How the visitor capacity figures were worked out</h4>
-<ul>
-  <li>One visit is assumed to be three pages, about thirty requests, and roughly 250 KB of files
-  downloaded, falling to about 100 KB once Cloudflare caches repeat images.</li>
-  <li>Supabase 5 GB ÷ 250 KB ≈ 20,000 visits a month ≈ 650 a day. With caching, ≈ 1,650 a day.</li>
-  <li>Cloudflare R2 has no download charge at all, so no visitor limit follows from it. The 10 GB storage
-  allowance is about space, not traffic.</li>
-  <li>Vercel 1,000,000 requests ÷ 30 per visit ≈ 33,000 visits a month ≈ 1,100 a day.</li>
-  <li>Server capacity figures are engineering estimates for this application, not supplier guarantees.</li>
-</ul>
-
 <h4>Other assumptions</h4>
 <ul>
-  <li>The existing DigitalOcean server has spare capacity for a second small application, and a share of
-  its cost can be agreed. Both worth confirming before launch.</li>
-  <li>Moving file storage to R2 and adding the Turnstile check to the booking page are development tasks,
-  costed at $0 in supplier fees but not in time.</li>
+  <li>Self-hosted Postgres backup cost is priced as $0 in fees because it reuses the R2 bucket and
+    S3 client the app already has for photo/PDF storage; the pg_dump job itself is development time,
+    not a new supplier bill.</li>
+  <li>The existing DigitalOcean server (Option 2) has spare capacity for a second small application,
+    and a share of its cost can be agreed. Worth confirming before launch, as in the prior report.</li>
   <li>Development and ongoing maintenance time are excluded throughout. These are supplier costs only.</li>
-  <li>Baht figures are converted at a single rate on the report date and are rounded. The dollar figures
-  are what the suppliers actually bill.</li>
+  <li>Baht figures are converted at a single rate carried from the report date and are rounded. The
+    dollar figures are what the suppliers actually bill.</li>
 </ul>
 
 </div><!-- /pad -->
 
 <footer>
-  <p><b>The Culprit — Hosting &amp; Running Cost Report.</b> Prepared 7 August 2026. All figures verified
-  against live supplier pricing on that date. Currency converted at $1 = ฿33.10.</p>
+  <p><b>The Culprit — Hosting &amp; Running Cost Report, revision 2.</b> Prepared 11 August 2026,
+  superseding the 7 August 2026 edition. Server and third-party prices verified 7 August 2026 and
+  carried forward; the Vercel deployment finding is new to this date. Currency converted at
+  $1 = ฿33.10.</p>
 </footer>
 
 </div><!-- /page -->
