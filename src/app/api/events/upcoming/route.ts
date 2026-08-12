@@ -1,6 +1,6 @@
 import { getUpcomingEventsService, toAppointmentView } from '@/modules/appointments';
 import { mapResult } from '@/modules/shared/lib/result';
-import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
+import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-response';
 
 // Public: upcoming events (admin-declared appointments, `scheduled` and in the future), gated by
 // the admin's upcoming_events_visible setting. Never 403s — when the setting is off this returns
@@ -9,16 +9,19 @@ import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
 // settings writes (see modules/shared/lib/revalidate). Shorter 300s ceiling (vs. the usual 3600s)
 // because "upcoming" is time-sensitive — a scheduled appointment can pass into the past between
 // invalidations, so this bounds how long a stale-but-now-past event could still be served.
+// Browser/edge TTLs mirror the "frequently changing public data" tier — shorter than the other
+// public GET routes for the same time-sensitivity reason as the 300s `revalidate` above.
 export const revalidate = 300;
 
 export async function GET() {
   try {
     const result = await getUpcomingEventsService().getUpcomingEvents();
-    return respond(
+    return respondPublicCache(
       mapResult(result, (data) => ({
         visible: data.visible,
         events: data.events.map(toAppointmentView),
       })),
+      { browserTtl: 60, edgeTtl: 300, staleWhileRevalidate: 60 },
     );
   } catch (error) {
     return apiUnexpected(error);

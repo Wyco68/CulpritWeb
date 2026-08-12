@@ -1,5 +1,5 @@
 import { getResearchGroupService } from '@/modules/research-groups';
-import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
+import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-response';
 
 // Public: list research groups, each including its team members (ordered by sortOrder).
 // ISR-style route cache: purged by `revalidatePath('/api/groups')` on admin writes (see
@@ -9,7 +9,7 @@ export const revalidate = 3600;
 export async function GET() {
   try {
     const result = await getResearchGroupService().list();
-    return respond(result);
+    return respondPublicCache(result, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
   } catch (error) {
     return apiUnexpected(error);
   }

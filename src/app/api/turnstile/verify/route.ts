@@ -26,7 +26,11 @@ export async function POST(request: NextRequest) {
     const result = await getTurnstileVerifier().verify(parsed.data.token, ip);
     if (!result.ok) return apiError(result.error);
 
-    return apiSuccess({ verified: true });
+    // Tokens are single-use and this reflects the verification of one specific token — never
+    // cacheable at any layer, even though nothing is written to the database.
+    const response = apiSuccess({ verified: true });
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   } catch (error) {
     return apiUnexpected(error);
   }
