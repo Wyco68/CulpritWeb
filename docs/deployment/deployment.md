@@ -14,6 +14,11 @@ related_decisions: [ADR-001, ADR-002]
 stack-agnostic anymore in practice; see [architecture/overview.md](../architecture/overview.md)
 for the full adopted stack.
 
+A self-hosted alternative also exists — one prebuilt Docker container on a low-resource VPS,
+built and pushed by CI, never built on the VPS itself. See
+[docker-vps.md](docker-vps.md) for that pipeline; everything below (build command, migrations,
+connection pooling) applies identically to both targets.
+
 ## Build
 
 ```bash
