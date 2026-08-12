@@ -9,8 +9,11 @@ name: Docker build & publish
 #              Next statically traces route handlers that import the Zod-validated server env
 #              module — same values used at runtime, see docs/deployment/docker-vps.md)
 #              DEPLOY_SSH_KEY (private key for the `deploy` user on the target VPS)
-#   Variables: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_CALENDLY_URL, NEXT_PUBLIC_TURNSTILE_SITE_KEY
-#              (public by design — safe as plain repo Variables, not Secrets)
+#   Variables: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_CALENDLY_URL, NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+#              R2_PUBLIC_URL (public by design — safe as plain repo Variables, not Secrets;
+#              R2_PUBLIC_URL specifically must be set here even though it's not a NEXT_PUBLIC_*
+#              var, because next.config.ts's images.remotePatterns is computed from it at build
+#              time and baked into the standalone output — see Dockerfile)
 #              DEPLOY_HOST, DEPLOY_USER (VPS SSH target)
 #
 # The VPS is shared with other apps behind a single Caddy reverse proxy — see
@@ -141,6 +144,7 @@ jobs:
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
             NEXT_PUBLIC_CALENDLY_URL=${{ vars.NEXT_PUBLIC_CALENDLY_URL }}
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+            R2_PUBLIC_URL=${{ vars.R2_PUBLIC_URL }}
           secrets: |
             database_url=${{ secrets.DATABASE_URL }}
             direct_url=${{ secrets.DIRECT_URL }}

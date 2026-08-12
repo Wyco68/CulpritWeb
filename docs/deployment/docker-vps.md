@@ -105,6 +105,7 @@ Set once in the repo (**Settings → Secrets and variables → Actions**):
 | `NEXT_PUBLIC_APP_URL` | Variable | Public by design — inlined into the client bundle |
 | `NEXT_PUBLIC_CALENDLY_URL` | Variable | Public |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Variable | Public |
+| `R2_PUBLIC_URL` | Variable | Public (the R2 bucket's public dev URL). Not a `NEXT_PUBLIC_*` var, but still required at build time: `next.config.ts`'s `images.remotePatterns` is computed from it and baked into `.next/required-server-files.json` — the standalone runner never re-reads `next.config.ts`, so setting this only in `.env.production` (runtime) has no effect on image optimization |
 | `TURNSTILE_SECRET_KEY` | Secret | Used at build time for the same static-trace reason as the DB vars above; also lives in `.env.production` for runtime |
 | `DEPLOY_SSH_KEY` | Secret | Private key for the VPS `deploy` user — the `deploy` job's only credential |
 | `DEPLOY_HOST` / `DEPLOY_USER` | Variable | SSH target — not secret, but scoped as repo config rather than hardcoded in the workflow |

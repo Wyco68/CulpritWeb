@@ -37,9 +37,16 @@ RUN mkdir -p public
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ARG NEXT_PUBLIC_CALENDLY_URL
+# Not a NEXT_PUBLIC_* var (it's read server-side, in next.config.ts), but still not secret — it's
+# the R2 bucket's public URL by design (see .env.example). next.config.ts's images.remotePatterns
+# is computed from this at `next build` time and baked into .next/required-server-files.json — the
+# standalone runner never re-reads next.config.ts, so setting R2_PUBLIC_URL only in
+# .env.production (runtime) has no effect; it must be present here, at build time.
+ARG R2_PUBLIC_URL
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
     NEXT_PUBLIC_CALENDLY_URL=${NEXT_PUBLIC_CALENDLY_URL} \
+    R2_PUBLIC_URL=${R2_PUBLIC_URL} \
     NEXT_TELEMETRY_DISABLED=1
 
 # DATABASE_URL/DIRECT_URL/BETTER_AUTH_SECRET are required only because `next build` imports
