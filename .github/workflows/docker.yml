@@ -87,10 +87,17 @@ jobs:
     needs: [test, migrate]
     runs-on: ubuntu-latest
     outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
+      image-tag: ${{ steps.sha.outputs.value }}
       image-repo: ${{ steps.repo.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Compute short-SHA tag
+        id: sha
+        # docker/metadata-action's `version` output picks between the sha/latest tag rules by an
+        # internal priority that resolved to "latest" here, not the immutable tag deploy.sh
+        # expects — compute it directly instead of trusting that output for this purpose.
+        run: echo "value=sha-${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Lowercase image repo
         id: repo

@@ -23,7 +23,9 @@ services:
       - .env.production
     environment:
       # Conservative default for a low-RAM VPS; raise via .env.production if the box has headroom.
-      NODE_OPTIONS: ${NODE_OPTIONS:--max-old-space-size=256}
+      # Three dashes, not two: the `:-` default-value operator consumes one of them, so
+      # `${VAR:--foo}` silently becomes the single-dash (invalid) flag `-foo`.
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=256}
     healthcheck:
       test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
