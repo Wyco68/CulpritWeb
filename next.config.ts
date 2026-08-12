@@ -1,5 +1,24 @@
 import type { NextConfig } from 'next';
 
+// Best-effort host derivation for next/image's allow-list. R2_PUBLIC_URL may be unset for a
+// contributor who hasn't configured R2 yet, or a CI step that doesn't need it — fall back to no
+// allow-listed host rather than crashing config eval.
+function r2RemotePatterns(): NonNullable<NextConfig['images']>['remotePatterns'] {
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (!publicUrl) return [];
+  try {
+    const { protocol, hostname } = new URL(publicUrl);
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      console.warn(`R2_PUBLIC_URL has unsupported protocol "${protocol}" — ignoring.`);
+      return [];
+    }
+    return [{ protocol: protocol.slice(0, -1) as 'http' | 'https', hostname }];
+  } catch {
+    console.warn(`R2_PUBLIC_URL "${publicUrl}" is not a valid URL — ignoring.`);
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Self-contained server bundle (server.js + pruned prod-only node_modules) — the production
@@ -14,13 +33,12 @@ const nextConfig: NextConfig = {
     // visited payloads briefly: re-selecting a tab within the window renders from memory.
     staleTimes: { dynamic: 30 },
   },
-  // Photos (profile/team) come from Supabase Storage — the adopted object store per
-  // PROJECT_SPEC.md §14.1 (Cloudflare R2 was Option B, evaluated and rejected). Left empty: the
-  // `Avatar` component renders a plain `<img>`, not `next/image` (see its own comment for why),
-  // so this allow-list currently has no consumer. Add the Supabase project host here first if
-  // that ever changes.
+  // Photos (profile/team) come from Cloudflare R2 — object storage moved off Supabase Storage on
+  // 2026-08-08 (see docs/decisions/ADR-002-object-storage-r2.md). The public R2 host is derived
+  // from R2_PUBLIC_URL at config-eval time so the `Avatar` component's next/image usage resolves
+  // instead of 404ing.
   images: {
-    remotePatterns: [],
+    remotePatterns: r2RemotePatterns(),
   },
 };
 
