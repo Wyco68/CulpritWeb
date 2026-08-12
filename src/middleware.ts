@@ -36,20 +36,56 @@ export function rateLimitExceededResponse(retryAfterSeconds: number): NextRespon
   );
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const ip = getClientIp(request.headers);
-  const rule = resolveRateLimitRule(request.nextUrl.pathname, request.method, ip);
-  if (!rule) return NextResponse.next();
+/**
+ * Old `/api/team-members?groupId=X` callers (pre-ADR-007-addendum contract) still land on the
+ * unfiltered route, since Next doesn't route on query string. Redirect here, in middleware, rather
+ * than in the route handler: reading `request.nextUrl.searchParams` inside a route handler is
+ * itself a dynamic-API use that forces the whole route dynamic (confirmed via `next build`'s
+ * "Dynamic server usage" error — the route handler previously did this and silently lost its
+ * `export const revalidate = 3600` caching as a result). Middleware runs before route-level static
+ * analysis and isn't subject to that rule, so the redirect can live here for free.
+ */
+export function resolveTeamMembersCompatRedirect(request: NextRequest): NextResponse | null {
+  if (request.nextUrl.pathname !== '/api/team-members' || request.method !== 'GET') return null;
+  const groupId = request.nextUrl.searchParams.get('groupId');
+  if (!groupId) return null;
+  return NextResponse.redirect(
+    new URL(`/api/team-members/group/${encodeURIComponent(groupId)}`, request.url),
+    307,
+  );
+}
 
-  const limiter = getRateLimiter({ limit: rule.limit, windowSeconds: rule.windowSeconds });
-  const { success, reset } = await limiter.limit(rule.key);
-  if (!success) {
-    const retryAfter = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
-    return rateLimitExceededResponse(retryAfter);
+const PRIVATE_NO_STORE = 'private, no-store';
+
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const redirect = resolveTeamMembersCompatRedirect(request);
+  if (redirect) return redirect;
+
+  const { pathname } = request.nextUrl;
+  const isPrivateSurface = pathname.startsWith('/api/auth/') || pathname.startsWith('/api/admin/');
+
+  const ip = getClientIp(request.headers);
+  const rule = resolveRateLimitRule(pathname, request.method, ip);
+  if (rule) {
+    const limiter = getRateLimiter({ limit: rule.limit, windowSeconds: rule.windowSeconds });
+    const { success, reset } = await limiter.limit(rule.key);
+    if (!success) {
+      const retryAfter = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
+      const response = rateLimitExceededResponse(retryAfter);
+      if (isPrivateSurface) response.headers.set('Cache-Control', PRIVATE_NO_STORE);
+      return response;
+    }
   }
-  return NextResponse.next();
+
+  const response = NextResponse.next();
+  // Defense-in-depth: explicitly forbid shared/browser caching of session-gated surfaces, rather
+  // than relying only on the absence of a Cache-Control header (which a misconfigured proxy or a
+  // future Cloudflare Cache Rule could still choose to cache). Public GET routes are unaffected —
+  // this matcher never runs on them.
+  if (isPrivateSurface) response.headers.set('Cache-Control', PRIVATE_NO_STORE);
+  return response;
 }
 
 export const config = {
-  matcher: ['/api/auth/:path*', '/api/admin/:path*'],
+  matcher: ['/api/auth/:path*', '/api/admin/:path*', '/api/team-members'],
 };

@@ -153,6 +153,25 @@ group assignment changing is rarer and lower-stakes if briefly stale.
 `listTeamMembersQuerySchema` and its test cases were removed as dead code (confirmed via grep: no
 remaining importer once the query-string route was gone) rather than left unused.
 
+## Correction (2026-08-12): the Addendum's "no longer forced dynamic" claim was wrong
+
+A production Cloudflare caching audit found `/api/team-members` still `DYNAMIC` in prod despite this
+ADR's Addendum claiming it was fixed. `npm run build` confirmed it directly: the build log repeated
+the exact same `Dynamic server usage: Route /api/team-members couldn't be rendered statically
+because it used nextUrl.searchParams` error the original Correction (above) had already diagnosed.
+
+The Addendum's restructure split the route in two, but the unfiltered `route.ts` kept an
+unconditional `request.nextUrl.searchParams.get('groupId')` read to 307-redirect old
+`?groupId=`-style callers to the new `/api/team-members/group/{groupId}` path. That read — not
+gated behind any other dynamic API — is itself sufficient to force the route dynamic, the same
+mechanism as before; the Addendum's claim that "next build's route table confirms both new route
+shapes are no longer forced dynamic" was never actually re-verified against a real build.
+
+**Fix**: moved the redirect into `src/middleware.ts` (`resolveTeamMembersCompatRedirect`), which
+runs before route-level static analysis and isn't subject to it. `route.ts` no longer takes a
+`NextRequest` param at all. `next build` now shows `○ /api/team-members` (Static, 1h/1y), matching
+what this ADR always intended.
+
 ## Consequences
 
 - On-demand invalidation actually works again: an admin save reaches the public site (and its

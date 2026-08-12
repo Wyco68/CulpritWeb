@@ -1,6 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getTeamMemberService } from '@/modules/research-groups';
-import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
+import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-response';
 
 // Public: list ALL team members, ordered by sortOrder. Filtered-by-group reads live at the
 // separate `/api/team-members/group/{groupId}` route (see ADR-007's addendum) — splitting them
@@ -8,23 +7,18 @@ import { apiUnexpected, respond } from '@/modules/shared/lib/api-response';
 // ISR-style route cache as the other public GET API routes.
 //
 // Old callers on the pre-split `?groupId=` contract still land HERE (Next doesn't route on query
-// string). Redirect them to the new path instead of silently returning the unfiltered list —
-// wrong-by-silence is worse than a 307. This check reads `nextUrl.searchParams` only on this one
-// branch; the common no-query-string request never touches it, so the route stays cacheable.
+// string). `middleware.ts`'s `resolveTeamMembersCompatRedirect` 307s them to the new path — NOT
+// handled here. An earlier version of this route read `request.nextUrl.searchParams` directly in
+// this handler to do that redirect; that alone forced the whole route dynamic (confirmed via
+// `next build`'s "Dynamic server usage" error), silently defeating the `revalidate` below despite
+// this file's own comment claiming otherwise. Moving the redirect to middleware — which isn't
+// subject to route-level static analysis — is what actually makes this route cacheable.
 export const revalidate = 3600;
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const groupId = request.nextUrl.searchParams.get('groupId');
-    if (groupId) {
-      return NextResponse.redirect(
-        new URL(`/api/team-members/group/${encodeURIComponent(groupId)}`, request.url),
-        307,
-      );
-    }
-
     const result = await getTeamMemberService().list();
-    return respond(result);
+    return respondPublicCache(result, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
   } catch (error) {
     return apiUnexpected(error);
   }

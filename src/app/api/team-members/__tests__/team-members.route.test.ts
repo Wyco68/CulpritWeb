@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const list = vi.fn();
@@ -11,12 +10,8 @@ beforeEach(() => {
   list.mockClear();
 });
 
-function makeRequest(url: string) {
-  return new NextRequest(url);
-}
-
 describe('GET /api/team-members', () => {
-  it('returns 200 with all team members, unfiltered', async () => {
+  it('returns 200 with all team members, unfiltered, and a public-cache header', async () => {
     const { ok } = await import('@/modules/shared/lib/result');
     list.mockResolvedValueOnce(
       ok([
@@ -34,37 +29,24 @@ describe('GET /api/team-members', () => {
       ]),
     );
 
-    const res = await GET(makeRequest('https://example.com/api/team-members'));
+    const res = await GET();
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
     expect(json.data).toHaveLength(1);
     expect(list).toHaveBeenCalledWith();
+    expect(res.headers.get('Cache-Control')).toBe(
+      'public, max-age=300, s-maxage=3600, stale-while-revalidate=300',
+    );
   });
 
-  it('maps an unexpected service throw to a safe 500 envelope', async () => {
+  it('maps an unexpected service throw to a safe 500 envelope with no-store', async () => {
     list.mockRejectedValueOnce(new Error('db unavailable'));
 
-    const res = await GET(makeRequest('https://example.com/api/team-members'));
+    const res = await GET();
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json.ok).toBe(false);
-  });
-
-  it('redirects old ?groupId= callers to the new filtered route (307), without touching the service', async () => {
-    const res = await GET(makeRequest('https://example.com/api/team-members?groupId=group_1'));
-    expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toBe('https://example.com/api/team-members/group/group_1');
-    expect(list).not.toHaveBeenCalled();
-  });
-
-  it('URL-encodes a groupId containing special characters in the redirect target', async () => {
-    const res = await GET(
-      makeRequest('https://example.com/api/team-members?groupId=' + encodeURIComponent('grp/ 1')),
-    );
-    expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toBe(
-      'https://example.com/api/team-members/group/grp%2F%201',
-    );
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 });
