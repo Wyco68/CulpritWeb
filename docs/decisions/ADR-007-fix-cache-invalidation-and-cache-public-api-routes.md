@@ -172,6 +172,72 @@ runs before route-level static analysis and isn't subject to it. `route.ts` no l
 `NextRequest` param at all. `next build` now shows `○ /api/team-members` (Static, 1h/1y), matching
 what this ADR always intended.
 
+## Addendum (2026-08-12): Cloudflare edge caching + purge, explicit browser/edge Cache-Control tiers
+
+A production caching audit (prompted by the VPS/Docker deploy going live the same day, see
+[docker-vps.md](../deployment/docker-vps.md)) found the public routes this ADR made cacheable were
+never actually cached at the Cloudflare edge in front of the VPS — confirmed live via
+`CF-Cache-Status: DYNAMIC` on every request, not assumed. Cloudflare does not cache HTML/JSON by
+default regardless of the origin's `Cache-Control`; it only auto-caches by static file extension.
+
+**Cloudflare Cache Rule added** (dashboard/API, not in this repo — Free plan allows 10 Cache Rules
+per zone, confirmed via current docs) on `culprit.wyco-dev.com` only (host-scoped — this zone also
+hosts an unrelated sibling app, `carpart.wyco-dev.com`, on the same shared VPS), matching exactly
+the routes this ADR already lists as safe: the 6 public pages + `/api/research`, `/api/publications`,
+`/api/profile`, `/api/events/upcoming`, `/api/groups`, `/api/team-members`, and
+`/api/team-members/group/*`. Edge/browser TTL both set to "respect origin" — i.e. whatever
+`Cache-Control` the route sends. `/api/admin/**`, `/api/auth/**`, and all mutation endpoints are
+untouched by the rule (confirmed live: still `DYNAMIC`).
+
+**Cache key safety — Vary.** Every response from this app carries
+`Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch,
+Accept-Encoding` (Next.js's own RSC/prefetch content negotiation). Cloudflare ignores `Vary` by
+default; naively enabling caching without addressing it would let a plain page-load response and an
+RSC/prefetch fetch collide on the same cache entry for a given URL — a real correctness bug, not
+theoretical (confirmed by testing: without a `vary` action in the rule, everything with
+`Accept-Encoding` in `Vary` came back `BYPASS`, since it fell to the rule's `default: bypass` and
+every response lists that header). Fixed by including all 4 custom headers as `passthrough` and
+`accept-encoding` as `normalize` in the Cache Rule's `vary` config (a Free-plan-available feature,
+shipped 2026-07-02) — every other header defaults to `bypass`. Verified live with a real request
+carrying `RSC`/`Next-Router-Prefetch` headers: gets its own cache entry, doesn't corrupt the plain
+HTML variant.
+
+**Explicit two-tier `Cache-Control`.** Each of the routes above now sets its own `Cache-Control`
+via `respondPublicCache`/`withPublicCache` (`src/modules/shared/lib/api-response.ts`) instead of
+relying on Next's auto-synthesized `s-maxage`-only header — Next only synthesizes one when the
+handler hasn't already set `Cache-Control` itself (confirmed in `next/dist/server/send-payload.js`:
+`if (cacheControl && !res.getHeader('Cache-Control'))`), so an explicit header here is respected
+as-is. Two tiers, matching each route's actual update frequency (not "public therefore long"):
+- Normal CMS content (research/publications/profile/groups/team-members): `public, max-age=300,
+  s-maxage=3600, stale-while-revalidate=300` — browser TTL intentionally shorter than the edge TTL.
+- Time-sensitive (`/api/events/upcoming`, already 300s `revalidate` per the original ADR): `public,
+  max-age=60, s-maxage=300, stale-while-revalidate=60`.
+Error responses (`apiError`, hit via either a rejected `Result` or a caught throw) always get
+`Cache-Control: no-store` — an error is never the real resource and must never be cached as if it
+were, at any layer.
+
+**Private surfaces get an explicit header too**, not just an absent one. `src/middleware.ts` now
+sets `Cache-Control: private, no-store` on every response under `/api/auth/**` and `/api/admin/**`
+(defense-in-depth against a future misconfigured Cache Rule or proxy, not just relying on the
+absence of a cache directive).
+
+**Cloudflare purge on invalidation.** `revalidatePublic` (this file) now also schedules a Cloudflare
+purge for the same resolved paths via `src/modules/shared/lib/cloudflare-cache.ts`, using Next 15's
+`after()` so it runs post-response without delaying the mutation, and consolidated into one purge
+call per `revalidatePublic` invocation (not one per area) to avoid a purge storm on a multi-area
+save. Entirely optional: no-ops without `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID` configured (not
+yet set in production as of this addendum — needs a token scoped to *Zone > Cache Purge > Purge*
+added to `.env.production` on the VPS to actually activate; see `.env.example`). Without it, the
+site is still correct — Next's own cache is invalidated immediately either way, and each route's
+`revalidate` TTL (above) bounds how long a stale edge-cached response can outlive an admin edit.
+Never throws: a purge failure is logged, not raised, so it can't fail the database write that
+triggered it.
+
+Considered and rejected: a Cloudflare Worker for purge/caching (a Cache Rule + the Purge API already
+solve this without one, per this project's own "prefer Cloudflare config over Workers" bias);
+purging cache tags instead of URLs (this app's traffic/write volume doesn't need tag-level
+granularity — the existing per-area `revalidatePath` URL list already gives exact targeting).
+
 ## Consequences
 
 - On-demand invalidation actually works again: an admin save reaches the public site (and its

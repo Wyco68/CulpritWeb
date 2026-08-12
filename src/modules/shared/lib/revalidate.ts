@@ -1,4 +1,6 @@
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
+import { purgeCloudflareCache } from './cloudflare-cache';
 import type { Result } from './result';
 
 // Public-page (and public-API) cache invalidation.
@@ -49,13 +51,29 @@ export type PublicArea = keyof typeof AREA_PATHS;
  * save has to drop the whole subtree, not just the About page. `/api/profile` is purged alongside it.
  */
 export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
+  const purgePaths: string[] = [];
   for (const area of areas) {
     if (area === 'profile') {
       revalidatePath('/', 'layout');
       revalidatePath('/api/profile');
+      purgePaths.push('/', '/api/profile');
     } else {
       for (const path of AREA_PATHS[area]) revalidatePath(path);
+      purgePaths.push(...AREA_PATHS[area]);
     }
+  }
+
+  // Cloudflare purge runs after the response is sent (`after()`), and is a no-op without
+  // CLOUDFLARE_API_TOKEN/CLOUDFLARE_ZONE_ID configured — see cloudflare-cache.ts. Batched into one
+  // call per `revalidatePublic` invocation (not one per area/path) so an admin edit that touches
+  // several areas at once doesn't fire a purge storm — see docs/decisions for the reasoning.
+  // Guarded: `after` throws when called outside a real request scope (e.g. a unit test invoking
+  // this function directly rather than through a route handler).
+  try {
+    after(() => purgeCloudflareCache(purgePaths));
+  } catch {
+    // Outside a request scope — nothing to schedule against. Not worth mocking `after` to avoid
+    // this; `purgeCloudflareCache` itself is covered by its own tests.
   }
 }
 
