@@ -50,7 +50,11 @@ jobs:
       # No postinstall hook generates the Prisma client — lint/typecheck/test all import types
       # from it, so a fresh checkout fails without this (caught the hard way: passed locally only
       # because a stale generated client already existed on disk from earlier `npm run build`).
+      # `prisma.config.ts` calls env('DIRECT_URL') at config-load time — required even for
+      # `generate`, which otherwise makes no DB connection at all.
       - run: npm run db:generate
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - run: npm run lint
       - run: npm run typecheck
