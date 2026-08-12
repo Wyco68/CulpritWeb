@@ -7,16 +7,42 @@ professor, built on Next.js 15 (App Router).
 
 ## Quick start
 
+Env vars are managed via [Doppler](https://doppler.com), not a local `.env` file.
+
+1. Install Doppler CLI and log in:
+   ```bash
+   # macOS
+   brew install dopplerhq/cli/doppler
+   # Linux
+   curl -Ls https://cli.doppler.com/install.sh | sh
+   # Windows (PowerShell)
+   scoop bucket add doppler https://github.com/DopplerHQ/scoop-doppler.git
+   scoop install doppler
+
+   doppler login
+   ```
+2. From repo root, link project: `doppler setup` (choose `culprit` → `dev` config)
+3. Run app normally — env vars inject automatically: `npm run dev`
+
 ```bash
 npm install
-cp .env.example .env.local   # fill in real values
+doppler setup   # once, links this repo to the Doppler project/config
 npm run dev
 ```
 
+Check the link worked (should print your `DATABASE_URL`):
+
+```bash
+# macOS/Linux
+doppler run -- printenv | grep DATABASE_URL
+# Windows (PowerShell)
+doppler run -- cmd /c set | Select-String DATABASE_URL
+```
+
 You need at minimum a Supabase Postgres connection (`DATABASE_URL`/`DIRECT_URL`) and
-`BETTER_AUTH_SECRET` for the app to boot. Everything else in `.env.example` (Turnstile, R2,
-Resend, Cloudflare purge) is optional — each integration no-ops gracefully when its env vars are
-unset, so local dev never gets blocked waiting on a third-party credential.
+`BETTER_AUTH_SECRET` for the app to boot. Everything else (Turnstile, R2, Resend, Cloudflare purge)
+is optional — each integration no-ops gracefully when its env vars are unset, so local dev never
+gets blocked waiting on a third-party credential.
 
 ```bash
 npm run build        # prisma generate && next build
