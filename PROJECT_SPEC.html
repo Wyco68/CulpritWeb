@@ -187,9 +187,8 @@
   §9 for the current (2026-08-05) Figma-derived visual system: fixed dark-navy header, mono numbered
   indices, colored-dot status badges.</p>
   <blockquote><strong>Elevator pitch:</strong> A clean public presence for a security researcher, plus a
-  lightweight, admin-only appointment log — kept simple by leaning entirely on Calendly's own free
-  embed for visitor-facing booking rather than half-building server-side sync that Calendly's Free
-  plan can't actually support.</blockquote>
+  lightweight, admin-only appointment log. Visitor booking runs entirely on Calendly's free embed —
+  no server-side sync, because Calendly's Free plan doesn't support one.</blockquote>
 </section>
 
 <!-- 2 -->
@@ -288,7 +287,7 @@
     <tr><td><code><s>FR-9</s></code></td><td><em>(removed 2026-08-08)</em> Confirmation: "pending" for a request, "booked" for a direct booking.</td></tr>
     <tr><td><code>FR-10</code></td><td>Tab shows embedded <strong>Calendly</strong> widget for live availability + direct booking. This is the entire "Make Appointment" tab today.</td></tr>
     <tr><td><code><s>FR-11</s></code></td><td><em>(removed 2026-08-08)</em> Cancel own meeting via a unique link. No visitor-facing appointment record exists to cancel.</td></tr>
-    <tr><td><code><s>FR-12</s></code></td><td><em>(removed as a form guard 2026-08-08; repurposed later same day)</em> The original requirement — protecting a request <em>form</em> against spam/bots — no longer applies, since no public appointment-writing endpoint exists. <strong>Behavioral note (2026-08-08):</strong> Turnstile now gates <em>visibility</em> of the embedded Calendly widget instead: <code>TurnstileChallenge</code> renders first on the Make Appointment tab and only reveals the embed after <code>POST /api/turnstile/verify</code> (IP-rate-limited via Upstash) confirms the token server-side. Protects the embed's exposure to bots, not a form submission — there is still no appointment-writing endpoint of any kind. See §6, §14.2.</td></tr>
+    <tr><td><code><s>FR-12</s></code></td><td><em>(removed as a form guard 2026-08-08; repurposed later same day)</em> The original requirement — protecting a request <em>form</em> against spam/bots — no longer applies, since no public appointment-writing endpoint exists. <strong>Behavioral note (2026-08-08):</strong> Turnstile now gates <em>visibility</em> of the embedded Calendly widget instead: <code>TurnstileChallenge</code> renders first on the Make Appointment tab and only reveals the embed after <code>POST /api/turnstile/verify</code> (IP-rate-limited) confirms the token server-side. Protects the embed's exposure to bots, not a form submission — there is still no appointment-writing endpoint of any kind. See §6, §14.2.</td></tr>
   </table></div>
   <h3>5.3 Admin — content management</h3>
   <div class="twrap"><table>
@@ -324,7 +323,7 @@
     <tr><th>Category</th><th>Requirement</th></tr>
     <tr><td><strong>Performance</strong></td><td>Public pages &lt; 2s on broadband; cache/CDN where possible.</td></tr>
     <tr><td><strong>Security</strong></td><td>HTTPS everywhere; server-side validation on every form; hardened admin sessions (secure, httpOnly cookies); secrets out of client; least-privilege API.</td></tr>
-    <tr><td><strong>Spam / abuse</strong></td><td><em>(updated 2026-08-08 — later same day)</em> No public appointment-<em>writing</em> endpoint exists to spam — unchanged. But Turnstile and Upstash rate-limiting are <strong>no longer zero-callers</strong>: they now gate <em>visibility</em> of the public Calendly embed itself (<code>POST /api/turnstile/verify</code>, rate-limited by IP, called from <code>GatedCalendlyEmbed</code>) — Calendly Free has no bot protection and only one bookable event type, so an unprotected embed is a single stream a script could fill entirely. <code>guardPublicWrite</code> itself remains unused — the new route calls the rate-limiter/verifier directly.</td></tr>
+    <tr><td><strong>Spam / abuse</strong></td><td><em>(updated 2026-08-08, rate-limiter swapped 2026-08-10 — see §14.1)</em> No public appointment-<em>writing</em> endpoint exists to spam. Turnstile now gates <em>visibility</em> of the public Calendly embed instead (<code>POST /api/turnstile/verify</code>, IP-rate-limited, called from <code>GatedCalendlyEmbed</code>). Reason: Calendly Free has no bot protection and only one bookable event type, so an unprotected embed is one stream a script could fill with junk bookings. <code>guardPublicWrite</code> stays unused — the route calls the rate-limiter/verifier directly.</td></tr>
     <tr><td><strong>Privacy</strong></td><td>Minimal PII (name + email); clear retention; cancelled records retained but purgeable on request; no PII in URLs.</td></tr>
     <tr><td><strong>Accessibility</strong></td><td>WCAG 2.1 AA: semantic HTML, keyboard nav, contrast, alt text.</td></tr>
     <tr><td><strong>Responsive</strong></td><td>Mobile-first; usable 320px → desktop.</td></tr>
@@ -729,7 +728,8 @@
     <li><strong>auth</strong> — single-admin session management (Better Auth, DB-backed cookie sessions).</li>
     <li><strong>settings</strong> — feature flags (currently just upcoming-events visibility).</li>
     <li><s><strong>notifications</strong></s> — <strong>deleted 2026-08-08</strong> (was: email on appointment status transitions). No appointment email of any kind is sent by this app anymore.</li>
-    <li><strong>integrations</strong> — Calendly (<strong>embed-only</strong> as of 2026-08-08 — no server-side client, no webhook receiver, no PAT), Cloudflare R2 storage adapter (<em>switched from Supabase Storage 2026-08-08</em> — see §14.1), YouTube embed helper, Turnstile bot-challenge + Upstash rate limiter (<em>active as of 2026-08-08</em> — gate visibility of the public Calendly embed via <code>/api/turnstile/verify</code>), email provider (Resend; unused for appointments).</li>
+    <li><strong>integrations</strong> — Calendly (<strong>embed-only</strong> as of 2026-08-08 — no server-side client, no webhook receiver, no PAT), Cloudflare R2 storage adapter (<em>switched from Supabase Storage 2026-08-08</em> — see §14.1), YouTube embed helper, Turnstile bot-challenge (<em>active as of 2026-08-08</em> — gates visibility of the public Calendly embed via <code>/api/turnstile/verify</code>), email provider (Resend; unused for appointments).</li>
+    <li><strong>Rate limiting</strong> <em>(replaced 2026-08-10 — see §14.1)</em> — no longer Upstash/Redis. A Cloudflare WAF rule at the edge throttles admin login; a small in-process fallback (no external store) covers login and admin mutation routes if that edge rule is ever off. Public GET routes aren't rate-limited — caching absorbs that traffic instead.</li>
   </ul>
   <h3>12.3 Cross-cutting</h3>
   <ul>
@@ -784,10 +784,35 @@
   <code>src/modules/integrations/storage/storage-adapter.ts</code>.</blockquote>
   <div class="twrap"><table>
     <tr><th>Option</th><th>Frontend</th><th>Backend / API</th><th>Database</th><th>Storage</th><th>Notes</th></tr>
-    <tr><td><strong>A (adopted, DB/auth/hosting)</strong></td><td>Next.js (Vercel)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td><s>Supabase Storage</s></td><td>Better Auth for admin (not Supabase Auth — see note above); Prisma via <code>@prisma/adapter-pg</code>.</td></tr>
+    <tr><td><strong>A (adopted, DB/auth; hosting since revised)</strong></td><td>Next.js (<s>Vercel</s> self-hosted Docker on a VPS, 2026-08-12)</td><td>Next.js API routes</td><td>Supabase Postgres</td><td><s>Supabase Storage</s></td><td>Better Auth for admin (not Supabase Auth — see note above); Prisma via <code>@prisma/adapter-pg</code>.</td></tr>
     <tr><td><strong>B (adopted for storage only, 2026-08-08)</strong></td><td>Cloudflare Pages <em>(not taken)</em></td><td>CF Workers (Hono) <em>(not taken)</em></td><td>D1 (SQLite) <em>(not taken)</em></td><td><strong>R2 (adopted)</strong></td><td>Storage-only adoption — see note above. Frontend/backend/DB from B were not taken, only R2.</td></tr>
     <tr><td>C</td><td>Any SPA</td><td>Any REST service</td><td>Any relational DB</td><td>Any object store</td><td>Fully generic; matches this spec.</td></tr>
   </table></div>
+  <blockquote><strong>Hosting settled on self-hosted Docker on a VPS (2026-08-12):</strong> the app
+  runs in a self-hosted Docker container on a VPS, behind the <code>wyco-dev.com</code>
+  Cloudflare zone. One image built once in CI (GitHub Actions builds and pushes to GHCR; the
+  VPS only <code>docker pull</code>s and restarts, no build on the box). See
+  <code>docs/deployment/docker-vps.md</code> and <code>docs/deployment/vps-hosting-runbook.md</code>.
+  Vercel hosting, run briefly in parallel earlier the same day, was dropped in favor of this single
+  VPS target — there is no live Vercel deployment.</blockquote>
+  <blockquote><strong>Rate limiting moved off Upstash (2026-08-10, ADR-008):</strong> the app-level
+  Upstash/Redis limiter is gone. Admin login (<code>POST /api/auth/sign-in/email</code>) is now
+  throttled by a Cloudflare WAF Rate Limiting Rule (5 requests/10s per IP, blocked at Cloudflare's edge
+  before reaching the app), the one rule the Cloudflare Free plan allows per zone. A small in-process,
+  in-memory limiter (no external store) is the fallback layer behind it, also covering mutating
+  <code>/api/admin/**</code> routes. Reason: removes a Redis dependency that existed only for rate
+  limiting, and moves the highest-value protection (login brute force) in front of the app instead of
+  after it.</blockquote>
+  <blockquote><strong>Cloudflare edge caching added (2026-08-12, ADR-007 addendum):</strong> the six
+  public GET API routes and public pages are now cached at the Cloudflare edge too, in addition to
+  Next's own cache. A Cloudflare Cache Rule on <code>culprit.wyco-dev.com</code> respects each route's own
+  <code>Cache-Control</code> header. Each route sends an explicit two-tier header: a short browser TTL
+  and a longer edge TTL (e.g. <code>max-age=300, s-maxage=3600</code> for most content;
+  <code>max-age=60, s-maxage=300</code> for the time-sensitive upcoming-events route). An admin save
+  triggers a Cloudflare purge for the affected paths (optional, only runs if
+  <code>CLOUDFLARE_API_TOKEN</code>/<code>CLOUDFLARE_ZONE_ID</code> are set) in addition to Next's own
+  cache invalidation, so a stale edge-cached page can't outlive an edit by more than the purge
+  round-trip.</blockquote>
   <h3>14.2 Calendly capability (free vs paid)</h3>
   <blockquote><strong>Rewritten 2026-08-08.</strong> The server-side REST integration described in the
   prior version of this section (adopted 2026-08-02) was removed outright once its actual gating

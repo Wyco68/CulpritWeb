@@ -17,7 +17,7 @@ related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-00
 | Layer | Choice |
 |---|---|
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind v4 |
-| Hosting | Vercel |
+| Hosting | Self-hosted Docker container on a VPS, behind Cloudflare — see [deployment/docker-vps.md](../deployment/docker-vps.md) |
 | Backend | Next.js Route Handlers (`src/app/api/**/route.ts`) |
 | ORM | Prisma 7, driver adapter (`@prisma/adapter-pg`) over a plain `pg` `Pool` |
 | Database | Supabase Postgres (pooled connection, port 6543/pgbouncer) — see [ADR-001](../decisions/ADR-001-database.md) |
@@ -25,7 +25,7 @@ related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-00
 | Object storage | Cloudflare R2, S3-compatible API via `@aws-sdk/client-s3` — see [ADR-002](../decisions/ADR-002-object-storage-r2.md) |
 | Scheduling | Calendly, embed-only — see [ADR-005](../decisions/ADR-005-calendly-embed-only.md) |
 | Bot defense | Cloudflare Turnstile |
-| Rate limiting | Cloudflare WAF Rate Limiting Rule (edge, auth login) + in-process fallback limiter (Vercel) — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) |
+| Rate limiting | Cloudflare WAF Rate Limiting Rule (edge, auth login) + in-process fallback limiter (in the app) — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) |
 | Email | Resend + React Email — wired but has zero current callers |
 | Video | YouTube embeds (`src/modules/integrations/youtube/`) — built, not yet wired to any content model |
 | i18n | **None.** English-only, literal strings — see [ADR-006](../decisions/ADR-006-remove-i18n-and-locale-routing.md) |

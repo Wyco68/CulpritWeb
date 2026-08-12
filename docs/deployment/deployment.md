@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
+last_updated: 2026-08-12
 related_modules: [shared, integrations]
 related_decisions: [ADR-001, ADR-002]
 ---
@@ -10,14 +10,11 @@ related_decisions: [ADR-001, ADR-002]
 
 ## Platform
 
-**Vercel** — `NEXT_PUBLIC_APP_URL`/`BETTER_AUTH_URL` are set to the deployed URL. Not
-stack-agnostic anymore in practice; see [architecture/overview.md](../architecture/overview.md)
-for the full adopted stack.
-
-A self-hosted alternative also exists — one prebuilt Docker container on a low-resource VPS,
-built and pushed by CI, never built on the VPS itself. See
-[docker-vps.md](docker-vps.md) for that pipeline; everything below (build command, migrations,
-connection pooling) applies identically to both targets.
+Self-hosted: one prebuilt Docker container on a low-resource VPS, built and pushed by CI, never
+built on the VPS itself. `NEXT_PUBLIC_APP_URL`/`BETTER_AUTH_URL` are set to the deployed domain.
+See [architecture/overview.md](../architecture/overview.md) for the full adopted stack and
+[docker-vps.md](docker-vps.md) for the pipeline itself; everything below (build command,
+migrations, connection pooling) is the platform-agnostic part that pipeline relies on.
 
 ## Build
 
@@ -37,9 +34,11 @@ must run `prisma migrate deploy` as an explicit release step, separate from the 
 
 ## Connection pooling
 
-Serverless + Postgres exhausts connections fast. The app uses Supabase's pooled connection
-(port 6543, pgbouncer, transaction mode) for `DATABASE_URL`; migrations use the direct connection
-(port 5432) via `DIRECT_URL`. This is mandatory, not optional, in a serverless deploy.
+The app uses Supabase's pooled connection (port 6543, pgbouncer, transaction mode) for
+`DATABASE_URL`; migrations use the direct connection (port 5432) via `DIRECT_URL`. The container
+is long-running, not serverless, so this isn't strictly required to avoid connection exhaustion
+the way it would be on a platform that spins up a new function instance per request — it's kept
+regardless, since it's already configured and costs nothing to keep.
 
 ## Object storage & DNS
 
@@ -67,9 +66,10 @@ monitoring tool is wired up to measure it.
 
 ## Cost constraint
 
-Every third-party service must stay on its **free tier**: Vercel (hobby), Supabase (free Postgres),
+Every third-party service must stay on its **free tier**: Supabase (free Postgres),
 Cloudflare R2 (free egress), Calendly (free, embed-only), Cloudflare Turnstile (free), Cloudflare
 WAF Rate Limiting + DNS proxy (Free plan, 1 rate limiting rule per zone), Resend (free tier,
-unused). See `HOSTING_COST.html` for the full cost review that drove the R2 migration
+unused). The VPS itself is the one paid line item — see `HOSTING_COST.html` for the full cost
+review that drove the R2 migration
 ([ADR-002](../decisions/ADR-002-object-storage-r2.md)) and
 [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) for the rate-limiting architecture.

@@ -8,10 +8,9 @@ related_decisions: []
 
 # Docker / VPS deployment
 
-An alternative deploy target alongside [Vercel](deployment.md) — a self-hosted, low-resource VPS
-running one prebuilt Docker container. Both targets run the same codebase; nothing here changes
-the Vercel path. Choose this when you want a fixed-cost box instead of Vercel's usage-based
-pricing, or need to run somewhere Vercel doesn't reach.
+The deployment target: a self-hosted, low-resource VPS running one prebuilt Docker container,
+fixed-cost rather than usage-based. See [deployment.md](deployment.md) for the platform-agnostic
+parts (build command, migrations, connection pooling) this pipeline relies on.
 
 ## Architecture
 

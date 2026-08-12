@@ -14,7 +14,7 @@ related_decisions: []
 |----------|-------------|
 | Performance | Public pages load in < 2s on broadband; content served from cache/CDN where possible. |
 | Security | HTTPS everywhere; server-side input validation on every form (Zod at the boundary); admin session hardening (secure, httpOnly cookies via Better Auth); secrets kept out of the client; least-privilege API. |
-| Spam / abuse | No public appointment-*writing* endpoint exists to spam. Turnstile + IP rate-limiting gate *visibility* of the public Calendly embed (`POST /api/turnstile/verify`). Login brute force is blocked at the Cloudflare edge before Vercel — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) and [architecture/backend.md](../architecture/backend.md). |
+| Spam / abuse | No public appointment-*writing* endpoint exists to spam. Turnstile + IP rate-limiting gate *visibility* of the public Calendly embed (`POST /api/turnstile/verify`). Login brute force is blocked at the Cloudflare edge before it reaches the app — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) and [architecture/backend.md](../architecture/backend.md). |
 | Privacy | Minimal PII collected (visitor name + email only, and only when an admin types it in). No PII in URLs/query strings. Cancelled appointment records retained for audit, never hard-deleted. |
 | Accessibility | WCAG 2.1 AA: semantic HTML, keyboard navigation, sufficient contrast, alt text on the professor photo. |
 | Responsive | Mobile-first; usable from 320px up to desktop. |
