@@ -2,6 +2,10 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Self-contained server bundle (server.js + pruned prod-only node_modules) — the production
+  // Docker image copies only .next/standalone instead of the full node_modules tree. Irrelevant to
+  // the existing Vercel deploy (Vercel ignores `output` and always uses its own build output).
+  output: 'standalone',
   experimental: {
     // Client-side Router Cache lifetimes. Next's default for dynamic segments is 0, so clicking
     // back to a tab you were just on re-fetches its whole RSC payload — a full server round trip

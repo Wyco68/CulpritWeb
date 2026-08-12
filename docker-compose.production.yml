@@ -1,0 +1,53 @@
+# Production deployment for a low-resource VPS. The image is built in CI and pushed to GHCR —
+# this file only pulls and runs it. There is no `build:` key: the VPS must never build the image.
+#
+# Usage (see scripts/deploy.sh for the scripted version):
+#   docker login ghcr.io -u <user> --password-stdin
+#   IMAGE_TAG=sha-<commit> docker compose -f docker-compose.production.yml pull
+#   IMAGE_TAG=sha-<commit> docker compose -f docker-compose.production.yml up -d
+#
+# Runtime config comes from .env.production (copy .env.example, fill in real values, keep off
+# git). No database service is defined here — Postgres is Supabase (managed, external); the app
+# is the only container this project genuinely needs (single admin, no queue/cache tier).
+#
+# This VPS is shared with another app behind a single Caddy reverse proxy (see ~/server on the
+# box) — Caddy owns ports 80/443 and routes by hostname to containers by name over the shared
+# `server_default` network. No host port is published here; join that network instead.
+
+services:
+  app:
+    image: ${IMAGE_REPO:-ghcr.io/wyco68/culpritweb}:${IMAGE_TAG:-latest}
+    container_name: culprit-web
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      # Conservative default for a low-RAM VPS; raise via .env.production if the box has headroom.
+      NODE_OPTIONS: ${NODE_OPTIONS:--max-old-space-size=256}
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    # Bounds Docker's json-file log driver so container logs can't fill VPS disk over time.
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    # Plain (non-swarm) resource caps — real values for a small VPS, not aspirational ones.
+    # Raise these if the box has more than ~1 vCPU / 1GB free; too tight and the app OOM-kills
+    # under normal load instead of degrading gracefully.
+    mem_limit: ${APP_MEM_LIMIT:-512m}
+    cpus: ${APP_CPU_LIMIT:-1.0}
+    security_opt:
+      - no-new-privileges:true
+    read_only: false # Next's standalone server writes nothing to disk at runtime in steady state,
+    # but Next itself expects a writable /app/.next/cache-adjacent tmp in some code paths — leaving
+    # this false avoids a fragile read-only filesystem breaking startup for a marginal security gain.
+
+networks:
+  default:
+    name: server_default
+    external: true

@@ -1,0 +1,169 @@
+name: Docker build & publish
+
+# Builds the production image in CI and pushes it to GHCR. The VPS only ever pulls what this
+# workflow publishes — it never builds. See docs/deployment/docker-vps.md.
+#
+# Required repo configuration (Settings > Secrets and variables > Actions):
+#   Secrets:   DATABASE_URL, DIRECT_URL, BETTER_AUTH_SECRET, TURNSTILE_SECRET_KEY
+#              (DATABASE_URL/DIRECT_URL/BETTER_AUTH_SECRET are needed at build time only because
+#              Next statically traces route handlers that import the Zod-validated server env
+#              module — same values used at runtime, see docs/deployment/docker-vps.md)
+#              DEPLOY_SSH_KEY (private key for the `deploy` user on the target VPS)
+#   Variables: NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_CALENDLY_URL, NEXT_PUBLIC_TURNSTILE_SITE_KEY
+#              (public by design — safe as plain repo Variables, not Secrets)
+#              DEPLOY_HOST, DEPLOY_USER (VPS SSH target)
+#
+# The VPS is shared with other apps behind a single Caddy reverse proxy — see
+# docs/deployment/docker-vps.md for the ~/server/apps/<app>/ layout this job assumes already
+# exists (bootstrapped once by hand: directory, .env.production, Caddy site block).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: false # never cancel a build that might already be mid-push to GHCR
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Lint, typecheck, unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+
+  migrate:
+    name: Apply database migrations
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      # Release-step migration, per docs/deployment/deployment.md: `predev` only runs before
+      # `next dev`, never before a build, so CI must run `migrate deploy` explicitly. Runs against
+      # DIRECT_URL (unpooled) — Supabase's pooled DATABASE_URL is pgbouncer transaction mode,
+      # which can't run migrations.
+      - run: npm run db:deploy
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+  build-and-push:
+    name: Build & push image
+    needs: [test, migrate]
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      image-repo: ${{ steps.repo.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image repo
+        id: repo
+        # GHCR requires a lowercase path; github.repository preserves the repo's actual case
+        # (Wyco68/CulpritWeb), which docker/metadata-action already lowercases for the pushed
+        # tags — this mirrors that so the deploy job pulls the same ref that was actually pushed.
+        run: echo "value=$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build-time secrets are mounted read-only for a single RUN layer in the Dockerfile and are
+      # never written into an image layer, env, or label — they cannot be recovered with
+      # `docker history` the way a plain ARG/ENV secret could.
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_CALENDLY_URL=${{ vars.NEXT_PUBLIC_CALENDLY_URL }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          secrets: |
+            database_url=${{ secrets.DATABASE_URL }}
+            direct_url=${{ secrets.DIRECT_URL }}
+            better_auth_secret=${{ secrets.BETTER_AUTH_SECRET }}
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ vars.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Sync only the non-secret deploy files — .env.production stays untouched on the VPS
+      # (bootstrapped once by hand; CI never regenerates or overwrites runtime secrets there).
+      - name: Sync compose file and deploy script
+        run: |
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            docker-compose.production.yml scripts/deploy.sh \
+            "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:~/server/apps/culprit-web/"
+
+      # GHCR packages default to private, and the VPS has no standing registry credential — log
+      # in with this job's short-lived GITHUB_TOKEN (scoped to this run, expires shortly after)
+      # rather than provisioning a long-lived PAT on the box.
+      - name: Log the VPS into GHCR
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
+            "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin"
+
+      - name: Run deploy.sh on the VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+            "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
+            "cd ~/server/apps/culprit-web && chmod +x deploy.sh && IMAGE_REPO=${{ needs.build-and-push.outputs.image-repo }} ./deploy.sh ${{ needs.build-and-push.outputs.image-tag }}"
