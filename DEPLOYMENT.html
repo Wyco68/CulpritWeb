@@ -106,7 +106,8 @@
   </div>
   <ol>
     <li><a href="#live">Live Environment</a></li>
-    <li><a href="#pipeline">Deploy Pipeline</a></li>
+    <li><a href="#pipeline">Deploy Pipelines</a></li>
+    <li><a href="#edge">Cloudflare &amp; Caching</a></li>
     <li><a href="#docs">This Site</a></li>
   </ol>
 </nav>
@@ -114,9 +115,9 @@
 <main>
 <header class="doc">
   <h1>Deployment</h1>
-  <div class="sub">Where the app runs and how updates reach it.</div>
+  <div class="sub">Where the app runs today, and how a change goes live.</div>
   <div class="meta">
-    <span class="tag">Host: Vercel</span>
+    <span class="tag">Host: self-hosted VPS</span>
     <span class="tag">Status: Live</span>
   </div>
 </header>
@@ -129,28 +130,23 @@
     <tbody>
       <tr>
         <td>Application</td>
-        <td><a href="https://culprit-web.vercel.app">culprit-web.vercel.app</a></td>
+        <td>culprit.wyco-dev.com, one Docker container on a shared VPS, behind Cloudflare</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
         <td>Database</td>
-        <td>PostgreSQL (Supabase), automated backups</td>
+        <td>PostgreSQL, hosted by Supabase (free tier: no automatic backups, see Hosting Cost)</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
         <td>File storage</td>
-        <td>Supabase Storage (photos, CVs, event images)</td>
-        <td><span class="pill done">Configured</span></td>
+        <td>Cloudflare R2 (photos, documents)</td>
+        <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
-        <td>Video hosting</td>
-        <td>YouTube (external, embed-only)</td>
-        <td><span class="pill done">Configured</span></td>
-      </tr>
-      <tr>
-        <td>Calendar provider</td>
-        <td>Calendly</td>
-        <td><span class="pill done">Connected</span></td>
+        <td>Booking widget</td>
+        <td>Calendly, embedded on the page only, nothing server-side</td>
+        <td><span class="pill done">Live</span></td>
       </tr>
     </tbody>
   </table>
@@ -159,15 +155,33 @@
 
 <section id="pipeline">
   <h2><span class="n">02</span> Deploy Pipeline</h2>
-  <p>Every update pushed to the main branch on GitHub is automatically built and deployed to
-  production. The build checks types, runs the test suite, and applies any database changes before
-  going live, so a broken change doesn't reach visitors.</p>
+  <p>Every push to the main branch on GitHub builds the app, checks types, runs the test suite, and
+  applies any database changes. All of that happens before anything goes live, not after.
+  GitHub Actions then builds a Docker image and pushes it to a container registry. The server
+  pulls that image and restarts the container. It never builds anything itself, it only runs what
+  CI already built and tested. If the new container doesn't pass its health check, the pipeline
+  automatically puts the previous version back, so a bad deploy can't take the site down.</p>
+</section>
+
+<section id="edge">
+  <h2><span class="n">03</span> Cloudflare &amp; Caching</h2>
+  <p>The self-hosted deployment sits behind Cloudflare, which does three things:</p>
+  <ul>
+    <li><b>Caches public pages at the edge.</b> Most visitors get served straight from Cloudflare,
+    never touching the app server or the database. An admin edit clears that cache within a second
+    or two, not after some long wait.</li>
+    <li><b>Blocks login attack attempts.</b> Too many login tries too fast get stopped before they
+    even reach the server.</li>
+    <li><b>Runs a quick bot check</b> on the booking page, so the Calendly widget can't get spammed
+    by a script.</li>
+  </ul>
+  <p>None of this needs a paid Cloudflare plan. Everything here runs on the free tier.</p>
 </section>
 
 <section id="docs">
-  <h2><span class="n">03</span> This Site</h2>
-  <p>These project docs (Spec, Progress, Front-end, Back-end, Deployment) are hosted separately from
-  the application itself, on GitHub Pages, and update automatically whenever they change.</p>
+  <h2><span class="n">04</span> This Site</h2>
+  <p>These project docs (Spec, Progress, Front-end, Back-end, Deployment, Hosting Cost) are hosted
+  separately from the app itself, on GitHub Pages, and update whenever they change.</p>
 </section>
 
 </main>

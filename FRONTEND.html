@@ -105,9 +105,9 @@
     <a href="./hosting-cost.html">Hosting Cost</a>
   </div>
   <ol>
-    <li><a href="#live">Live Now</a></li>
+    <li><a href="#public">Public Site</a></li>
+    <li><a href="#admin">Admin Area</a></li>
     <li><a href="#stack">Stack</a></li>
-    <li><a href="#next">Up Next</a></li>
   </ol>
 </nav>
 
@@ -117,72 +117,51 @@
   <div class="sub">What visitors and the admin can see and use today.</div>
   <div class="meta">
     <span class="tag">Framework: Next.js 15</span>
-    <span class="tag">Status: In development</span>
+    <span class="tag">Status: Live</span>
   </div>
 </header>
 
-<section id="live">
-  <h2><span class="n">01</span> Live Now</h2>
+<section id="public">
+  <h2><span class="n">01</span> Public Site</h2>
+  <p>Every public page is live: Bio, Research, Publications, Research Groups, Upcoming Events, and
+  Make Appointment. Each one is server-rendered and cached, so pages load fast without a database
+  round trip on every visit.</p>
   <div class="twrap">
   <table>
-    <thead><tr><th>Screen</th><th>What it does</th><th>Status</th></tr></thead>
+    <thead><tr><th>Page</th><th>What it does</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
-        <td>Make Appointment — direct booking</td>
-        <td>Embedded scheduling widget for picking a live 30-minute slot. Matches light/dark theme,
-        resizes to fit the full calendar (no inner scrollbar), and shows a friendly message instead
-        of breaking if scheduling isn't configured.</td>
+        <td>Make Appointment</td>
+        <td>A quick bot check, then the embedded Calendly widget for picking an open slot. Matches
+        light/dark theme and resizes to fit the full calendar.</td>
+        <td><span class="pill done">Live</span></td>
+      </tr>
+      <tr>
+        <td>Bio / Research / Publications / Research Groups / Upcoming Events</td>
+        <td>All content-driven, editable from the admin dashboard.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
         <td>Theming</td>
-        <td>Light / dark / system, applied site-wide.</td>
-        <td><span class="pill done">Live</span></td>
-      </tr>
-      <tr>
-        <td>Language support</td>
-        <td>English by default; the app is structured to add more languages without rebuilding
-        pages.</td>
+        <td>Light, dark, or system, applied site-wide.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
     </tbody>
   </table>
   </div>
+</section>
+
+<section id="admin">
+  <h2><span class="n">02</span> Admin Area</h2>
+  <p>Login, dashboard, and CRUD screens for research, publications, research groups, team members,
+  appointments, and settings are all live. There's a single admin account, no public sign-up.</p>
 </section>
 
 <section id="stack">
-  <h2><span class="n">02</span> Stack</h2>
-  <p>Next.js 15, React 19, Tailwind CSS, shadcn/ui components, next-themes, next-intl. Forms will use
-  React Hook Form with the same validation rules as the server, so what the visitor sees matches what
-  actually gets accepted.</p>
-</section>
-
-<section id="next">
-  <h2><span class="n">03</span> Up Next</h2>
-  <div class="twrap">
-  <table>
-    <thead><tr><th>Screen</th><th>Depends on</th><th>Status</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>Appointment request form</td>
-        <td>Approved design</td>
-        <td><span class="pill inprogress">Awaiting design</span></td>
-      </tr>
-      <tr>
-        <td>Manage Appointments (admin)</td>
-        <td>Approved design</td>
-        <td><span class="pill inprogress">Awaiting design</span></td>
-      </tr>
-      <tr>
-        <td>Bio, Research, Publications, Research Groups, Upcoming Events</td>
-        <td>Content &amp; design</td>
-        <td><span class="pill planned">Planned</span></td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-  <blockquote>Backend for all of these already exists — building the screen is what's left once design
-  is ready. See <a href="./backend.html">Back-end</a> for what's already running behind them.</blockquote>
+  <h2><span class="n">03</span> Stack</h2>
+  <p>Next.js 15, React 19, Tailwind CSS v4, shadcn/ui components, next-themes. Forms use React Hook
+  Form with the same validation rules as the server, so what a visitor sees matches what actually
+  gets accepted. There is no translation layer; the site is English-only by design.</p>
 </section>
 
 </main>

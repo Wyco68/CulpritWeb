@@ -105,8 +105,10 @@
     <a href="./hosting-cost.html">Hosting Cost</a>
   </div>
   <ol>
-    <li><a href="#appointments">Appointment System</a></li>
-    <li><a href="#calendly">Calendar Integration</a></li>
+    <li><a href="#layers">How Requests Flow</a></li>
+    <li><a href="#appointments">Appointments</a></li>
+    <li><a href="#calendly">Calendly</a></li>
+    <li><a href="#caching">Caching</a></li>
     <li><a href="#security">Security &amp; Abuse Protection</a></li>
     <li><a href="#testing">Testing</a></li>
   </ol>
@@ -117,56 +119,118 @@
   <h1>Back-end</h1>
   <div class="sub">The server-side systems running behind the site today.</div>
   <div class="meta">
-    <span class="tag">Database: PostgreSQL (Neon)</span>
+    <span class="tag">Database: PostgreSQL (Supabase)</span>
     <span class="tag">Auth: Better Auth, single admin</span>
     <span class="tag">Status: Live</span>
   </div>
 </header>
 
+<section id="layers">
+  <h2><span class="n">01</span> How Requests Flow</h2>
+  <p>Every API call follows the same path: a route handler checks who's asking and whether the
+  input is valid, a service applies the actual business rules, and a repository is the only place
+  that talks to the database. Each layer only knows about the one below it. This keeps rules easy
+  to find: if it's about permissions or input shape, it's in the route handler; if it's a business
+  rule, it's in the service.</p>
+</section>
+
 <section id="appointments">
-  <h2><span class="n">01</span> Appointment System</h2>
-  <p>The full lifecycle of a meeting request is built and running: a request comes in, the admin
-  approves, declines, books, or cancels it, and the visitor gets an email at each step. Records are
-  never deleted — a declined or cancelled request stays on file. Every state change is written to an
-  audit log, so there's always a record of who did what and when.</p>
+  <h2><span class="n">02</span> Appointments</h2>
+  <p>There is no request-and-approve workflow. The admin creates an appointment directly from the
+  admin dashboard, that's it. An appointment can only move from "scheduled" to "cancelled", and
+  cancelling never deletes the row, it just marks it. The app doesn't send any email for
+  appointments; if a visitor books through the Calendly widget, Calendly sends its own confirmation
+  and that booking never becomes a row in this app's database at all. Every change made through the
+  admin, including a cancellation, gets written to an audit log in the same database transaction as
+  the change itself.</p>
 </section>
 
 <section id="calendly">
-  <h2><span class="n">02</span> Calendar Integration</h2>
-  <p>A secure, server-side connection to the scheduling provider (not exposed to visitors) that
-  supports:</p>
-  <ul>
-    <li>Reading the list of available meeting types and their scheduling links.</li>
-    <li>Reading scheduled meetings and their details.</li>
-    <li>Reading open availability.</li>
-    <li>Cancelling a meeting — this updates both the calendar and the appointment record together, so
-    they never fall out of sync.</li>
-    <li>Receiving real-time updates from the calendar provider, verified authentic and safe to
-    receive more than once without creating duplicate records.</li>
-  </ul>
-  <blockquote>One thing worth knowing: no calendar provider, on any plan, offers a way to
-  automatically create a booking from an approved request — that step is always a manual "book it
-  in the calendar" action by the admin. This isn't a shortcut we took; it's a limitation of the
-  provider itself.</blockquote>
+  <h2><span class="n">03</span> Calendly</h2>
+  <p>Calendly is embedded on the "Make Appointment" page and nowhere else. There is no server-side
+  connection to Calendly: no API token, no webhook, no syncing bookings back into this app's
+  database. A visitor books directly in the widget, Calendly handles the confirmation, and that's
+  the end of the app's involvement.</p>
+  <blockquote>If a Calendly booking should show up on the public "Upcoming Events" tab, the admin
+  adds it by hand. Calendly has no free-tier way to push a booking into another system
+  automatically, so this is a deliberate choice, not a missing feature.</blockquote>
+</section>
+
+<section id="caching">
+  <h2><span class="n">04</span> Caching</h2>
+  <p>Caching means keeping a saved copy of something so the next request doesn't have to redo the
+  work. Done carelessly it also means someone can see an old version of a page after it's changed,
+  so this runs through three layers, each with its own job: the visitor's browser, Cloudflare at
+  the edge, and Next.js on the server. A request only reaches the next layer down if the one above
+  it doesn't already have a fresh copy.</p>
+  <div class="twrap">
+  <table>
+    <thead><tr><th>Content</th><th>Browser</th><th>Cloudflare / server</th></tr></thead>
+    <tbody>
+      <tr><td>Images, JS, CSS files</td><td>1 year</td><td>1 year</td></tr>
+      <tr><td>Public pages (Bio, Research, etc.)</td><td>&mdash;</td><td>1 hour</td></tr>
+      <tr><td>Research / publications / profile / team-member data</td><td>5 minutes</td><td>1 hour</td></tr>
+      <tr><td>Upcoming-events data</td><td>1 minute</td><td>5 minutes</td></tr>
+      <tr><td>Anything behind admin login</td><td>never</td><td>never</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Upcoming events gets a shorter cache time on purpose: an appointment can slip from "upcoming"
+  into "in the past" while nobody's looking, so a shorter window limits how long a stale,
+  already-past event could keep showing.</p>
+  <p>The moment an admin save succeeds, the app clears its own server cache for the affected pages
+  right away, and, where set up, tells Cloudflare to drop its cached copy too. In practice a real
+  edit shows up within a second or two &mdash; the TTLs above are a safety net for the rare case
+  where content changes some other way that skips this process (a direct database edit, for
+  example), not the primary way freshness is kept.</p>
+  <blockquote>A subtlety worth knowing, because it caused a real bug: Next.js marks its responses
+  with a <code>Vary</code> header saying "this page can look different depending on certain
+  request headers," for the background fetch it does on client-side navigation. Cloudflare ignores
+  that header by default. Turning on edge caching without accounting for it would let a normal
+  page load and a background navigation fetch collide in the same cache slot. That was caught and
+  fixed by explicitly telling Cloudflare to keep those two request types in separate cache
+  entries &mdash; not something that would be obvious without checking.</blockquote>
 </section>
 
 <section id="security">
-  <h2><span class="n">03</span> Security &amp; Abuse Protection</h2>
+  <h2><span class="n">05</span> Security &amp; Abuse Protection</h2>
+
+  <h3>Rate limiting</h3>
+  <p>Two things are protected: the admin login, and admin save/edit/delete actions. Both go
+  through two layers. First, Cloudflare blocks more than 5 login attempts in 10 seconds at the
+  edge, before the request ever reaches the app server &mdash; this is the main defense. Behind
+  that, the app keeps its own backup counter (5 login attempts per minute, 30 admin actions per
+  minute) in case the Cloudflare rule is ever off or misconfigured. Two layers exist because
+  Cloudflare's free plan only allows one such rule per site; if that one rule ever fails, the app
+  still protects itself, just a bit more loosely. Public pages aren't rate-limited at all &mdash;
+  they're already served from cache, so visiting them repeatedly can't cause any harm.</p>
+
+  <h3>Turnstile — proving a visitor is a real person</h3>
+  <p>Turnstile is Cloudflare's bot check, and it protects exactly one thing here: the booking
+  calendar on the "Make Appointment" page. Calendly's free plan has no bot protection of its own,
+  so without this check a script could spam-book every open slot on the professor's real calendar.
+  The flow: the visitor's browser gets a one-time code from Cloudflare (usually instant and
+  invisible), the app's server takes that code and asks Cloudflare directly whether it's real, and
+  only once the server gets a yes does the actual booking widget appear. The client-side check
+  alone proves nothing &mdash; a fake one could be scripted too &mdash; which is why the
+  server-side confirmation is the part that actually gates anything. The code expires in 5 minutes
+  and works once, so it can't be captured and reused.</p>
+
+  <h3>Everything else</h3>
   <ul>
-    <li>Every public form submission is checked with a bot challenge and a rate limit, so the
-    appointment system can't be spammed.</li>
-    <li>All input is validated on the server, not just in the browser — a request can't skip
-    validation by bypassing the visible form.</li>
-    <li>Admin actions require a signed-in session; every admin endpoint checks it independently.</li>
-    <li>Secrets (database credentials, API keys) never reach the browser.</li>
+    <li>All input is validated on the server, not just in the browser. A request can't skip
+    validation by going around the visible form.</li>
+    <li>Every admin endpoint checks the login session on its own; nothing assumes an earlier check
+    already covered it.</li>
+    <li>Secrets like database credentials and API keys never reach the browser.</li>
   </ul>
 </section>
 
 <section id="testing">
-  <h2><span class="n">04</span> Testing</h2>
-  <p>Automated tests cover the appointment approval/decline/booking rules and the calendar
-  integration's request handling, so a future change that breaks one of those rules gets caught
-  before it reaches the live site.</p>
+  <h2><span class="n">06</span> Testing</h2>
+  <p>Automated tests (Vitest) cover the services, validation rules, and components, and run on every
+  push. A separate set of Playwright tests covers full browser flows but isn't wired into that
+  automatic check yet, so it has to be run by hand for now.</p>
 </section>
 
 </main>

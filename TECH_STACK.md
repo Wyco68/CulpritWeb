@@ -1,172 +1,150 @@
 # The Culprit — Technology Stack
 
-Aligned to [PROJECT_SPEC.md](PROJECT_SPEC.md). Each entry states what the technology does **in this
-project** — no generic product descriptions.
+Matches what's actually running today, not the original plan. See [CLAUDE.md](CLAUDE.md) and
+[PROJECT_SPEC.md](PROJECT_SPEC.md) for the full picture.
 
 ---
 
 ## Framework & language
 
 ### Next.js 15 (App Router)
-- Public site tabs: Bio, Research, Publications, Research Groups, Upcoming Events, Make Appointment.
-- Admin app: Login, Dashboard, content CRUD, Manage Appointments, Settings, Audit log.
-- Route Handlers are the API boundary (`auth → validate → service → response`); **no business logic
-  in handlers**.
-- Server Components render public content; SEO for the academic profile.
+- Public site: Bio, Research, Publications, Research Groups, Upcoming Events, Make Appointment.
+- Admin app: Login, Dashboard, content CRUD, Manage Appointments, Settings.
+- Route handlers are the only API boundary: check auth, validate input, call a service, respond.
+  No business logic lives in a route handler itself.
+- Public pages are Server Components, cached, and fast.
 
 ---
 
 ## UI layer
 
 ### Tailwind CSS v4
-- Responsive layouts for cards, forms, appointment tables, dashboard.
+Layouts for cards, forms, tables, and the admin dashboard.
 
 ### shadcn/ui
-- Buttons, Cards, Dialogs, Tables (appointment list), Inputs, Dropdowns, Toasts, Nav.
-- Status pills for appointment states: `pending · approved · declined · booked · cancelled`.
+Buttons, cards, dialogs, tables, inputs, dropdowns, toasts, nav.
 
 ### Lucide Icons
-- Nav, status badges, action buttons. Tree-shakeable.
+Nav and action icons. Tree-shakeable, so unused icons don't bloat the bundle.
 
 ### next-themes
-- Light / Dark / System.
+Light, dark, or system.
 
-### next-intl
-- English default; no hardcoded user-facing strings (spec non-functional requirement). Future
-  languages via translation files.
+There is no translation library. The site is English-only by design — see
+[ADR-006](docs/decisions/ADR-006-remove-i18n-and-locale-routing.md).
 
 ---
 
 ## Forms & validation
 
 ### React Hook Form
-- Appointment request form (name, email, research group, time, topic), Login, admin CRUD, Settings.
+Every admin form, plus login.
 
 ### Zod
-- **Server-side validation at every API boundary is the source of truth**; client copy is UX only.
-- One schema per module.
+Server-side validation is the source of truth at every API boundary. Client-side validation is
+just UX, it never replaces the server check. One schema per module.
 
 ### TanStack Query v5
-- Admin dashboard + Manage Appointments data fetching, caching, background refetch, loading/error
-  states.
+Data fetching, caching, and loading/error states in the admin dashboard.
 
 ---
 
 ## Data & backend
 
-### Prisma ORM
-- **Imported only in repositories.** CRUD for Profile, Research, Publications, Research Groups,
-  Appointments, Settings, AuditLog.
-- Migrations via `prisma migrate deploy` in CI; pooled `DATABASE_URL` for app, `DIRECT_URL` for
-  migrations.
+### Prisma ORM (v7, driver adapter)
+Only ever imported inside a repository, never anywhere else. Covers Profile, Research,
+Publications, Research Groups, Team Members, Appointments, Settings, AuditLog.
 
 ### PostgreSQL (Supabase)
-- Stores all entities + audit logs. **Not** photos/PDFs/videos (URLs/refs only).
-- Appointment records **never hard-deleted** — `declined`/`cancelled` are retained states.
-- Connection pooling mandatory in serverless (Supabase pgbouncer pooler for `DATABASE_URL`, direct
-  connection for `DIRECT_URL`/migrations). Accessed via `@prisma/adapter-pg`.
+Holds every table above. Files (photos, documents) are not stored here, only their URLs.
+Appointments are never hard-deleted: cancelling one just changes its status. Uses Supabase's
+pooled connection for normal queries and a direct connection for migrations, standard practice
+for a serverless-friendly setup.
 
 ### Better Auth
-- **Single admin, secure cookie sessions — not JWT.** Seeded from `ADMIN_EMAIL` /
-  `ADMIN_INITIAL_PASSWORD`. Gates all `/api/admin/*` routes.
+Single admin account, secure cookie sessions, not JWT. Seeded once from an initial admin email and
+password. Guards every `/api/admin/*` route.
 
 ---
 
-## Object storage (adapter)
+## File storage
 
-### Supabase Storage
-- Interface-based storage adapter (`src/modules/integrations/storage`), server-only, service-role
-  authenticated — bypasses RLS, is the only writer.
-- Buckets: `profile` · `research` · `publications` · `events` (public-read) and `documents`
-  (private, signed URLs only). DB stores only the path/URL reference (`photo_url`, etc.), never
-  binary file data.
----
-
-## Video hosting
-
-### YouTube
-- Videos are hosted externally on YouTube — never uploaded to or proxied through Supabase Storage.
-- DB stores only a YouTube video ID/URL reference; the `YouTubeVideo` component
-  (`src/modules/integrations/youtube`) renders a responsive `youtube-nocookie.com` embed.
----
-
-## Email
-
-### Resend + React Email
-- Transactional email on each appointment transition: received (`pending`/`booked`), approved,
-  declined, cancelled.
-- Templates authored as React components → HTML → sent via Resend.
+### Cloudflare R2
+S3-compatible storage for photos and documents. Server-only credentials; the app is the only thing
+that writes to it. The database stores just a URL reference, never the file itself. R2 replaced
+Supabase Storage in August 2026 — see
+[ADR-002](docs/decisions/ADR-002-object-storage-r2.md).
 
 ---
 
-## Scheduling integration
+## Scheduling
 
-### Calendly (embed + metadata only)
-- Embedded **free** widget on Make Appointment tab and admin booking step; default slot **30 min**.
-- **No webhooks / no sync / no paid auto-book** (spec NG1, NG2, F1 deferred).
-- Direct booking → status `booked` (`source=direct`). Approved requests booked **manually** by
-  admin, then **Mark booked** stores `calendly_event_ref`.
+### Calendly, embedded only
+The booking widget on the Make Appointment page. No server-side API connection at all, no webhook,
+no token. A booking made in the widget stays entirely on Calendly's side; it never becomes a row
+in this app's database. See [ADR-005](docs/decisions/ADR-005-calendly-embed-only.md) for why an
+earlier server-side integration was built and then removed.
 
 ---
 
-## Abuse protection
+## Bot protection & rate limiting
 
 ### Cloudflare Turnstile
-- Bot challenge on appointment request form and login. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` +
-  server-only `TURNSTILE_SECRET_KEY`.
+A quick, mostly invisible bot check in front of the Calendly widget only.
 
-### Upstash Redis
-- Rate limiting at the API edge on appointment + login endpoints (e.g. 5 requests/hour).
+### Cloudflare + an in-app fallback
+Login attempts are blocked at Cloudflare's edge (5 per 10 seconds) and again by a simple in-app
+counter behind that. No Redis, no external rate-limiting service, see
+[ADR-008](docs/decisions/ADR-008-cloudflare-rate-limiting.md) for the reasoning.
+
+---
+
+## Caching
+
+Public pages and their API routes are cached on the server (Next.js) and, on the self-hosted
+deployment, at Cloudflare's edge too. An admin save clears the relevant cache within a second or
+two. See [ADR-007](docs/decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md)
+for the full detail.
 
 ---
 
 ## Testing
 
-### Vitest
-- Unit tests: validation, services, appointment state machine, business logic.
-
-### React Testing Library
-- Component tests: forms, dialogs, buttons, status pills, user interactions.
+### Vitest + React Testing Library
+Unit and component tests, run on every push.
 
 ### Playwright
-- Config: `playwright.config.ts` (chromium project, `webServer` boots `npm run dev` against
-  `http://localhost:3000`, reuses an already-running dev server outside CI).
-- Covered today (`tests/e2e/`): public Make Appointment page render + Calendly embed
-  container/empty-state, admin login page client-side required-field validation.
-- Not yet covered — real gaps, not just unwritten cases: full appointment lifecycle (request →
-  approve → mark booked → email) and admin CRUD both require a seeded DB session/fixtures and
-  admin-authenticated flows that don't exist as e2e specs yet.
+Full-browser end-to-end tests. They exist and pass, but aren't wired into the automatic CI check
+yet, so they only run when someone runs them by hand.
 
 ---
 
-## Deployment(Changeable later)
+## Deployment
 
-### Vercel
-- Deploy, HTTPS, CDN, preview builds. CI gate `typecheck → lint → test`; `prisma migrate deploy` on
-  release. Security headers incl. CSP allowing Calendly frame origin (per env-deploy guide).
-- Alternative per Appendix 14.1: Cloudflare Pages/Workers + D1/Postgres + R2.
+Self-hosted VPS. A GitHub Actions pipeline builds a Docker image, pushes it to a container
+registry, and the server pulls and restarts the container. The server never builds anything
+itself. Sits behind Cloudflare (proxied DNS, edge caching, the WAF rate-limit rule above) and
+Caddy as the reverse proxy.
 
 ---
 
-## Architecture
+## Architecture, at a glance
 
 ```
-Users
-  │
-Vercel ──► Next.js 15
-  │          ├── Public tabs · Admin tabs · Calendly embed (client) · YouTube embed (client)
-  │          ├── Route Handlers (auth → validate → service → repository)
-  │          └── Better Auth (cookie session)
-  │
-  ├── Supabase
-  │     ├── PostgreSQL ── Profile · Research · Publications · Groups · Appointments · Settings · AuditLog
-  │     └── Storage ── profile/research/publications/events/documents buckets (URLs in DB)
-  ├── YouTube ── externally hosted videos; DB stores video ID/URL only
-  ├── Resend + React Email ── appointment lifecycle notifications
-  ├── Upstash Redis ── rate limiting
-  ├── Turnstile ── bot defense
-  └── Calendly (free embed) ── direct booking + calendly_event_ref
+Visitor / Admin
+      │
+      ▼
+Cloudflare (self-hosted deployment only) — edge cache, rate-limit rule, bot check
+      │
+      ▼
+Next.js 15 — route handler → service → repository
+      │
+      ├── Supabase Postgres — all app data + audit log
+      ├── Cloudflare R2 — photos, documents
+      ├── Calendly — embedded booking widget, no server connection
+      └── Better Auth — single-admin cookie session
 ```
 
 Modules: `auth · profile · research · publications · research-groups · appointments · settings ·
-notifications · integrations · shared`.
+integrations · shared`. There is no `notifications` module, that idea was dropped along with the
+old appointment-request workflow.

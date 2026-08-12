@@ -120,20 +120,20 @@
 <main>
 <header class="doc">
   <h1>Development Progress</h1>
-  <div class="sub">Status update for "The Culprit" — personal academic website &amp; appointment system.</div>
+  <div class="sub">Status update for "The Culprit," a personal academic website and appointment
+  system.</div>
   <div class="meta">
-    <span class="tag">Period: 2026-07-26 &ndash; 2026-08-02</span>
-    <span class="tag">Status: In development</span>
-    <span class="tag">Environment: Live on Vercel</span>
+    <span class="tag">Period: 2026-07-26 to 2026-08-12</span>
+    <span class="tag">Status: Live</span>
+    <span class="tag">Environment: self-hosted VPS</span>
   </div>
 </header>
 
 <section id="overview">
   <h2><span class="n">01</span> Overview</h2>
-  <p>Backend systems for the appointment feature are built and deployed. Visitors can already book a
-  30-minute meeting directly through the live scheduling widget on the site. The admin-facing review
-  workflow (approve/decline requests) and the public content pages (Bio, Research, Publications) are
-  next, pending the visual design for those screens.</p>
+  <p>The site is finished and live. Every public page and every admin screen described in the spec
+  is built and working, running in production on a self-hosted server behind Cloudflare. What's
+  left below is smaller follow-up work, not core features.</p>
 </section>
 
 <section id="delivered">
@@ -143,38 +143,37 @@
     <thead><tr><th>Area</th><th>What it does</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
-        <td>Direct booking</td>
-        <td>Visitors pick an open 30-minute slot on the live "Make Appointment" page and get an
-        instant confirmation — no admin approval needed.</td>
+        <td>Public site</td>
+        <td>Bio, Research, Publications, Research Groups, Upcoming Events, and Make Appointment, all
+        editable from the admin dashboard.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
-        <td>Appointment request workflow</td>
-        <td>Full backend for the review path: a request is recorded, the admin can approve, decline,
-        book, or cancel it, and the visitor is emailed at every step. Cancelled/declined requests are
-        kept on record, never deleted.</td>
-        <td><span class="pill done">Backend ready</span></td>
+        <td>Appointments</td>
+        <td>The admin creates appointments directly. No request/approve workflow, and appointments
+        are never deleted, only marked cancelled.</td>
+        <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
-        <td>Calendar management (admin)</td>
-        <td>Server-side connection to the scheduling provider so the admin side can list event types,
-        view booked meetings, and cancel a meeting — kept in sync with the appointment record
-        automatically.</td>
-        <td><span class="pill done">Backend ready</span></td>
-      </tr>
-      <tr>
-        <td>Spam &amp; abuse protection</td>
-        <td>Bot-challenge and request-rate limits on every public form submission.</td>
+        <td>Booking widget</td>
+        <td>Calendly, embedded on the page, with a quick bot check first so it can't be spammed.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
         <td>Admin login</td>
-        <td>Secure single-admin sign-in protecting every management action.</td>
+        <td>Single-admin sign-in protecting every management action.</td>
+        <td><span class="pill done">Live</span></td>
+      </tr>
+      <tr>
+        <td>Caching &amp; rate limiting</td>
+        <td>Public pages cached at the server and, on the self-hosted deployment, at Cloudflare's
+        edge too. Login attempts are rate-limited at two layers.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
       <tr>
         <td>Hosting &amp; deployment</td>
-        <td>Production environment configured and deploying automatically from every update.</td>
+        <td>A GitHub Actions pipeline builds a Docker image and rolls it out to the self-hosted
+        server automatically on every push to main.</td>
         <td><span class="pill done">Live</span></td>
       </tr>
     </tbody>
@@ -183,27 +182,29 @@
 </section>
 
 <section id="next">
-  <h2><span class="n">03</span> Up Next</h2>
+  <h2><span class="n">03</span> Follow-up Work</h2>
   <div class="twrap">
   <table>
     <thead><tr><th>Item</th><th>Notes</th><th>Status</th></tr></thead>
     <tbody>
       <tr>
-        <td>Appointment request form (visitor-facing)</td>
-        <td>The screen visitors use to submit a request instead of booking directly. Backend is ready
-        — waiting on the approved visual design before building the screen itself.</td>
-        <td><span class="pill inprogress">Awaiting design</span></td>
+        <td>Cloudflare edge purge on save</td>
+        <td>Built and tested, but needs one more credential added to the server before it turns on
+        in production. Until then, edge-cached pages still refresh, just within their normal cache
+        window (5 minutes to 1 hour) instead of instantly.</td>
+        <td><span class="pill inprogress">Needs setup</span></td>
       </tr>
       <tr>
-        <td>Manage Appointments (admin dashboard)</td>
-        <td>The table where the admin approves/declines/books requests. Backend is ready — same
-        dependency on design.</td>
-        <td><span class="pill inprogress">Awaiting design</span></td>
+        <td>End-to-end tests in CI</td>
+        <td>The Playwright test suite exists and passes, it just isn't run automatically on every
+        push yet.</td>
+        <td><span class="pill inprogress">Not wired up</span></td>
       </tr>
       <tr>
-        <td>Public content pages</td>
-        <td>Bio, Research, Publications, Research Groups, Upcoming Events.</td>
-        <td><span class="pill planned">Planned</span></td>
+        <td>Privacy / data retention policy</td>
+        <td>Appointment records are kept indefinitely today. No policy page or deletion process
+        exists yet.</td>
+        <td><span class="pill planned">Open question</span></td>
       </tr>
     </tbody>
   </table>
@@ -211,19 +212,15 @@
 </section>
 
 <section id="decisions">
-  <h2><span class="n">04</span> Decisions Needed</h2>
-  <p>A few open questions worth a quick decision so the remaining work isn't blocked later:</p>
+  <h2><span class="n">04</span> Open Questions</h2>
   <ul>
-    <li>Will a delegated assistant ever need admin access, or is a single admin account sufficient
-    long-term?</li>
-    <li>Preferred email sender/provider for appointment notifications?</li>
-    <li>Should publications be entered manually, or imported from an existing list (e.g. BibTeX/ORCID)?</li>
-    <li>The scheduling provider has no option, on any plan, to auto-create a booking from an approved
-    request — the admin always finalizes those manually in the scheduler. Confirming this is
-    acceptable, or worth exploring alternatives, would be good to settle now.</li>
+    <li>Should appointment records eventually be deleted or archived after some amount of time?</li>
+    <li>Should publications be entered by hand going forward, or imported from an existing list
+    (BibTeX, ORCID)?</li>
+    <li>Is the current single-admin model enough long-term, or will a second admin account ever be
+    needed?</li>
   </ul>
-  <blockquote>Full technical detail for all of the above lives in the <a href="./index.html">Project
-  Spec</a>.</blockquote>
+  <blockquote>Full technical detail lives in the <a href="./index.html">Project Spec</a>.</blockquote>
 </section>
 
 </main>
