@@ -47,6 +47,10 @@ jobs:
           cache: npm
 
       - run: npm ci --legacy-peer-deps
+      # No postinstall hook generates the Prisma client — lint/typecheck/test all import types
+      # from it, so a fresh checkout fails without this (caught the hard way: passed locally only
+      # because a stale generated client already existed on disk from earlier `npm run build`).
+      - run: npm run db:generate
 
       - run: npm run lint
       - run: npm run typecheck
