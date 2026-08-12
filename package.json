@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "doppler run -- prisma migrate deploy",
     "dev": "doppler run -- next dev",
-    "build": "doppler run -- prisma generate && doppler run -- next build",
+    "build": "prisma generate && next build",
     "start": "doppler run -- next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "db:generate": "prisma generate",
     "db:migrate": "doppler run -- prisma migrate dev",
-    "db:deploy": "doppler run -- prisma migrate deploy",
+    "db:deploy": "prisma migrate deploy",
     "db:seed": "doppler run -- tsx prisma/seed.ts",
     "db:seed:demo": "doppler run -- tsx prisma/seed-demo.ts",
     "docs:search": "node scripts/docs-search.mjs"

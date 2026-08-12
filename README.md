@@ -44,6 +44,12 @@ You need at minimum a Supabase Postgres connection (`DATABASE_URL`/`DIRECT_URL`)
 is optional — each integration no-ops gracefully when its env vars are unset, so local dev never
 gets blocked waiting on a third-party credential.
 
+`build` and `db:deploy` are deliberately NOT Doppler-wrapped: Next loads `.env.local` on its own,
+and `prisma.config.ts` loads it for the Prisma CLI too, so both commands work with or without
+Doppler installed. This also matters in CI/Docker, which run these two exact scripts with env vars
+injected directly (GitHub Actions secrets, BuildKit secret mounts) — neither environment has the
+Doppler CLI, so wrapping them would break the real deploy pipeline.
+
 ```bash
 npm run build        # prisma generate && next build
 npm run typecheck
