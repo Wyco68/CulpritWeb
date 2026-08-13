@@ -12,11 +12,10 @@
   --border: hsl(220 13% 91%);
   --accent: hsl(190 90% 30%);
   --accent-foreground: hsl(0 0% 100%);
-  /* Fixed brand band (site header/hero + active-tab underline surface), matching the Figma
-     prototype's #0c1a2e/#112240 header — a constant navy identity element distinct from the
-     light page background used everywhere else. */
-  --navy: hsl(215 59% 11%);
-  --navy-foreground: hsl(210 20% 92%);
+  /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
+     element distinct from the light page background used everywhere else. */
+  --navy: hsl(190 85% 88%);
+  --navy-foreground: hsl(215 59% 15%);
   --destructive: hsl(3 72% 42%);
   --destructive-foreground: hsl(0 0% 100%);
   --ring: hsl(190 90% 30%);

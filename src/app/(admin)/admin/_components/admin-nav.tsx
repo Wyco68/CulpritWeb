@@ -31,10 +31,8 @@ export function AdminNav() {
                 href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium tracking-tight text-navy-foreground/65 transition-colors hover:text-navy-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  active
-                    ? 'border-accent font-semibold text-navy-foreground'
-                    : 'border-transparent',
+                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold tracking-tight text-navy-foreground transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                  active ? 'border-accent font-bold text-accent' : 'border-transparent',
                 )}
               >
                 {label}

@@ -34,7 +34,10 @@ describe('AdminLayout (server guard)', () => {
   });
 
   it('renders the admin shell when a session is present, without redirecting', async () => {
-    requireAdminMock.mockResolvedValue({ ok: true, data: { userId: '1', email: 'admin@example.com' } });
+    requireAdminMock.mockResolvedValue({
+      ok: true,
+      data: { userId: '1', email: 'admin@example.com', name: 'Admin User' },
+    });
     const { default: AdminLayout } = await import('../layout');
 
     const result = await AdminLayout({ children: 'content' });
