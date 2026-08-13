@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AdminHeader adminEmail={session.data.email} />
+      <AdminHeader adminName={session.data.name} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
     </div>
   );

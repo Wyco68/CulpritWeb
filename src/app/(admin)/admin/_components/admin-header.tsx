@@ -6,7 +6,7 @@ import { AdminNav } from './admin-nav';
 // The admin chrome's navy hero band — deliberately the same `--navy` brand surface as the public
 // site header (per the Figma "Admin View" prototype) so the two apps read as one product, not two
 // disconnected shells.
-export async function AdminHeader({ adminEmail }: { adminEmail: string }) {
+export async function AdminHeader({ adminName }: { adminName: string }) {
   return (
     <header className="bg-navy text-navy-foreground">
       <div className="mx-auto max-w-6xl px-6 pt-6">
@@ -20,7 +20,7 @@ export async function AdminHeader({ adminEmail }: { adminEmail: string }) {
             </span>
             <span className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">The Culprit — Admin</span>
-              <span className="text-xs text-navy-foreground/60">{adminEmail}</span>
+              <span className="text-xs font-bold tracking-wide text-accent">{adminName}</span>
             </span>
           </Link>
 

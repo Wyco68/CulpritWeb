@@ -2,12 +2,12 @@ import { getUpcomingEventsService, toAppointmentView } from '@/modules/appointme
 import { mapResult } from '@/modules/shared/lib/result';
 import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-response';
 
-// Public: upcoming events (admin-declared appointments, `scheduled` and in the future), gated by
-// the admin's upcoming_events_visible setting. Never 403s — when the setting is off this returns
-// 200 with `{ visible: false, events: [] }` so the public tab can render an explicit "not shown" state.
-// ISR-style route cache: purged by `revalidatePath('/api/events/upcoming')` on admin appointment/
-// settings writes (see modules/shared/lib/revalidate). Shorter 300s ceiling (vs. the usual 3600s)
-// because "upcoming" is time-sensitive — a scheduled appointment can pass into the past between
+// Public: upcoming events — admin-declared appointments that are `scheduled`, in the future, and
+// individually opted into public visibility (`isPublic`, admin-toggled per row). Always 200 with
+// `{ events: [] }` when there are none to show, never a 403/empty-section flag.
+// ISR-style route cache: purged by `revalidatePath('/api/events/upcoming')` on admin appointment
+// writes (see modules/shared/lib/revalidate). Shorter 300s ceiling (vs. the usual 3600s) because
+// "upcoming" is time-sensitive — a scheduled appointment can pass into the past between
 // invalidations, so this bounds how long a stale-but-now-past event could still be served.
 // Browser/edge TTLs mirror the "frequently changing public data" tier — shorter than the other
 // public GET routes for the same time-sensitivity reason as the 300s `revalidate` above.
@@ -18,7 +18,6 @@ export async function GET() {
     const result = await getUpcomingEventsService().getUpcomingEvents();
     return respondPublicCache(
       mapResult(result, (data) => ({
-        visible: data.visible,
         events: data.events.map(toAppointmentView),
       })),
       { browserTtl: 60, edgeTtl: 300, staleWhileRevalidate: 60 },

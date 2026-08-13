@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-11
+last_updated: 2026-08-13
 related_modules: [appointments, auth, integrations, shared]
-related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008]
+related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008, ADR-010]
 ---
 
 # Backend architecture
@@ -28,7 +28,10 @@ rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decid
 | GET | `/api/admin/appointments` | List, optional `?status=` filter |
 | POST | `/api/admin/appointments` | Declare directly → `scheduled` |
 | PUT | `/api/admin/appointments/{id}` | Edit a `scheduled` appointment; `409` if cancelled |
+| DELETE | `/api/admin/appointments/{id}` | Hard-delete, any status, audited before removal (ADR-010) |
 | POST | `/api/admin/appointments/{id}/cancel` | `scheduled → cancelled` + required reason; `409` if already cancelled |
+| POST | `/api/admin/appointments/{id}/reschedule` | `scheduled → scheduled`, `scheduledAt` only; `409` if not `scheduled` (ADR-010) |
+| PATCH | `/api/admin/appointments/{id}/visibility` | Toggle `isPublic`; no status restriction (ADR-010) |
 
 **No public appointment-writing endpoint exists** (`POST /api/appointments` was removed
 outright) and **no Calendly integration route exists** (no `/api/integrations/calendly/*`) — see
@@ -42,7 +45,6 @@ outright) and **no Calendly integration route exists** (no `/api/integrations/ca
 | POST/GET | `/api/auth/[...all]` — Better Auth's own handler (login/logout/session) |
 | PUT | `/api/admin/profile`, POST `/api/admin/profile/photo` |
 | CRUD | `/api/admin/research[/{id}]`, `/api/admin/publications[/{id}]`, `/api/admin/groups[/{id}]`, `/api/admin/team-members[/{id}]` |
-| PUT | `/api/admin/settings` |
 
 ### Bot-defense edge
 

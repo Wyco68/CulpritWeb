@@ -216,9 +216,10 @@ async function seed() {
 
   if ((await prisma.appointment.count()) === 0) {
     // Every row here is what the admin would type into "Add appointment" by hand — there is no
-    // Calendly-sourced path anymore. Mixed statuses on purpose: the four `scheduled` rows are
-    // what the public Upcoming Events tab lists; the two `cancelled` rows exercise the status
-    // pill / cancellation reason without being deletable.
+    // Calendly-sourced path anymore. Mixed statuses on purpose: three of the four `scheduled`
+    // rows are `isPublic: true` (what the public Upcoming Events tab lists), one is kept private
+    // to demonstrate the toggle; the two `cancelled` rows exercise the status pill / cancellation
+    // reason as retained (soft-cancelled), never-deleted seed data.
     await prisma.appointment.createMany({
       data: [
         {
@@ -228,6 +229,7 @@ async function seed() {
           scheduledAt: daysFromNow(4, 10),
           topic: 'Collaboration on post-quantum key rotation tooling.',
           status: 'scheduled',
+          isPublic: true,
         },
         {
           requesterName: 'Daniel Okonkwo',
@@ -236,6 +238,7 @@ async function seed() {
           scheduledAt: daysFromNow(9, 14),
           topic: 'Reproducible build attestations for a national registry.',
           status: 'scheduled',
+          isPublic: true,
         },
         {
           requesterName: 'Lena Fischer',
@@ -244,6 +247,7 @@ async function seed() {
           scheduledAt: daysFromNow(16, 11),
           topic: 'Joint study on warning comprehension in banking apps.',
           status: 'scheduled',
+          isPublic: true,
         },
         {
           requesterName: 'Omar Haddadi',
@@ -252,6 +256,7 @@ async function seed() {
           scheduledAt: daysFromNow(6, 9),
           topic: 'MSc supervision enquiry.',
           status: 'scheduled',
+          isPublic: false,
         },
         {
           requesterName: 'Grace Adeyemi',
@@ -271,18 +276,12 @@ async function seed() {
         },
       ],
     });
-    console.log('appointments: 6 created (4 scheduled + 2 cancelled)');
+    console.log(
+      'appointments: 6 created (4 scheduled — 3 public, 1 private — + 2 cancelled)',
+    );
   } else {
     console.log('appointments: rows already present — skipped');
   }
-
-  // Upcoming Events defaults to hidden; turn it on so the seeded events are actually visible.
-  await prisma.setting.upsert({
-    where: { key: 'upcoming_events_visible' },
-    create: { key: 'upcoming_events_visible', value: true },
-    update: { value: true },
-  });
-  console.log('settings: upcoming events visible');
 }
 
 const DEMO_APPOINTMENT_NAMES = [
@@ -319,7 +318,7 @@ async function undo() {
   console.log(
     `undo: ${research.count} research, ${publications.count} publications, ${groups.count} groups, ` +
       `${members.count} team members, ${appointments.count} appointments removed. ` +
-      'Profile and settings left as-is (edit them in the admin UI).',
+      'Profile left as-is (edit it in the admin UI).',
   );
 }
 

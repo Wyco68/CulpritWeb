@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
-related_modules: [appointments, profile, research, publications, research-groups, settings, auth]
-related_decisions: [ADR-001, ADR-004]
+last_updated: 2026-08-13
+related_modules: [appointments, profile, research, publications, research-groups, auth]
+related_decisions: [ADR-001, ADR-004, ADR-010]
 ---
 
 # Database
@@ -32,8 +32,8 @@ related_decisions: [ADR-001, ADR-004]
 | `Publication` | Publications | `link` nullable (conference/book-chapter entries often have no stable URL). |
 | `ResearchGroup` | Research groups | Has-many `TeamMember`. `members` JSON blob was **removed** — replaced by the relational entity below. |
 | `TeamMember` | Researchers & visiting professors | `researchGroupId` nullable FK (`onDelete: SetNull`) — a member may be unaffiliated. |
-| `Appointment` | Admin-declared appointments | See below — deliberately minimal after the 2026-08-08 rewrite. |
-| `Setting` | Key/value flags | Currently only `upcoming_events_visible`. |
+| `Appointment` | Admin-declared appointments | See below — minimal after the 2026-08-08 rewrite, extended 2026-08-13 (ADR-010) with `isPublic` + hard delete + reschedule. |
+| ~~`Setting`~~ | ~~Key/value flags~~ | **Deleted 2026-08-13 (ADR-010).** Held one key, `upcoming_events_visible`; replaced by `Appointment.isPublic`. |
 | `User`/`Session`/`Account`/`Verification` | Better Auth's own tables | Owned by Better Auth's Prisma adapter — **never query these from domain code**; only `src/modules/auth/auth.ts` hands the client to the adapter. |
 | `AuditLog` | Append-only audit trail | Written by repositories, not services — see [architecture/backend.md](backend.md#audit-logging). |
 
@@ -47,10 +47,11 @@ model Appointment {
   requesterName  String
   requesterEmail String?           // informational only — no email is ever sent for this
   researchGroup  String?
-  scheduledAt    DateTime
+  scheduledAt    DateTime          // changeable via reschedule (scheduled -> scheduled)
   topic          String?
   status         AppointmentStatus @default(scheduled)
   cancelReason   String?
+  isPublic       Boolean           @default(false) // drives public Upcoming Events listing (ADR-010)
   createdAt      DateTime
   updatedAt      DateTime
 }
@@ -61,6 +62,11 @@ model Appointment {
 `calendlyEventUri`/`calendlyInviteeUri`/`calendlyEventTypeUri`/`meetingUrl`/`cancelledAt`,
 `requestedTime` (renamed `scheduledAt`, now admin-set exactly), `cancelToken` (no visitor
 self-cancel flow exists). See [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md).
+
+**Added 2026-08-13** ([ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md)):
+`isPublic` (per-row Upcoming Events visibility, replaces the deleted `Setting` model); hard delete
+(`delete()` on the repository/service, any status, audited via `AuditLog` before removal); reschedule
+(`scheduled -> scheduled`, `scheduledAt`-only, audited).
 
 ## Conventions
 
@@ -82,20 +88,26 @@ erDiagram
     ADMIN ||--o{ APPOINTMENT : "declares directly"
 ```
 
-No `Setting` governs appointment creation — `Setting` today only gates public Upcoming Events
-visibility.
+There is no `Setting` model anymore (deleted 2026-08-13, ADR-010) — public Upcoming Events
+visibility is `Appointment.isPublic`, a column on the entity itself.
 
 ## Appointment status transitions
 
 ```mermaid
 stateDiagram-v2
     [*] --> scheduled : admin declares an appointment directly
+    scheduled --> scheduled : admin reschedules (scheduledAt only)
     scheduled --> cancelled : admin cancels (reason required)
     cancelled --> [*]
 ```
 
-`cancelled` is terminal but **retained** — no row is ever hard-deleted. Any other transition
-attempt (including cancelling an already-cancelled row) → `ConflictError` → `409`.
+`cancelled` is terminal but **retained** (soft) — the cancel action alone never deletes a row. Any
+illegal transition attempt (cancelling/rescheduling an already-cancelled row) → `ConflictError` →
+`409`.
+
+**Hard delete (2026-08-13, ADR-010):** separate admin action, not part of the state machine above —
+any row, any status, can be permanently deleted. `AuditLog` captures the full before-state before
+the row is removed.
 
 ## Migration strategy
 

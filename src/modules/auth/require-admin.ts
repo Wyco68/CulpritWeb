@@ -6,6 +6,7 @@ import { auth } from './auth';
 export type AdminSession = {
   userId: string;
   email: string;
+  name: string;
 };
 
 /**
@@ -19,5 +20,5 @@ export type AdminSession = {
 export async function requireAdmin(): Promise<Result<AdminSession, UnauthorizedError>> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return err(new UnauthorizedError());
-  return ok({ userId: session.user.id, email: session.user.email });
+  return ok({ userId: session.user.id, email: session.user.email, name: session.user.name });
 }

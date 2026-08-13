@@ -6,12 +6,16 @@ import type { Appointment } from './appointment.types';
 import type {
   CancelAppointmentInput,
   CreateAppointmentInput,
+  RescheduleAppointmentInput,
   UpdateAppointmentInput,
+  UpdateAppointmentVisibilityInput,
 } from './appointment.schema';
 
 // No approve/decline/book review queue, and no Calendly sync: an appointment exists ONLY because
-// the admin declared it directly. The one remaining transition, `scheduled -> cancelled`, is
-// enforced HERE and only here. Cancelled records are retained (never hard-deleted).
+// the admin declared it directly. The transitions `scheduled -> cancelled` (cancel) and
+// `scheduled -> scheduled` (reschedule: `scheduledAt` only) are enforced HERE and only here.
+// Hard delete is a separate, explicit, audited admin action — not a lifecycle transition, so it
+// carries no status restriction (see `delete` below).
 //
 // No notification of any kind is sent from this service. A visitor who books through the Calendly
 // embed gets Calendly's own confirmation email, entirely outside this app — see
@@ -30,6 +34,21 @@ export interface AppointmentService {
   update(id: string, input: UpdateAppointmentInput, actor: string): Promise<Result<Appointment>>;
   /** `scheduled -> cancelled`. 409 if it is already cancelled. */
   cancel(id: string, input: CancelAppointmentInput, actor: string): Promise<Result<Appointment>>;
+  /** `scheduled -> scheduled`: changes `scheduledAt` only. 409 if not currently scheduled. */
+  reschedule(
+    id: string,
+    input: RescheduleAppointmentInput,
+    actor: string,
+  ): Promise<Result<Appointment>>;
+  /** Toggle whether an appointment is shown on the public Upcoming Events tab. */
+  updateVisibility(
+    id: string,
+    input: UpdateAppointmentVisibilityInput,
+    actor: string,
+  ): Promise<Result<Appointment>>;
+  /** Hard-delete an appointment, audited (before-state) first. Not a lifecycle transition — any
+   *  status may be deleted. 404 if it doesn't exist. */
+  delete(id: string, actor: string): Promise<Result<void>>;
   list(filter?: ListAppointmentsFilter): Promise<Result<Appointment[]>>;
 }
 
@@ -75,6 +94,7 @@ export function createAppointmentService(deps: AppointmentServiceDeps): Appointm
             topic: input.topic ?? null,
           },
           audit: { actor, action: 'appointment.update' },
+          expectedStatus: 'scheduled',
         });
         log.info('appointment_updated', { id, actor });
         return ok(updated);
@@ -95,9 +115,72 @@ export function createAppointmentService(deps: AppointmentServiceDeps): Appointm
           id,
           data: { status: 'cancelled', cancelReason: input.reason },
           audit: { actor, action: 'appointment.cancel', metadata: { from: current.status } },
+          expectedStatus: 'scheduled',
         });
         log.info('appointment_cancelled', { id, actor });
         return ok(updated);
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async reschedule(id, input, actor) {
+      try {
+        const current = await repository.findById(id);
+        if (!current) return err(new NotFoundError('Appointment not found.'));
+        if (current.status !== 'scheduled') {
+          return err(new ConflictError('Only a scheduled appointment can be rescheduled.'));
+        }
+
+        const updated = await repository.updateWithAudit({
+          id,
+          data: { scheduledAt: input.scheduledAt },
+          audit: {
+            actor,
+            action: 'appointment.reschedule',
+            metadata: { from: current.scheduledAt, to: input.scheduledAt },
+          },
+          expectedStatus: 'scheduled',
+        });
+        log.info('appointment_rescheduled', { id, actor });
+        return ok(updated);
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async updateVisibility(id, input, actor) {
+      try {
+        const current = await repository.findById(id);
+        if (!current) return err(new NotFoundError('Appointment not found.'));
+
+        const updated = await repository.updateWithAudit({
+          id,
+          data: { isPublic: input.isPublic },
+          audit: {
+            actor,
+            action: 'appointment.update_visibility',
+            metadata: { from: current.isPublic, to: input.isPublic },
+          },
+        });
+        log.info('appointment_visibility_updated', { id, actor, isPublic: input.isPublic });
+        return ok(updated);
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async delete(id, actor) {
+      try {
+        const current = await repository.findById(id);
+        if (!current) return err(new NotFoundError('Appointment not found.'));
+
+        await repository.deleteWithAudit({
+          id,
+          audit: { actor, action: 'appointment.delete', metadata: { before: current } },
+        });
+        log.info('appointment_deleted', { id, actor });
+        return ok(undefined);
       } catch (error) {
         return err(toAppError(error));
       }

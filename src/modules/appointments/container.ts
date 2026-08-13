@@ -1,4 +1,3 @@
-import { isUpcomingEventsVisible } from '@/modules/settings';
 import { PrismaAppointmentRepository } from './appointment.repository';
 import { createAppointmentService, type AppointmentService } from './appointment.service';
 import {
@@ -24,7 +23,6 @@ export function getUpcomingEventsService(): UpcomingEventsService {
   if (!cachedUpcomingEvents) {
     cachedUpcomingEvents = createUpcomingEventsService({
       appointmentService: getAppointmentService(),
-      isUpcomingEventsVisible,
     });
   }
   return cachedUpcomingEvents;

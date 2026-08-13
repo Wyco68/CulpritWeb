@@ -14,6 +14,7 @@ class FakeRepository implements AppointmentRepository {
   store = new Map<string, Appointment>();
   audits: (AuditContext & { entityId: string })[] = [];
   updateCalls = 0;
+  deleteCalls = 0;
   private seq = 0;
 
   seed(appointment: Appointment) {
@@ -41,6 +42,7 @@ class FakeRepository implements AppointmentRepository {
       topic: input.data.topic ?? null,
       status: 'scheduled',
       cancelReason: null,
+      isPublic: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -66,11 +68,19 @@ class FakeRepository implements AppointmentRepository {
       topic: input.data.topic !== undefined ? input.data.topic : current.topic,
       status: input.data.status ?? current.status,
       cancelReason: input.data.cancelReason !== undefined ? input.data.cancelReason : current.cancelReason,
+      isPublic: input.data.isPublic !== undefined ? input.data.isPublic : current.isPublic,
       updatedAt: new Date('2026-08-02T01:00:00Z'),
     };
     this.store.set(input.id, updated);
     this.audits.push({ ...input.audit, entityId: input.id });
     return { ...updated };
+  }
+
+  async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
+    this.deleteCalls++;
+    if (!this.store.has(input.id)) throw new Error('not found');
+    this.audits.push({ ...input.audit, entityId: input.id });
+    this.store.delete(input.id);
   }
 }
 
@@ -93,6 +103,7 @@ function seedAppointment(repository: FakeRepository, overrides: Partial<Appointm
     topic: 'Intro call',
     status: 'scheduled',
     cancelReason: null,
+    isPublic: false,
     createdAt: new Date('2026-08-02T00:00:00Z'),
     updatedAt: new Date('2026-08-02T00:00:00Z'),
     ...overrides,
@@ -172,5 +183,102 @@ describe('cancel', () => {
     const result = await service.cancel('missing', { reason: 'x' }, 'admin:1');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe('not_found');
+  });
+});
+
+describe('reschedule', () => {
+  it('scheduled → scheduled, changes scheduledAt only, audited', async () => {
+    const { repository, service } = build();
+    seedAppointment(repository, { topic: 'Keep me' });
+    const result = await service.reschedule(
+      'apt_seed',
+      { scheduledAt: new Date('2026-09-05T12:00:00Z') },
+      'admin:1',
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.scheduledAt).toEqual(new Date('2026-09-05T12:00:00Z'));
+    expect(result.data.status).toBe('scheduled');
+    expect(result.data.topic).toBe('Keep me');
+    expect(repository.audits.at(-1)?.action).toBe('appointment.reschedule');
+  });
+
+  it('rejects rescheduling a cancelled appointment → 409, no side effects', async () => {
+    const { repository, service } = build();
+    seedAppointment(repository, { status: 'cancelled' });
+    const result = await service.reschedule(
+      'apt_seed',
+      { scheduledAt: new Date('2026-09-05T12:00:00Z') },
+      'admin:1',
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe('conflict');
+    expect(repository.updateCalls).toBe(0);
+  });
+
+  it('reschedule on missing id → NotFound (404)', async () => {
+    const { service } = build();
+    const result = await service.reschedule(
+      'missing',
+      { scheduledAt: new Date('2026-09-05T12:00:00Z') },
+      'admin:1',
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe('not_found');
+  });
+});
+
+describe('updateVisibility', () => {
+  it('toggles isPublic, audited', async () => {
+    const { repository, service } = build();
+    seedAppointment(repository, { isPublic: false });
+    const result = await service.updateVisibility('apt_seed', { isPublic: true }, 'admin:1');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.isPublic).toBe(true);
+    expect(repository.audits.at(-1)?.action).toBe('appointment.update_visibility');
+  });
+
+  it('works on a cancelled appointment too (no status restriction)', async () => {
+    const { repository, service } = build();
+    seedAppointment(repository, { status: 'cancelled', isPublic: false });
+    const result = await service.updateVisibility('apt_seed', { isPublic: true }, 'admin:1');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.isPublic).toBe(true);
+  });
+
+  it('visibility update on missing id → NotFound (404)', async () => {
+    const { service } = build();
+    const result = await service.updateVisibility('missing', { isPublic: true }, 'admin:1');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe('not_found');
+  });
+});
+
+describe('delete', () => {
+  it('hard-deletes an appointment, auditing the before-state first', async () => {
+    const { repository, service } = build();
+    const seeded = seedAppointment(repository);
+    const result = await service.delete('apt_seed', 'admin:1');
+    expect(result.ok).toBe(true);
+    expect(repository.store.has('apt_seed')).toBe(false);
+    const audit = repository.audits.at(-1);
+    expect(audit?.action).toBe('appointment.delete');
+    expect((audit?.metadata as { before?: Appointment })?.before).toEqual(seeded);
+  });
+
+  it('deletes a cancelled appointment too (not a lifecycle transition, no status restriction)', async () => {
+    const { repository, service } = build();
+    seedAppointment(repository, { status: 'cancelled' });
+    const result = await service.delete('apt_seed', 'admin:1');
+    expect(result.ok).toBe(true);
+    expect(repository.store.has('apt_seed')).toBe(false);
+  });
+
+  it('delete on missing id → NotFound (404), no delete attempted', async () => {
+    const { repository, service } = build();
+    const result = await service.delete('missing', 'admin:1');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe('not_found');
+    expect(repository.deleteCalls).toBe(0);
   });
 });

@@ -29,7 +29,7 @@ export function LogoutButton() {
       size="sm"
       loading={loading}
       onClick={handleLogout}
-      className="text-navy-foreground/80 hover:bg-navy-foreground/10 hover:text-navy-foreground"
+      className="font-semibold text-navy-foreground hover:bg-navy-foreground/10 hover:text-accent"
     >
       <LogOut className="size-4" aria-hidden="true" />
       Log out

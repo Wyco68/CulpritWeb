@@ -65,8 +65,11 @@
     (<code>NEXT_PUBLIC_CALENDLY_URL</code>), but that booking lives entirely on Calendly's side and
     never reaches this app. Separately, the admin can <strong>directly declare an appointment</strong>
     (name, optional email, optional research group, time, optional topic) in Manage Appointments —
-    that is the only way a row is ever created in this app's database. The one lifecycle transition
-    is <span class="pill cancelled">scheduled → cancelled</span>; records are never hard-deleted.</li>
+    that is the only way a row is ever created in this app's database. Lifecycle transitions are
+    <span class="pill cancelled">scheduled → cancelled</span> (reason required) and
+    <span class="pill scheduled">scheduled → scheduled</span> (reschedule, time-only).
+    <strong>Updated 2026-08-13 (ADR-010):</strong> admin can also <strong>hard-delete</strong> any
+    appointment (audited, any status) — see §5.4 FR-22.</li>
   </ul>
   <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic. See
   §9 for the current (2026-08-05) Figma-derived visual system: fixed dark-navy header, mono numbered
@@ -84,7 +87,7 @@
     <li><strong>G1</strong> — Professional, minimalist public presence (bio, research, publications, team members).</li>
     <li><strong>G2</strong> — <s>Visitors book directly (30-min default) or request a meeting, no account (name + email only).</s> <strong>Descoped (2026-08-08):</strong> a visitor can still book via the embedded Calendly widget, but that's Calendly's own flow, entirely outside this app — see NG6. No in-app request form exists.</li>
     <li><strong>G3</strong> — <s>Admin fully controls: approve, decline, cancel requests; edit all content.</s> <strong>Reworded (2026-08-08):</strong> admin directly declares and cancels appointments (no review queue) and edits all public content.</li>
-    <li><strong>G4</strong> — Durable record of every admin-declared appointment + status change (cancellations soft, retained).</li>
+    <li><strong>G4</strong> — Durable record of every admin-declared appointment + status change (cancellations soft, retained). <em>Updated 2026-08-13:</em> admin may also hard-delete a record outright (audited) — see FR-22, ADR-010.</li>
     <li><strong>G5</strong> — Embed the Calendly widget so visitors can book directly against availability, independent of this app's own records.</li>
     <li><strong>G6</strong> — Clean, <strong>modular</strong> architecture reusable across future apps.</li>
   </ul>
@@ -153,7 +156,7 @@
     <tr><td><code>FR-2</code></td><td>View <strong>Researches</strong>: list of works (title + summary + area).</td></tr>
     <tr><td><code>FR-3</code></td><td>View <strong>Publications</strong>: title, authors, venue, year, external link. <em>Behavioral note (2026-08-08):</em> <code>link</code> is nullable — conference and book-chapter entries frequently have no stable public URL, so the link is shown only when present.</td></tr>
     <tr><td><code>FR-4</code></td><td>View <strong>Research Groups</strong> &amp; visiting professors (CV-style). <em>Behavioral note:</em> served today by the public <strong>Team Members</strong> tab, grouped by research group (backed by the relational <code>TeamMember</code> entity, §7.1), rather than a separate "Research Groups" tab.</td></tr>
-    <tr><td><code>FR-5</code></td><td>View <strong>Upcoming Events</strong> <strong>only if</strong> admin enabled visibility.</td></tr>
+    <tr><td><code>FR-5</code></td><td>View <strong>Upcoming Events</strong>: shows <span class="pill scheduled">scheduled</span> appointments the admin marked <code>isPublic</code>. <em>Behavioral note (2026-08-13, ADR-010):</em> previously one global toggle (removed); now per-appointment.</td></tr>
     <tr><td><code>FR-6</code></td><td>Site fully readable without login.</td></tr>
   </table></div>
   <h3>5.2 Appointment request (Visitor)</h3>
@@ -180,8 +183,9 @@
     <tr><td><code>FR-13</code></td><td>Log in via a single admin account.</td></tr>
     <tr><td><code>FR-14</code></td><td>Edit the structured <strong>Bio</strong> (position/affiliation, education, fellowships &amp; visiting appointments, teaching roles &amp; awards, scholarships &amp; travel awards, research interests, research statement, invited talks, plus <strong>LinkedIn</strong>/<strong>Google Scholar</strong> links — added 2026-08-08), Research, Publications, Groups, and Team Members via simple forms.</td></tr>
     <tr><td><code>FR-15</code></td><td>Each form has a clear <strong>"Save changes"</strong> action + feedback.</td></tr>
-    <tr><td><code>FR-16</code></td><td>Toggle whether Upcoming Events is visible to visitors.</td></tr>
-    <tr><td><code><s>FR-16a</s></code></td><td><em>(removed 2026-08-08)</em> Set the default appointment slot duration. Moot: admin enters an exact start time per appointment; <code>Setting</code> is just <code>{ upcomingEventsVisible }</code>.</td></tr>
+    <tr><td><code><s>FR-16</s></code></td><td><em>(removed 2026-08-13, ADR-010)</em> Toggle whether Upcoming Events is visible to visitors, via a global setting. Replaced by FR-16b.</td></tr>
+    <tr><td><code><s>FR-16a</s></code></td><td><em>(removed 2026-08-08)</em> Set the default appointment slot duration. Moot: admin enters an exact start time per appointment.</td></tr>
+    <tr><td><code>FR-16b</code> <em>(new, 2026-08-13)</em></td><td>Toggle whether an individual appointment appears on the public Upcoming Events tab, via <code>Appointment.isPublic</code>. The global <code>Setting</code> model/<code>upcoming_events_visible</code> toggle was deleted.</td></tr>
   </table></div>
   <h3>5.4 Admin — appointment management</h3>
   <blockquote><strong>Note (rewritten 2026-08-08):</strong> the review-queue workflow (FR-18/19/20/23
@@ -192,11 +196,12 @@
     <tr><td><code>FR-17</code></td><td>See table of appointments: <strong>name, research group, scheduled time, status</strong>.</td></tr>
     <tr><td><code>FR-17a</code> <em>(new)</em></td><td>Admin can <strong>add</strong> an appointment directly: requester name (required), email (optional, informational only), research group (optional), scheduled time, topic (optional). Lands as scheduled immediately.</td></tr>
     <tr><td><code>FR-17b</code> <em>(new)</em></td><td>Admin can <strong>edit</strong> a scheduled appointment's details. <code>409</code> if already cancelled.</td></tr>
+    <tr><td><code>FR-17c</code> <em>(new, 2026-08-13, ADR-010)</em></td><td>Admin can <strong>reschedule</strong> a scheduled appointment: <span class="pill scheduled">scheduled → scheduled</span>, changing <code>scheduledAt</code> only (audited). <code>409</code> if not currently scheduled.</td></tr>
     <tr><td><code><s>FR-18</s></code></td><td><em>(removed)</em> Approve a pending request. No review queue exists.</td></tr>
     <tr><td><code><s>FR-19</s></code></td><td><em>(removed)</em> Decline a pending request. No review queue exists.</td></tr>
     <tr><td><code><s>FR-20</s></code></td><td><em>(removed)</em> Manually create the Calendly event, then mark booked. No booked status or Calendly event reference exists anymore.</td></tr>
-    <tr><td><code>FR-21</code></td><td><strong>Cancel</strong> a scheduled meeting (→ <span class="pill cancelled">cancelled</span>, reason required, retained).</td></tr>
-    <tr><td><code>FR-22</code></td><td>No record ever hard-deleted; cancelled items kept for audit.</td></tr>
+    <tr><td><code>FR-21</code></td><td><strong>Cancel</strong> a scheduled meeting (→ <span class="pill cancelled">cancelled</span>, reason required, retained, soft). <code>409</code> if already cancelled.</td></tr>
+    <tr><td><code>FR-22</code> <em>(rewritten 2026-08-13, ADR-010)</em></td><td>Admin can <strong>hard-delete</strong> an appointment (any status), audited via <code>AuditLog</code> (full before-state) prior to removal. Separate, explicit admin action alongside cancel, not a lifecycle transition. <em>Behavioral note:</em> supersedes the prior "never hard-deleted" rule.</td></tr>
     <tr><td><code><s>FR-23</s></code></td><td><em>(removed)</em> Status changes trigger visitor emails. No email of any kind is sent by this app for appointments; the <code>notifications</code> module was deleted. Resend remains as generic infra, reserved for other future features.</td></tr>
   </table></div>
 </section>
@@ -209,7 +214,7 @@
     <tr><td><strong>Performance</strong></td><td>Public pages &lt; 2s on broadband; cache/CDN where possible.</td></tr>
     <tr><td><strong>Security</strong></td><td>HTTPS everywhere; server-side validation on every form; hardened admin sessions (secure, httpOnly cookies); secrets out of client; least-privilege API.</td></tr>
     <tr><td><strong>Spam / abuse</strong></td><td><em>(updated 2026-08-08, rate-limiter swapped 2026-08-10 — see §14.1)</em> No public appointment-<em>writing</em> endpoint exists to spam. Turnstile now gates <em>visibility</em> of the public Calendly embed instead (<code>POST /api/turnstile/verify</code>, IP-rate-limited, called from <code>GatedCalendlyEmbed</code>). Reason: Calendly Free has no bot protection and only one bookable event type, so an unprotected embed is one stream a script could fill with junk bookings. <code>guardPublicWrite</code> stays unused — the route calls the rate-limiter/verifier directly.</td></tr>
-    <tr><td><strong>Privacy</strong></td><td>Minimal PII (name + email); clear retention; cancelled records retained but purgeable on request; no PII in URLs.</td></tr>
+    <tr><td><strong>Privacy</strong></td><td>Minimal PII (name + email); clear retention; cancelled records retained but purgeable on request (admin can hard-delete, 2026-08-13); no PII in URLs.</td></tr>
     <tr><td><strong>Accessibility</strong></td><td>WCAG 2.1 AA: semantic HTML, keyboard nav, contrast, alt text.</td></tr>
     <tr><td><strong>Responsive</strong></td><td>Mobile-first; usable 320px → desktop.</td></tr>
     <tr><td><strong>Availability</strong></td><td>Target 99.5% uptime for public site.</td></tr>
@@ -288,21 +293,24 @@
     <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
     <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
-  <h4>Appointment <em>(rewritten 2026-08-08 — see §2 NG6, §10.1)</em></h4>
+  <h4>Appointment <em>(rewritten 2026-08-08 — see §2 NG6, §10.1; extended 2026-08-13, ADR-010)</em></h4>
   <blockquote>No review queue, no Calendly sync of any kind. <span class="pill cancelled">scheduled</span>
   is the only creatable state; an appointment exists only because the admin declared it directly in
-  Manage Appointments. Cancelled is terminal and retained (never hard-deleted). A visitor booking
-  through the Calendly embed happens entirely on Calendly's side and never reaches this table.</blockquote>
+  Manage Appointments. Cancelled is terminal and retained (soft — not hard-deleted by cancel itself).
+  A visitor booking through the Calendly embed happens entirely on Calendly's side and never reaches
+  this table. <em>Updated 2026-08-13:</em> any row can also be hard-deleted by the admin as a
+  separate, audited action — see FR-22.</blockquote>
   <div class="twrap"><table>
     <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
     <tr><td>id</td><td><code>uuid</code></td><td>PK</td></tr>
     <tr><td>requester_name</td><td><code>string</code></td><td>who the meeting is with, entered by the admin</td></tr>
     <tr><td>requester_email</td><td><code>string</code></td><td>nullable, informational only — no email is ever sent by this app</td></tr>
     <tr><td>research_group</td><td><code>string</code></td><td>group the requester represents (nullable)</td></tr>
-    <tr><td>scheduled_at</td><td><code>timestamp</code></td><td>the meeting's start time, entered by the admin</td></tr>
+    <tr><td>scheduled_at</td><td><code>timestamp</code></td><td>the meeting's start time, entered by the admin; changeable via reschedule (FR-17c)</td></tr>
     <tr><td>topic</td><td><code>text</code></td><td>purpose (nullable)</td></tr>
     <tr><td>status</td><td><code>enum</code></td><td><span class="pill scheduled">scheduled</span> <span class="pill cancelled">cancelled</span></td></tr>
     <tr><td>cancel_reason</td><td><code>text</code></td><td>nullable; required input when cancelling</td></tr>
+    <tr><td>is_public</td><td><code>boolean</code></td><td><em>(added 2026-08-13, ADR-010)</em> default <code>false</code>; admin-toggled per row (FR-16b) — drives Upcoming Events visibility. Replaces the deleted global <code>Setting.upcoming_events_visible</code>.</td></tr>
     <tr><td>created_at / updated_at</td><td><code>timestamp</code></td><td></td></tr>
   </table></div>
   <blockquote><strong>Removed 2026-08-08:</strong> <code>source</code>,
@@ -317,15 +325,14 @@
     <tr><td>email</td><td><code>string</code></td><td>unique</td></tr>
     <tr><td>password_hash</td><td><code>string</code></td><td>hashed, never plaintext</td></tr>
   </table></div>
-  <h4>Setting (key/value — currently only <code>upcoming_events_visible</code>)</h4>
-  <div class="twrap"><table>
-    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
-    <tr><td>key</td><td><code>string</code></td><td>PK</td></tr>
-    <tr><td>value</td><td><code>string/json</code></td><td></td></tr>
-  </table></div>
-  <blockquote><strong>Note (2026-08-08):</strong> <code>appointment_duration_minutes</code> was
-  removed — appointments no longer have a visitor-selectable slot duration; the admin enters an
-  exact <code>scheduled_at</code> per appointment.</blockquote>
+  <h4><s>Setting</s> <em>(key/value model — deleted entirely 2026-08-13, ADR-010)</em></h4>
+  <blockquote>Previously held one key, <code>upcoming_events_visible</code> (global on/off for the
+  public Upcoming Events tab). Removed outright — visibility is now per-appointment via
+  <code>Appointment.isPublic</code> (FR-16b). The <code>settings</code> module and its
+  <code>PUT /api/admin/settings</code> route were deleted along with the model.
+  <code>appointment_duration_minutes</code> had already been removed 2026-08-08 (no
+  visitor-selectable slot duration; admin enters an exact <code>scheduled_at</code> per appointment)
+  before the model itself was cut.</blockquote>
 
   <h3>7.2 Relationships (ER)</h3>
   <figure>
@@ -360,14 +367,19 @@
     <figcaption>Profile owns content entities · Admin declares Appointments directly</figcaption>
   </figure>
   <blockquote><strong>Note (2026-08-08):</strong> the previous <code>APPOINTMENT }o--|| SETTING :
-  "gated by"</code> relationship was removed — no <code>Setting</code> governs appointment creation
-  anymore. <code>Setting</code> today only gates the public Upcoming Events tab.</blockquote>
+  "gated by"</code> relationship was removed — no <code>Setting</code> governed appointment
+  creation.
+  <strong>Note (2026-08-13, ADR-010):</strong> the <code>Setting</code> model itself is now gone
+  entirely. Public Upcoming Events visibility is <code>Appointment.isPublic</code>, a plain boolean
+  column on the entity above — no separate table or relationship to diagram.</blockquote>
 
   <h3>7.3 Appointment status transitions</h3>
-  <blockquote><strong>Rewritten 2026-08-08</strong> — the review-queue diagram below is retired; only
-  one transition exists now: scheduled → cancelled.</blockquote>
+  <blockquote><strong>Rewritten 2026-08-08</strong> — the review-queue diagram below is retired.
+  <strong>Updated 2026-08-13 (ADR-010):</strong> added scheduled → scheduled (reschedule) alongside
+  scheduled → cancelled; hard delete is described separately below since it is not a status
+  transition.</blockquote>
   <figure>
-    <svg viewBox="0 0 520 160" role="img" aria-label="Appointment status state machine">
+    <svg viewBox="0 0 520 190" role="img" aria-label="Appointment status state machine">
       <circle cx="40" cy="80" r="9" class="dnode"/>
       <rect x="90" y="60" width="140" height="40" rx="20" class="dnode-soft"/>
       <text class="dtext-mono" x="160" y="85" text-anchor="middle">scheduled</text>
@@ -378,13 +390,15 @@
       <text class="dmuted" x="55" y="112">admin declares directly</text>
       <path class="dline" d="M230 80 L 328 80" marker-end="url(#ar)"/>
       <text class="dmuted" x="240" y="72">cancel (reason required)</text>
+      <path class="dline" d="M160 58 C 130 40, 190 40, 160 58" marker-end="url(#ar)"/>
+      <text class="dmuted" x="90" y="35">reschedule (scheduledAt only)</text>
       <defs>
         <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
           <path d="M0,0 L7,3 L0,6 Z" class="dfill-arrow"/>
         </marker>
       </defs>
     </svg>
-    <figcaption><span class="pill cancelled">cancelled</span> is terminal but retained — never deleted; any other transition attempt is rejected with 409</figcaption>
+    <figcaption><span class="pill cancelled">cancelled</span> is terminal but retained (soft); any illegal transition is rejected with 409. Hard delete (any status, audited) is a separate admin action, not part of this diagram — see FR-22.</figcaption>
   </figure>
 </section>
 
@@ -414,7 +428,10 @@
     <tr><td><code>GET</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>List all appointments (optional <code>?status=</code>).</td></tr>
     <tr><td><code>POST</code></td><td><code>/api/admin/appointments</code></td><td>Admin</td><td>Declare an appointment directly → <span class="pill scheduled">scheduled</span>. Body: requesterName, requesterEmail?, researchGroup?, scheduledAt, topic?.</td></tr>
     <tr><td><code>PUT</code></td><td><code>/api/admin/appointments/{id}</code></td><td>Admin</td><td>Edit a scheduled appointment's details. 409 if already cancelled.</td></tr>
+    <tr><td><code>DELETE</code></td><td><code>/api/admin/appointments/{id}</code></td><td>Admin</td><td><em>(new, 2026-08-13, ADR-010)</em> Hard-delete, any status. Audited (full before-state) before removal.</td></tr>
     <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/cancel</code></td><td>Admin</td><td>scheduled → cancelled + required reason. 409 if already cancelled.</td></tr>
+    <tr><td><code>POST</code></td><td><code>/api/admin/appointments/{id}/reschedule</code></td><td>Admin</td><td><em>(new, 2026-08-13, ADR-010)</em> scheduled → scheduled, changes scheduledAt only. 409 if not currently scheduled.</td></tr>
+    <tr><td><code>PATCH</code></td><td><code>/api/admin/appointments/{id}/visibility</code></td><td>Admin</td><td><em>(new, 2026-08-13, ADR-010)</em> Toggle <code>isPublic</code> for one appointment. No status restriction.</td></tr>
   </table></div>
   <h3>8.2a Calendly REST integration — removed</h3>
   <blockquote><strong>Removed 2026-08-08.</strong> This subsection previously documented a
@@ -439,7 +456,7 @@
     <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/publications</code></td><td>Admin</td><td>CRUD publications.</td></tr>
     <tr><td><code>PUT/POST/DELETE</code></td><td><code>/api/admin/groups</code></td><td>Admin</td><td>CRUD groups.</td></tr>
     <tr><td><code>POST/PUT/DELETE</code></td><td><code>/api/admin/team-members[/{id}]</code></td><td>Admin</td><td>CRUD team members (optional research_group_id).</td></tr>
-    <tr><td><code>PUT</code></td><td><code>/api/admin/settings</code></td><td>Admin</td><td>Toggle event visibility, etc.</td></tr>
+    <tr><td><s><code>PUT</code></s></td><td><s><code>/api/admin/settings</code></s></td><td>—</td><td><em>(removed 2026-08-13, ADR-010)</em> Toggled global event visibility. Replaced by per-appointment <code>PATCH /api/admin/appointments/{id}/visibility</code>, §8.2.</td></tr>
   </table></div>
   <blockquote>Admin endpoints validate the session (<code>401</code> if not). Invalid status moves are
   rejected (e.g. booking a declined request → <code>409</code>).</blockquote>
@@ -481,8 +498,8 @@
   <h3>9.2 Admin side — 2 tabs</h3>
   <div class="twrap"><table>
     <tr><th>Tab</th><th>Contents</th></tr>
-    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio (incl. LinkedIn/Google Scholar links — 2026-08-08), research, publications, groups, and <strong>team members</strong> (name, role, bio, photo, optional research-group assignment). Clear <strong>"Save changes"</strong>. Event-visibility toggle. <s>Default slot duration</s> <em>(removed 2026-08-08)</em>.</td></tr>
-    <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. <strong>Rewritten 2026-08-08:</strong> an "Add" button opens a form dialog to declare an appointment directly (lands scheduled immediately); each scheduled row has Edit and Cancel actions. <s>Approve/Decline/Mark booked</s> removed — no review queue.</td></tr>
+    <tr><td><strong>Set Information</strong></td><td>Forms to edit structured bio (incl. LinkedIn/Google Scholar links — 2026-08-08), research, publications, groups, and <strong>team members</strong> (name, role, bio, photo, optional research-group assignment). Clear <strong>"Save changes"</strong>. <s>Event-visibility toggle</s> <em>(removed 2026-08-13, ADR-010 — moved to a per-appointment toggle in Manage Appointments)</em>. <s>Default slot duration</s> <em>(removed 2026-08-08)</em>.</td></tr>
+    <tr><td><strong>Manage Appointments</strong></td><td>Table: <strong>name · research group · time · status</strong>. <strong>Rewritten 2026-08-08:</strong> an "Add" button opens a form dialog to declare an appointment directly (lands scheduled immediately); each scheduled row has Edit and Cancel actions. <s>Approve/Decline/Mark booked</s> removed — no review queue. <strong>Updated 2026-08-13 (ADR-010):</strong> rows also get Reschedule (time-only), a per-row public/Upcoming-Events visibility toggle (<code>isPublic</code>), and Delete (hard, any status, confirmation required, audited).</td></tr>
   </table></div>
   <h3>9.3 Shared UI notes</h3>
   <ul>
@@ -508,8 +525,10 @@
     <li>Admin opens <strong>Manage Appointments</strong>, clicks <strong>Add</strong>.</li>
     <li>Fills requester name (required), email (optional, informational only — no email is sent), research group (optional), scheduled time, topic (optional). Saves.</li>
     <li>System stores it as <span class="pill scheduled">scheduled</span> immediately — no approval step, no intermediate state.</li>
-    <li>Admin may <strong>Edit</strong> a scheduled appointment's details at any time.</li>
-    <li><strong>Cancellation:</strong> admin clicks <strong>Cancel</strong>, supplies a reason → <span class="pill cancelled">cancelled</span>. Record retained (never deleted); no email is sent. 409 if already cancelled.</li>
+    <li>Admin may <strong>Edit</strong> a scheduled appointment's details, or <strong>Reschedule</strong> it (time-only, scheduled → scheduled, audited) at any time. 409 if not currently scheduled.</li>
+    <li><strong>Cancellation:</strong> admin clicks <strong>Cancel</strong>, supplies a reason → <span class="pill cancelled">cancelled</span>. Record retained (soft); no email is sent. 409 if already cancelled.</li>
+    <li><strong>Visibility:</strong> admin toggles <strong>is public</strong> (<code>isPublic</code>) on any row to show/hide it on the public Upcoming Events tab, independent of status. <em>(2026-08-13, ADR-010)</em></li>
+    <li><strong>Deletion:</strong> admin clicks <strong>Delete</strong> on any row (any status) → hard-deleted, audited via <code>AuditLog</code> (full before-state) prior to removal. Separate from cancel; not reversible. <em>(2026-08-13, ADR-010)</em></li>
   </ol>
   <blockquote><strong>History:</strong> the previous design (through 2026-08-05) had visitors submit a
   request that the admin approved/declined, then manually booked in Calendly and marked booked, with
@@ -521,9 +540,11 @@
     <li>Clicks <strong>Save changes</strong> → API validates and persists → success feedback.</li>
   </ol>
   <h3>10.3 Upcoming-events visibility toggle</h3>
+  <blockquote><strong>Rewritten 2026-08-13 (ADR-010):</strong> was a single global toggle in Set
+  Information; now per-appointment.</blockquote>
   <ol>
-    <li>Admin toggles visibility in <strong>Set Information</strong>.</li>
-    <li>Public <strong>Upcoming Events</strong> tab shows or hides accordingly.</li>
+    <li>Admin toggles <strong>is public</strong> on an individual row in <strong>Manage Appointments</strong>.</li>
+    <li>Public <strong>Upcoming Events</strong> tab shows or hides that specific meeting accordingly (only scheduled + isPublic rows are ever listed).</li>
   </ol>
 </section>
 
@@ -540,9 +561,10 @@
     <tr><td>Book directly via embedded Calendly (Calendly-side only)</td><td class="center yes">✅</td><td class="center yes">✅</td></tr>
     <tr><td>Log in to admin panel</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
     <tr><td>Edit public content</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
-    <tr><td>Add / edit an appointment directly</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Add / edit / reschedule an appointment directly</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
     <tr><td>Cancel any appointment</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
-    <tr><td>Toggle upcoming-events visibility</td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Hard-delete any appointment <em>(new, 2026-08-13)</em></td><td class="center no">❌</td><td class="center yes">✅</td></tr>
+    <tr><td>Toggle an appointment's public (Upcoming Events) visibility <em>(per-row since 2026-08-13)</em></td><td class="center no">❌</td><td class="center yes">✅</td></tr>
   </table></div>
 </section>
 
@@ -563,7 +585,7 @@
 
       <rect class="dnode" x="60" y="160" width="500" height="52" rx="8"/>
       <text class="dtext" x="310" y="182" text-anchor="middle">Service / Domain</text>
-      <text class="dmuted" x="310" y="199" text-anchor="middle">appointment create/edit/cancel · content · settings</text>
+      <text class="dmuted" x="310" y="199" text-anchor="middle">appointment lifecycle · content mgmt</text>
 
       <rect class="dnode" x="60" y="236" width="500" height="44" rx="8"/>
       <text class="dtext" x="310" y="263" text-anchor="middle">Data / Repository — relational DB access</text>
@@ -609,9 +631,9 @@
   <h3>12.2 Module boundaries</h3>
   <ul>
     <li><strong>content</strong> — profile, research, publications, research-groups (incl. TeamMember) (read public, write admin).</li>
-    <li><strong>appointments</strong> — admin-declared create/update/cancel, audit trail. No request intake (removed 2026-08-08).</li>
+    <li><strong>appointments</strong> — admin-declared create/update/cancel/reschedule/delete, per-row isPublic visibility, audit trail. No request intake (removed 2026-08-08).</li>
     <li><strong>auth</strong> — single-admin session management (Better Auth, DB-backed cookie sessions).</li>
-    <li><strong>settings</strong> — feature flags (currently just upcoming-events visibility).</li>
+    <li><s><strong>settings</strong></s> — <strong>deleted 2026-08-13, ADR-010</strong> (was: the global upcoming-events-visible feature flag). Upcoming Events visibility is now <code>Appointment.isPublic</code>, owned by the appointments module — there is no separate settings module or Setting model anymore.</li>
     <li><s><strong>notifications</strong></s> — <strong>deleted 2026-08-08</strong> (was: email on appointment status transitions). No appointment email of any kind is sent by this app anymore.</li>
     <li><strong>integrations</strong> — Calendly (<strong>embed-only</strong> as of 2026-08-08 — no server-side client, no webhook receiver, no PAT), Cloudflare R2 storage adapter (<em>switched from Supabase Storage 2026-08-08</em> — see §14.1), YouTube embed helper, Turnstile bot-challenge (<em>active as of 2026-08-08</em> — gates visibility of the public Calendly embed via <code>/api/turnstile/verify</code>), email provider (Resend; unused for appointments).</li>
     <li><strong>Rate limiting</strong> <em>(replaced 2026-08-10 — see §14.1)</em> — no longer Upstash/Redis. A Cloudflare WAF rule at the edge throttles admin login; a small in-process fallback (no external store) covers login and admin mutation routes if that edge rule is ever off. Public GET routes aren't rate-limited — caching absorbs that traffic instead.</li>
