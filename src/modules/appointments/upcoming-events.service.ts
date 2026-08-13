@@ -4,19 +4,15 @@ import type { AppointmentService } from './appointment.service';
 import type { Appointment } from './appointment.types';
 
 // Thin read-model for the public Upcoming Events tab. Lives in the appointments module because it
-// only queries existing Appointment rows (never duplicates the repository's query logic) — the
-// visibility gate is the only thing borrowed from the settings module.
+// only queries existing Appointment rows (never duplicates the repository's query logic).
+// Visibility is per-appointment (`isPublic`, admin-toggled) — there is no global on/off setting.
 
 export type UpcomingEventsResult = {
-  /** Whether the admin has enabled the Upcoming Events tab. When false, `events` is always []. */
-  visible: boolean;
   events: Appointment[];
 };
 
 export type UpcomingEventsServiceDeps = {
   appointmentService: AppointmentService;
-  /** Injected so this stays unit-testable without importing the settings module's container. */
-  isUpcomingEventsVisible: () => Promise<boolean>;
   /** Injectable clock for deterministic tests. */
   now?: () => Date;
 };
@@ -31,15 +27,13 @@ export function createUpcomingEventsService(deps: UpcomingEventsServiceDeps): Up
   return {
     async getUpcomingEvents() {
       try {
-        const visible = await deps.isUpcomingEventsVisible();
-        if (!visible) return ok({ visible: false, events: [] });
-
         const result = await deps.appointmentService.list({
           status: 'scheduled',
           fromTime: now(),
+          isPublic: true,
         });
         if (!result.ok) return result;
-        return ok({ visible: true, events: result.data });
+        return ok({ events: result.data });
       } catch (error) {
         return err(toAppError(error));
       }

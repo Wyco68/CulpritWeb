@@ -14,6 +14,7 @@ function makeAppointment(overrides: Partial<Appointment> = {}): Appointment {
     topic: 'Intro call',
     status: 'scheduled',
     cancelReason: null,
+    isPublic: true,
     createdAt: new Date('2026-08-02T00:00:00Z'),
     updatedAt: new Date('2026-08-02T00:00:00Z'),
     ...overrides,
@@ -25,41 +26,40 @@ function makeAppointmentService(list: ReturnType<typeof vi.fn>): AppointmentServ
     create: vi.fn(),
     update: vi.fn(),
     cancel: vi.fn(),
+    reschedule: vi.fn(),
+    updateVisibility: vi.fn(),
+    delete: vi.fn(),
     list,
   };
 }
 
 describe('upcoming events service', () => {
-  it('returns visible=false and no events when the setting is off', async () => {
-    const listMock = vi.fn();
-    const service = createUpcomingEventsService({
-      appointmentService: makeAppointmentService(listMock),
-      isUpcomingEventsVisible: async () => false,
-    });
-
-    const result = await service.getUpcomingEvents();
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data).toEqual({ visible: false, events: [] });
-    expect(listMock).not.toHaveBeenCalled();
-  });
-
-  it('queries scheduled appointments from now when the setting is on', async () => {
+  it('queries scheduled, public appointments from now', async () => {
     const events = [makeAppointment(), makeAppointment({ id: 'apt_2' })];
     const listMock = vi.fn().mockResolvedValue(ok(events));
     const now = new Date('2026-08-05T12:00:00Z');
     const service = createUpcomingEventsService({
       appointmentService: makeAppointmentService(listMock),
-      isUpcomingEventsVisible: async () => true,
       now: () => now,
     });
 
     const result = await service.getUpcomingEvents();
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.visible).toBe(true);
       expect(result.data.events).toHaveLength(2);
     }
-    expect(listMock).toHaveBeenCalledWith({ status: 'scheduled', fromTime: now });
+    expect(listMock).toHaveBeenCalledWith({ status: 'scheduled', fromTime: now, isPublic: true });
+  });
+
+  it('returns an empty list when nothing is opted into public visibility', async () => {
+    const listMock = vi.fn().mockResolvedValue(ok([]));
+    const service = createUpcomingEventsService({
+      appointmentService: makeAppointmentService(listMock),
+    });
+
+    const result = await service.getUpcomingEvents();
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.events).toEqual([]);
   });
 
   it('propagates a repository/service failure', async () => {
@@ -68,7 +68,6 @@ describe('upcoming events service', () => {
     const listMock = vi.fn().mockResolvedValue(err(new InternalError('db down')));
     const service = createUpcomingEventsService({
       appointmentService: makeAppointmentService(listMock),
-      isUpcomingEventsVisible: async () => true,
     });
 
     const result = await service.getUpcomingEvents();
