@@ -37,7 +37,7 @@ const AREA_PATHS = {
   team: ['/team', '/api/groups', '/api/team-members'],
   /** Upcoming Events: both the appointment list and the admin visibility toggle. */
   events: ['/events', '/api/events/upcoming'],
-  /** The Make Appointment tab (slot duration comes from settings). No matching public API route. */
+  /** The Make Appointment tab (Calendly embed only). No matching public API route. */
   appointment: ['/appointment'],
 } as const;
 

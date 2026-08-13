@@ -15,7 +15,6 @@ const TABS = [
   { href: '/admin/groups', label: 'Research Groups' },
   { href: '/admin/team-members', label: 'Team Members' },
   { href: '/admin/appointments', label: 'Appointments' },
-  { href: '/admin/settings', label: 'Settings' },
 ] as const;
 
 export function AdminNav() {
