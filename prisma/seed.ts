@@ -93,7 +93,7 @@ async function seedAdmin() {
   });
 
   await seedAuth.api.signUpEmail({
-    body: { email, password, name: 'Admin' },
+    body: { email, password, name: REAL_PROFILE.fullName },
   });
 
   console.log(`Admin account created for ${email}.`);

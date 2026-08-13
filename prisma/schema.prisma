@@ -110,19 +110,15 @@ model Appointment {
   topic         String?           @db.Text
   status        AppointmentStatus @default(scheduled)
   cancelReason  String?           @map("cancel_reason") @db.Text
+  /// Drives public "Upcoming Events" visibility per-appointment (admin opt-in per row; replaces
+  /// the old global `upcoming_events_visible` setting — see ADR for the 2026-08-13 removal).
+  isPublic      Boolean           @default(false) @map("is_public")
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
   @@index([status])
   @@index([scheduledAt])
   @@map("appointment")
-}
-
-model Setting {
-  key   String @id
-  value Json
-
-  @@map("setting")
 }
 
 // --- Better Auth (single admin) ---------------------------------------------------------------
