@@ -62,8 +62,9 @@ header.doc .meta{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
 
 section{margin:0 0 20px;scroll-margin-top:20px}
 section>h2{font-size:22px;margin:38px 0 14px;padding-top:10px;letter-spacing:-.3px;
-  display:flex;align-items:baseline;gap:10px}
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 section>h2 .n{font-family:var(--mono);font-size:14px;color:var(--accent)}
+section>h2 .plain{flex-basis:100%;font-size:13px;font-weight:400;color:var(--muted);letter-spacing:0}
 h3{font-size:16.5px;margin:22px 0 8px;color:var(--ink)}
 h4{font-size:14px;margin:16px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
 p{margin:8px 0}
