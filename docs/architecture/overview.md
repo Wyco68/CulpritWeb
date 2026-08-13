@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-10
+last_updated: 2026-08-13
 related_modules: [shared, auth, appointments, integrations]
-related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008]
+related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008, ADR-010]
 ---
 
 # Architecture overview
@@ -50,7 +50,7 @@ Data flows one direction; each layer depends only on the one below it.
 (`createWithAudit`/`updateWithAudit`, same DB transaction as the mutation), not in the service
 layer as `.claude/skills/fullstack-nextjs-starter/references/{data-model,security}.md` describe.
 Verified across every repository that mutates state (`appointment`, `research`, `publications`,
-`profile`, `settings`, `research-group`, `team-member`). This is intentional — it makes the audit
+`profile`, `research-group`, `team-member`). This is intentional — it makes the audit
 entry atomic with the mutation — but it means "no business logic in repositories" (CLAUDE.md) does
 not extend to "no audit writes in repositories."
 
@@ -61,9 +61,8 @@ not extend to "no audit writes in repositories."
 - **research** — research works CRUD.
 - **publications** — publications CRUD.
 - **research-groups** — research groups + `TeamMember` (relational, not a JSON blob).
-- **appointments** — admin-declared create/update/cancel, audit trail, the Upcoming Events read
-  model. No request intake.
-- **settings** — feature flags (currently just `upcoming_events_visible`).
+- **appointments** — admin-declared create/update/cancel/reschedule/hard-delete, per-row
+  `isPublic` visibility, audit trail, the Upcoming Events read model. No request intake.
 - **integrations** — Calendly embed (no server-side client), Cloudflare R2 storage adapter,
   YouTube embed helper, Turnstile verifier, in-process rate limiter (fallback behind the
   Cloudflare edge rule — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)),
@@ -73,13 +72,15 @@ not extend to "no audit writes in repositories."
 
 There is **no `notifications` module** — it was deleted along with the appointment review-queue
 workflow. There is **no `i18n`/`messages` directory** — fully removed, not just the routing layer.
+There is **no `settings` module** (deleted 2026-08-13, ADR-010) — the global visibility flag it
+held is now `Appointment.isPublic`, owned by `appointments`.
 
 ## Route groups
 
 ```
 src/app/
 ├── (public)/    # About, research, publications, team, events, appointment — flat paths, no [locale]
-├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,appointments,settings}, login
+├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,appointments}, login
 └── api/         # route handlers — see architecture/backend.md
 ```
 

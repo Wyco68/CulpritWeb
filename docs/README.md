@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
+last_updated: 2026-08-13
 related_modules: []
 related_decisions: []
 ---
@@ -41,6 +41,11 @@ the history inline. Concretely:
   [ADR-006](decisions/ADR-006-remove-i18n-and-locale-routing.md).
 - Object storage is **Cloudflare R2** today. Supabase Storage was used 2026-08-05 → 2026-08-08 —
   see [ADR-002](decisions/ADR-002-object-storage-r2.md).
+- Appointments can be **hard-deleted** by the admin (audited, any status) today, alongside the
+  existing soft cancel; lifecycle also includes `scheduled → scheduled` (reschedule); the `Setting`
+  model/`settings` module are **gone** — Upcoming Events visibility is `Appointment.isPublic`,
+  per row. All since 2026-08-13 — see [ADR-010](decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md).
+  Do not resurrect a global visibility setting or reinstate "never hard-deleted" without a new ADR.
 
 If a document you're reading (including this tree) doesn't clearly say "current," check its
 frontmatter `status:` field and its `last_updated` date before relying on it.
