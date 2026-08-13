@@ -46,10 +46,6 @@ nav.toc .site-tabs{padding:0 22px 14px;margin-bottom:12px;border-bottom:1px soli
 nav.toc .site-tabs a{display:block;padding:5px 0;color:var(--sidebar-ink);font-family:var(--mono);font-size:12px}
 nav.toc .site-tabs a:hover{color:#fff;text-decoration:none}
 nav.toc .site-tabs a.active{color:var(--sidebar-active);font-weight:600}
-nav.toc .site-tabs a.pdf-link{color:var(--sidebar-active)}
-nav.toc .site-tabs a.pdf-link:hover{color:#fff}
-nav.toc .site-tabs a.pdf-link+a.pdf-link{padding-top:5px}
-nav.toc .site-tabs a.pdf-link:first-of-type{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.12)}
 
 /* Content */
 main{flex:1;min-width:0;padding:44px 56px 120px;max-width:960px}
