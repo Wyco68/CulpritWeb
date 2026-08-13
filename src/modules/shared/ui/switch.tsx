@@ -12,6 +12,7 @@ export interface SwitchProps {
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
   'aria-describedby'?: string;
+  'aria-label'?: string;
   className?: string;
 }
 

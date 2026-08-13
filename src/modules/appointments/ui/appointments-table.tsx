@@ -9,13 +9,20 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { StatusPill } from '@/modules/shared/ui/status-pill';
+import { Switch } from '@/modules/shared/ui/switch';
+import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { cn } from '@/modules/shared/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
 // Type-only, so it's erased at compile time either way — imported from the concrete files rather
 // than the barrel for consistency with the sibling dialogs (see cancel-dialog.tsx).
-import type { AppointmentStatus, CancelAppointmentInput } from '../appointment.schema';
+import type {
+  AppointmentStatus,
+  CancelAppointmentInput,
+  RescheduleAppointmentInput,
+} from '../appointment.schema';
 import type { AppointmentView } from '../appointment.serializer';
 import { CancelDialog } from './cancel-dialog';
+import { RescheduleDialog } from './reschedule-dialog';
 import { AppointmentFormDialog } from './appointment-form-dialog';
 
 const FILTERS = ['all', 'scheduled', 'cancelled'] as const;
@@ -30,6 +37,34 @@ async function cancelAppointment(id: string, body: CancelAppointmentInput) {
   const json = await response.json();
   if (!json.ok) throw new Error(json.error?.message ?? 'Request failed');
   return json.data as AppointmentView;
+}
+
+async function rescheduleAppointment(id: string, body: RescheduleAppointmentInput) {
+  const response = await fetch(`/api/admin/appointments/${id}/reschedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await response.json();
+  if (!json.ok) throw new Error(json.error?.message ?? 'Request failed');
+  return json.data as AppointmentView;
+}
+
+async function updateAppointmentVisibility(id: string, isPublic: boolean) {
+  const response = await fetch(`/api/admin/appointments/${id}/visibility`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isPublic }),
+  });
+  const json = await response.json();
+  if (!json.ok) throw new Error(json.error?.message ?? 'Request failed');
+  return json.data as AppointmentView;
+}
+
+async function deleteAppointment(id: string) {
+  const response = await fetch(`/api/admin/appointments/${id}`, { method: 'DELETE' });
+  const json = await response.json();
+  if (!json.ok) throw new Error(json.error?.message ?? 'Request failed');
 }
 
 export function AppointmentsTable({
@@ -49,6 +84,8 @@ export function AppointmentsTable({
   const router = useRouter();
 
   const [cancelling, setCancelling] = useState<AppointmentView | null>(null);
+  const [rescheduling, setRescheduling] = useState<AppointmentView | null>(null);
+  const [deleting, setDeleting] = useState<AppointmentView | null>(null);
   const [editing, setEditing] = useState<AppointmentView | undefined>(undefined);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -63,6 +100,36 @@ export function AppointmentsTable({
       router.refresh();
     },
     onError: () => toast.error('Could not update the appointment. Please try again.'),
+  });
+
+  const rescheduleMutation = useMutation({
+    mutationFn: (input: RescheduleAppointmentInput) => rescheduleAppointment(rescheduling!.id, input),
+    onSuccess: () => {
+      toast.success('Appointment rescheduled.');
+      setRescheduling(null);
+      router.refresh();
+    },
+    onError: () => toast.error('Could not reschedule the appointment. Please try again.'),
+  });
+
+  const visibilityMutation = useMutation({
+    mutationFn: ({ id, isPublic }: { id: string; isPublic: boolean }) =>
+      updateAppointmentVisibility(id, isPublic),
+    onSuccess: () => {
+      toast.success('Visibility updated.');
+      router.refresh();
+    },
+    onError: () => toast.error('Could not update visibility. Please try again.'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteAppointment(id),
+    onSuccess: () => {
+      toast.success('Appointment permanently deleted.');
+      setDeleting(null);
+      router.refresh();
+    },
+    onError: () => toast.error('Could not delete the appointment. Please try again.'),
   });
 
   return (
@@ -123,6 +190,7 @@ export function AppointmentsTable({
               <TableHead>Research group</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Public</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -142,6 +210,19 @@ export function AppointmentsTable({
                 <TableCell>
                   <StatusPill status={item.status as AppointmentStatus} />
                 </TableCell>
+                <TableCell>
+                  <Switch
+                    id={`visibility-${item.id}`}
+                    checked={item.isPublic}
+                    disabled={
+                      visibilityMutation.isPending && visibilityMutation.variables?.id === item.id
+                    }
+                    aria-label={`${item.isPublic ? 'Public' : 'Private'} — toggle whether ${item.requesterName}'s appointment appears on the public Upcoming Events tab`}
+                    onCheckedChange={(checked) =>
+                      visibilityMutation.mutate({ id: item.id, isPublic: checked })
+                    }
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex flex-wrap justify-end gap-1.5">
                     {item.status === 'scheduled' && (
@@ -159,6 +240,13 @@ export function AppointmentsTable({
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => setRescheduling(item)}
+                        >
+                          Reschedule
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="text-destructive hover:bg-destructive/10"
                           onClick={() => setCancelling(item)}
                         >
@@ -166,6 +254,14 @@ export function AppointmentsTable({
                         </Button>
                       </>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleting(item)}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -180,6 +276,23 @@ export function AppointmentsTable({
         onOpenChange={(open) => !open && setCancelling(null)}
         loading={cancelMutation.isPending}
         onConfirm={(input) => cancelMutation.mutate(input)}
+      />
+      <RescheduleDialog
+        open={Boolean(rescheduling)}
+        onOpenChange={(open) => !open && setRescheduling(null)}
+        scheduledAt={rescheduling?.scheduledAt}
+        loading={rescheduleMutation.isPending}
+        onConfirm={(input) => rescheduleMutation.mutate(input)}
+      />
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Permanently delete this appointment?"
+        description="This action cannot be undone — the appointment record will be permanently deleted, not cancelled or archived."
+        confirmLabel="Delete"
+        cancelLabel="Back"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );
