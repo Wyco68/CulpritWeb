@@ -4,7 +4,9 @@ import { ImageResponse } from 'next/og';
 // which re-exports this). Deliberately generic: site name + tagline only, no photo or invented
 // personal/business copy. Colors match the design system's navy/accent tokens (see globals.css
 // `@theme inline`) since CSS custom properties aren't available inside `ImageResponse`'s isolated
-// Satori renderer.
+// Satori renderer. Kept as a dark card by design even though the live `--navy` header is now
+// light cyan — a social-preview card needs strong contrast against arbitrary feed backgrounds, so
+// it intentionally doesn't chase every on-site palette tweak.
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
