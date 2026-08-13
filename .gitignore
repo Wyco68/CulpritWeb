@@ -19,6 +19,7 @@ raw_spec.md
 docs/internal/
 NOTES.md
 TODO.md
+docs/deployment/vps-hosting-runbook.md
 #
 # NOTE: docs-site/PROJECT_SPEC.html is intentionally NOT ignored.
 #       It is the source for the GitHub Pages "spec" site (deployment #1).

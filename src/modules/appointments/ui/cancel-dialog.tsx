@@ -57,7 +57,7 @@ export function CancelDialog({
         </FormField>
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Back
           </Button>
           <Button type="submit" variant="destructive" loading={loading}>
             Cancel
