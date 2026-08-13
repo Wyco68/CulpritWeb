@@ -11,6 +11,7 @@ const appointment: Appointment = {
   topic: 'Intro call',
   status: 'scheduled',
   cancelReason: null,
+  isPublic: false,
   createdAt: new Date('2026-08-02T00:00:00Z'),
   updatedAt: new Date('2026-08-02T00:00:00Z'),
 };

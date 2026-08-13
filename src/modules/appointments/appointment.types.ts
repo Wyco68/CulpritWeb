@@ -13,6 +13,8 @@ export type Appointment = {
   topic: string | null;
   status: AppointmentStatus;
   cancelReason: string | null;
+  /** Admin opt-in per row: whether this appointment appears on the public Upcoming Events tab. */
+  isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -22,3 +22,18 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
     return apiUnexpected(error);
   }
 }
+
+// Admin: hard-delete an appointment. Audited (full before-state) before the row is removed — an
+// explicit admin action, available alongside (not instead of) soft cancel. No status restriction.
+export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const admin = await requireAdmin();
+    if (!admin.ok) return apiError(admin.error);
+
+    const { id } = await ctx.params;
+    const result = await getAppointmentService().delete(id, `admin:${admin.data.userId}`);
+    return respond(revalidateOn(result, 'events'));
+  } catch (error) {
+    return apiUnexpected(error);
+  }
+}

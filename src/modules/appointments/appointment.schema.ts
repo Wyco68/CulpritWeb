@@ -50,6 +50,18 @@ export const cancelAppointmentSchema = z.object({
 });
 export type CancelAppointmentInput = z.infer<typeof cancelAppointmentSchema>;
 
+/** Admin: reschedule a scheduled appointment — changes `scheduledAt` only, nothing else. */
+export const rescheduleAppointmentSchema = z.object({
+  scheduledAt: z.coerce.date(),
+});
+export type RescheduleAppointmentInput = z.infer<typeof rescheduleAppointmentSchema>;
+
+/** Admin: toggle whether an appointment appears on the public Upcoming Events tab. */
+export const updateAppointmentVisibilitySchema = z.object({
+  isPublic: z.boolean(),
+});
+export type UpdateAppointmentVisibilityInput = z.infer<typeof updateAppointmentVisibilitySchema>;
+
 /** Admin: list filter (query string). */
 export const listAppointmentsQuerySchema = z.object({
   status: appointmentStatusSchema.optional(),

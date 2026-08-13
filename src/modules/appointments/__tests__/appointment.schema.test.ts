@@ -3,7 +3,9 @@ import {
   cancelAppointmentSchema,
   createAppointmentSchema,
   listAppointmentsQuerySchema,
+  rescheduleAppointmentSchema,
   updateAppointmentSchema,
+  updateAppointmentVisibilitySchema,
 } from '../appointment.schema';
 
 describe('createAppointmentSchema', () => {
@@ -87,6 +89,24 @@ describe('cancelAppointmentSchema', () => {
   it('requires a non-empty reason', () => {
     expect(cancelAppointmentSchema.safeParse({ reason: '' }).success).toBe(false);
     expect(cancelAppointmentSchema.safeParse({ reason: 'Conflict' }).success).toBe(true);
+  });
+});
+
+describe('rescheduleAppointmentSchema', () => {
+  it('requires a valid scheduledAt', () => {
+    expect(rescheduleAppointmentSchema.safeParse({}).success).toBe(false);
+    expect(rescheduleAppointmentSchema.safeParse({ scheduledAt: 'not-a-date' }).success).toBe(false);
+    const result = rescheduleAppointmentSchema.safeParse({ scheduledAt: '2026-09-05T12:00:00Z' });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.scheduledAt).toBeInstanceOf(Date);
+  });
+});
+
+describe('updateAppointmentVisibilitySchema', () => {
+  it('requires a boolean isPublic', () => {
+    expect(updateAppointmentVisibilitySchema.safeParse({}).success).toBe(false);
+    expect(updateAppointmentVisibilitySchema.safeParse({ isPublic: 'yes' }).success).toBe(false);
+    expect(updateAppointmentVisibilitySchema.safeParse({ isPublic: true }).success).toBe(true);
   });
 });
 
