@@ -81,7 +81,10 @@ Rendered status pages, published from this repo via GitHub Pages:
 [progress](https://wyco68.github.io/CulpritWeb/progress.html) ·
 [frontend](https://wyco68.github.io/CulpritWeb/frontend.html) ·
 [backend](https://wyco68.github.io/CulpritWeb/backend.html) ·
+[architecture](https://wyco68.github.io/CulpritWeb/architecture.html) ·
 [deployment](https://wyco68.github.io/CulpritWeb/deployment.html) ·
+[CI/CD & secrets](https://wyco68.github.io/CulpritWeb/cicd-secrets.html) ·
+[AI agents & docs](https://wyco68.github.io/CulpritWeb/ai-agents.html) ·
 [hosting cost](https://wyco68.github.io/CulpritWeb/hosting-cost.html).
 
 ## Deployment
