@@ -12,6 +12,7 @@ import { StatusPill } from '@/modules/shared/ui/status-pill';
 import { Switch } from '@/modules/shared/ui/switch';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { cn } from '@/modules/shared/lib/utils';
+import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
 // Type-only, so it's erased at compile time either way — imported from the concrete files rather
 // than the barrel for consistency with the sibling dialogs (see cancel-dialog.tsx).
@@ -80,7 +81,14 @@ export function AppointmentsTable({
     scheduled: 'Scheduled',
     cancelled: 'Cancelled',
   };
-  const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  // Pinned to the meeting location's zone, not the admin's current browser zone — the admin may
+  // be travelling (see profile visiting-researcher history) and still needs to see the actual
+  // scheduled wall-clock time at the meeting location, not a shifted local conversion.
+  const timeFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: INSTITUTION_TIME_ZONE,
+  });
   const router = useRouter();
 
   const [cancelling, setCancelling] = useState<AppointmentView | null>(null);
