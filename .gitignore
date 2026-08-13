@@ -20,7 +20,7 @@ docs/internal/
 NOTES.md
 TODO.md
 #
-# NOTE: PROJECT_SPEC.html is intentionally NOT ignored.
+# NOTE: docs-site/PROJECT_SPEC.html is intentionally NOT ignored.
 #       It is the source for the GitHub Pages "spec" site (deployment #1).
 #       It is kept OUT of the Vercel app build via .vercelignore.
 

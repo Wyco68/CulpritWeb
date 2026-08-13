@@ -12,14 +12,7 @@ AGENTS.md
 .mcp.json
 skills-lock.json
 PROJECT_SPEC.md
-PROJECT_SPEC.html
-DEVELOPMENT_PROGRESS.html
-FRONTEND.html
-BACKEND.html
-DEPLOYMENT.html
-HOSTING_COST.html
-hosting-cost.pdf
-hosting-cost-assets
+docs-site
 docs
 .reports
 

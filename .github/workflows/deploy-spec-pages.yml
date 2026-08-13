@@ -1,13 +1,14 @@
 name: Deploy Docs to GitHub Pages
 
-# Publishes the client-facing docs as the GitHub Pages site:
-#   PROJECT_SPEC.html          -> index.html
-#   DEVELOPMENT_PROGRESS.html  -> progress.html
-#   FRONTEND.html              -> frontend.html
-#   BACKEND.html               -> backend.html
-#   DEPLOYMENT.html            -> deployment.html
-#   HOSTING_COST.html          -> hosting-cost.html   (+ hosting-cost.pdf, hosting-cost-assets/)
-#   docs-site-assets/style.css -> style.css   (shared stylesheet all 6 pages link to)
+# Publishes the client-facing docs as the GitHub Pages site. All source files live together under
+# docs-site/ (see docs-site/README.md if that's ever added — for now, this mapping is the map):
+#   docs-site/PROJECT_SPEC.html          -> index.html
+#   docs-site/DEVELOPMENT_PROGRESS.html  -> progress.html
+#   docs-site/FRONTEND.html              -> frontend.html
+#   docs-site/BACKEND.html               -> backend.html
+#   docs-site/DEPLOYMENT.html            -> deployment.html
+#   docs-site/HOSTING_COST.html          -> hosting-cost.html   (+ hosting-cost.pdf, hosting-cost-assets/)
+#   docs-site/style.css                  -> style.css   (shared stylesheet all 6 pages link to)
 # Fully independent from the Vercel application deploy — different target, different domain.
 # This workflow touches nothing else in the repo.
 
@@ -15,15 +16,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'PROJECT_SPEC.html'
-      - 'DEVELOPMENT_PROGRESS.html'
-      - 'FRONTEND.html'
-      - 'BACKEND.html'
-      - 'DEPLOYMENT.html'
-      - 'HOSTING_COST.html'
-      - 'hosting-cost.pdf'
-      - 'hosting-cost-assets/**'
-      - 'docs-site-assets/**'
+      - 'docs-site/**'
       - '.github/workflows/deploy-spec-pages.yml'
   workflow_dispatch:
 
@@ -51,27 +44,27 @@ jobs:
       - name: Assemble site
         run: |
           set -euo pipefail
-          if [ ! -f PROJECT_SPEC.html ]; then
-            echo "PROJECT_SPEC.html not found — nothing to publish." >&2
+          if [ ! -f docs-site/PROJECT_SPEC.html ]; then
+            echo "docs-site/PROJECT_SPEC.html not found — nothing to publish." >&2
             exit 1
           fi
           rm -rf _site
           mkdir -p _site
-          cp PROJECT_SPEC.html _site/index.html
+          cp docs-site/PROJECT_SPEC.html _site/index.html
           for pair in "DEVELOPMENT_PROGRESS.html:progress.html" "FRONTEND.html:frontend.html" "BACKEND.html:backend.html" "DEPLOYMENT.html:deployment.html" "HOSTING_COST.html:hosting-cost.html" "hosting-cost.pdf:hosting-cost.pdf"; do
             src="${pair%%:*}"
             dest="${pair##*:}"
-            if [ -f "$src" ]; then
-              cp "$src" "_site/$dest"
+            if [ -f "docs-site/$src" ]; then
+              cp "docs-site/$src" "_site/$dest"
             fi
           done
           # Screenshots referenced by hosting-cost.html. Images only, nothing else.
-          if [ -d hosting-cost-assets ]; then
+          if [ -d docs-site/hosting-cost-assets ]; then
             mkdir -p _site/hosting-cost-assets
-            cp hosting-cost-assets/*.png _site/hosting-cost-assets/
+            cp docs-site/hosting-cost-assets/*.png _site/hosting-cost-assets/
           fi
           # Shared stylesheet — all 6 pages link to this instead of each embedding its own copy.
-          cp docs-site-assets/style.css _site/style.css
+          cp docs-site/style.css _site/style.css
           # Do NOT copy any other file. The Pages site is these docs only.
 
       - name: Configure Pages

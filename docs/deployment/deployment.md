@@ -54,7 +54,7 @@ origin allowlisted in `frame-src`/CSP if a Content-Security-Policy header is add
 ## Backups
 
 **Open question — not yet decided.** Supabase's free tier has no automatic backups (surfaced by
-the `HOSTING_COST.html` review). Accept the risk, script a manual backup, or budget for a paid
+the `docs-site/HOSTING_COST.html` review). Accept the risk, script a manual backup, or budget for a paid
 tier with backups included — see `requirements/scope.md`'s open questions.
 
 ## Observability
@@ -69,7 +69,7 @@ monitoring tool is wired up to measure it.
 Every third-party service must stay on its **free tier**: Supabase (free Postgres),
 Cloudflare R2 (free egress), Calendly (free, embed-only), Cloudflare Turnstile (free), Cloudflare
 WAF Rate Limiting + DNS proxy (Free plan, 1 rate limiting rule per zone), Resend (free tier,
-unused). The VPS itself is the one paid line item — see `HOSTING_COST.html` for the full cost
+unused). The VPS itself is the one paid line item — see `docs-site/HOSTING_COST.html` for the full cost
 review that drove the R2 migration
 ([ADR-002](../decisions/ADR-002-object-storage-r2.md)) and
 [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md) for the rate-limiting architecture.

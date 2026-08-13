@@ -1,16 +1,9 @@
 # Keep the spec site and internal docs OUT of the Vercel application build.
-# This guarantees the app never serves PROJECT_SPEC.html as a page and never
+# This guarantees the app never serves docs-site/PROJECT_SPEC.html as a page and never
 # ships internal documents. (.claude/ and CLAUDE.md are gitignored, so they
 # never reach Vercel anyway — listed here as defense in depth.)
 
-PROJECT_SPEC.html
-DEVELOPMENT_PROGRESS.html
-FRONTEND.html
-BACKEND.html
-DEPLOYMENT.html
-HOSTING_COST.html
-hosting-cost.pdf
-hosting-cost-assets/
+docs-site/
 PROJECT_SPEC.md
 raw_spec.md
 docs/internal/
