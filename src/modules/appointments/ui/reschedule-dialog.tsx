@@ -7,16 +7,11 @@ import { Dialog } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { toInstitutionLocalDatetimeValue } from '@/modules/shared/lib/timezone';
 // Deep, module-internal import — see the equivalent comment in cancel-dialog.tsx.
 import { rescheduleAppointmentSchema, type RescheduleAppointmentInput } from '../appointment.schema';
 
 type RescheduleFormInput = z.input<typeof rescheduleAppointmentSchema>;
-
-/** `<input type="datetime-local">` wants local wall-clock time with no offset/zone suffix. */
-function toDatetimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export function RescheduleDialog({
   open,
@@ -39,7 +34,7 @@ export function RescheduleDialog({
     reset,
   } = useForm<RescheduleFormInput, unknown, RescheduleAppointmentInput>({
     resolver: zodResolver(rescheduleAppointmentSchema),
-    values: { scheduledAt: scheduledAt ? toDatetimeLocalValue(scheduledAt) : '' },
+    values: { scheduledAt: scheduledAt ? toInstitutionLocalDatetimeValue(scheduledAt) : '' },
   });
 
   return (

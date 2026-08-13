@@ -11,6 +11,7 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { toInstitutionLocalDatetimeValue } from '@/modules/shared/lib/timezone';
 // Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx (the
 // barrel also re-exports the Prisma-backed `getAppointmentService`; even a type-only barrel
 // import drags Prisma/`pg` into the client bundle, confirmed empirically).
@@ -18,12 +19,6 @@ import type { Appointment } from '../appointment.types';
 import { createAppointmentSchema, type CreateAppointmentInput } from '../appointment.schema';
 
 type AppointmentFormInput = z.input<typeof createAppointmentSchema>;
-
-/** `<input type="datetime-local">` wants local wall-clock time with no offset/zone suffix. */
-function toDatetimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 async function submitAppointment(id: string | undefined, input: CreateAppointmentInput) {
   const response = await fetch(id ? `/api/admin/appointments/${id}` : '/api/admin/appointments', {
@@ -62,7 +57,7 @@ export function AppointmentFormDialog({
       requesterName: appointment?.requesterName ?? '',
       requesterEmail: appointment?.requesterEmail ?? '',
       researchGroup: appointment?.researchGroup ?? '',
-      scheduledAt: appointment ? toDatetimeLocalValue(appointment.scheduledAt) : '',
+      scheduledAt: appointment ? toInstitutionLocalDatetimeValue(appointment.scheduledAt) : '',
       topic: appointment?.topic ?? '',
     },
   });
@@ -119,16 +114,21 @@ export function AppointmentFormDialog({
         >
           {(fieldProps) => <Input {...fieldProps} {...register('researchGroup')} />}
         </FormField>
-        <FormField
-          label="Date & time"
-          htmlFor="appointment-scheduledAt"
-          required
-          error={errors.scheduledAt?.message}
-        >
-          {(fieldProps) => (
-            <Input {...fieldProps} type="datetime-local" {...register('scheduledAt')} />
-          )}
-        </FormField>
+        {!isEdit && (
+          // Time is set once at creation only — changing the time on an existing appointment is
+          // `RescheduleDialog`'s job alone (its own dedicated action, 409-guarded, separately
+          // audited), so there is exactly one control in the UI that can move a meeting.
+          <FormField
+            label="Date & time"
+            htmlFor="appointment-scheduledAt"
+            required
+            error={errors.scheduledAt?.message}
+          >
+            {(fieldProps) => (
+              <Input {...fieldProps} type="datetime-local" {...register('scheduledAt')} />
+            )}
+          </FormField>
+        )}
         <FormField label="Topic" htmlFor="appointment-topic" error={errors.topic?.message}>
           {(fieldProps) => <Textarea {...fieldProps} {...register('topic')} rows={3} />}
         </FormField>

@@ -90,7 +90,6 @@ export function createAppointmentService(deps: AppointmentServiceDeps): Appointm
             requesterName: input.requesterName,
             requesterEmail: input.requesterEmail ?? null,
             researchGroup: input.researchGroup ?? null,
-            scheduledAt: input.scheduledAt,
             topic: input.topic ?? null,
           },
           audit: { actor, action: 'appointment.update' },
