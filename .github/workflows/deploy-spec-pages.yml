@@ -7,6 +7,7 @@ name: Deploy Docs to GitHub Pages
 #   BACKEND.html               -> backend.html
 #   DEPLOYMENT.html            -> deployment.html
 #   HOSTING_COST.html          -> hosting-cost.html   (+ hosting-cost.pdf, hosting-cost-assets/)
+#   docs-site-assets/style.css -> style.css   (shared stylesheet all 6 pages link to)
 # Fully independent from the Vercel application deploy — different target, different domain.
 # This workflow touches nothing else in the repo.
 
@@ -22,6 +23,7 @@ on:
       - 'HOSTING_COST.html'
       - 'hosting-cost.pdf'
       - 'hosting-cost-assets/**'
+      - 'docs-site-assets/**'
       - '.github/workflows/deploy-spec-pages.yml'
   workflow_dispatch:
 
@@ -68,6 +70,8 @@ jobs:
             mkdir -p _site/hosting-cost-assets
             cp hosting-cost-assets/*.png _site/hosting-cost-assets/
           fi
+          # Shared stylesheet — all 6 pages link to this instead of each embedding its own copy.
+          cp docs-site-assets/style.css _site/style.css
           # Do NOT copy any other file. The Pages site is these docs only.
 
       - name: Configure Pages
