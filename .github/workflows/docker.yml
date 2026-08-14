@@ -23,7 +23,12 @@ name: Docker build & publish
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Bypass the Docker build cache (needed after a content-only DB change with no source diff — the cached `next build` layer would otherwise reuse the old prerendered ISR pages)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -138,7 +143,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          no-cache: ${{ github.event.inputs.no_cache == 'true' }}
+          cache-from: ${{ github.event.inputs.no_cache == 'true' && '' || 'type=gha' }}
           cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
