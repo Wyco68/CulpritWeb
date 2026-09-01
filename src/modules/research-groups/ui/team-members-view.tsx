@@ -21,19 +21,22 @@ function MemberCard({ member }: { member: TeamMember }) {
   const shown = expanded || !isLong ? bio : `${bio.slice(0, 180).trimEnd()}…`;
 
   return (
-    <li className="flex gap-4 rounded-lg border border-border p-4">
+    // Borderless, rule-separated roster entry. Boxing each person in a bordered card produced a
+    // grid of near-identical rectangles — the most template-looking pattern available — and the
+    // borders carried no information the whitespace and rules don't already carry.
+    <li className="flex gap-4 border-t border-border py-6">
       <Avatar
         src={member.photoUrl}
         alt={`Portrait of ${member.name}`}
         fallback={member.name.slice(0, 1).toUpperCase()}
-        size="sm"
+        size="md"
       />
       <div className="min-w-0">
-        <p className="font-medium text-foreground">{member.name}</p>
-        <p className="text-sm text-accent">{member.role}</p>
+        <p className="font-serif text-lg leading-tight text-foreground">{member.name}</p>
+        <p className="mt-1 text-sm text-accent">{member.role}</p>
         {bio && (
           <>
-            <p id={bioId} className="mt-1.5 text-sm text-muted-foreground">
+            <p id={bioId} className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
               {shown}
             </p>
             {isLong && (
@@ -42,7 +45,7 @@ function MemberCard({ member }: { member: TeamMember }) {
                 aria-expanded={expanded}
                 aria-controls={bioId}
                 onClick={() => setExpanded((value) => !value)}
-                className="mt-1 rounded text-sm font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="mt-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 transition-colors duration-300 ease-[var(--ease-out-expo)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {expanded ? 'Show less' : 'Show more'}
               </button>
@@ -65,18 +68,22 @@ function GroupSection({
 }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={heading ? headingId : undefined} className="space-y-4">
+    <section aria-labelledby={heading ? headingId : undefined} className="space-y-5">
       {heading && (
         <div>
-          <h3 id={headingId} className="text-lg font-semibold tracking-tight text-foreground">
+          <h3 id={headingId} className="text-balance font-serif text-2xl text-foreground">
             {heading}
           </h3>
           {description && (
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-[62ch] text-pretty leading-relaxed text-muted-foreground">
+              {description}
+            </p>
           )}
         </div>
       )}
-      <ul className={cn('grid gap-3 sm:grid-cols-2')}>
+      {/* Two columns of rule-separated entries, not two columns of cards. `gap-x` only: the rows
+          are divided by their own top borders, so a vertical gap would break the rule line. */}
+      <ul className={cn('grid gap-x-10 sm:grid-cols-2')}>
         {members.map((member) => (
           <MemberCard key={member.id} member={member} />
         ))}
@@ -93,7 +100,7 @@ export function TeamMembersView({
   ungrouped: TeamMember[];
 }) {
   return (
-    <div className="space-y-12">
+    <div className="space-y-16">
       {groups
         .filter((group) => group.teamMembers.length > 0)
         .map((group) => (
