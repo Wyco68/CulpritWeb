@@ -3,7 +3,7 @@ import { createEventService, splitByTiming } from '../event.service';
 import type { EventRepository } from '../event.repository';
 import type { AuditContext, Event } from '../event.types';
 
-const SILENT_LOGGER = { info: () => {}, warn: () => {}, error: () => {} };
+const SILENT_LOGGER = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
 function makeEvent(overrides: Partial<Event> = {}): Event {
   const now = new Date('2026-09-01T00:00:00Z');
