@@ -15,7 +15,7 @@ const TABS = [
   { href: '/admin/publications', label: 'Publications' },
   { href: '/admin/groups', label: 'Research Groups' },
   { href: '/admin/team-members', label: 'Team Members' },
-  { href: '/admin/appointments', label: 'Appointments' },
+  { href: '/admin/events', label: 'Events' },
 ] as const;
 
 export function AdminNav() {
@@ -23,7 +23,7 @@ export function AdminNav() {
   const activeRef = useRef<HTMLAnchorElement>(null);
 
   // On a narrow screen the tab just navigated to can sit outside the visible run — landing on
-  // Appointments and finding its own tab clipped at the edge. Pull it into view on mount and
+  // Events and finding its own tab clipped at the edge. Pull it into view on mount and
   // whenever the route changes.
   //
   // Guarded on the strip actually overflowing. `scrollIntoView` walks every scrollable ancestor,
