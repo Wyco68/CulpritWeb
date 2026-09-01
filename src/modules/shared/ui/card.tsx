@@ -3,13 +3,19 @@ import { cn } from '@/modules/shared/lib/utils';
 
 // shadcn/ui `new-york` Card family, owned by the repo (copied, not a black-box dependency).
 // data-slot attributes are the styling hook per the component system convention.
+//
+// The default no longer carries a shadow. Border + shadow + white fill on every card is the stock
+// card look, and applying elevation everywhere means elevation communicates nothing. A card here
+// is a flat panel on the page; anything that genuinely floats above the page (dialogs, menus)
+// opts into `shadow-raised` explicitly — a warm, diffused, single-light-source shadow rather than
+// the generic black one.
 
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card"
       className={cn(
-        'rounded-lg border border-border bg-background text-foreground shadow-sm',
+        'rounded-lg border border-border bg-background text-foreground',
         className,
       )}
       {...props}
@@ -21,7 +27,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-header"
-      className={cn('flex flex-col gap-1.5 p-5', className)}
+      className={cn('flex flex-col gap-2 p-6', className)}
       {...props}
     />
   );
@@ -31,7 +37,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'h3'>) {
   return (
     <h3
       data-slot="card-title"
-      className={cn('text-base font-semibold leading-tight tracking-tight', className)}
+      className={cn('text-balance font-serif text-lg leading-tight text-foreground', className)}
       {...props}
     />
   );
@@ -41,21 +47,21 @@ function CardDescription({ className, ...props }: React.ComponentProps<'p'>) {
   return (
     <p
       data-slot="card-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-pretty text-sm leading-relaxed text-muted-foreground', className)}
       {...props}
     />
   );
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div data-slot="card-content" className={cn('p-5 pt-0', className)} {...props} />;
+  return <div data-slot="card-content" className={cn('p-6 pt-0', className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card-footer"
-      className={cn('flex items-center gap-3 p-5 pt-0', className)}
+      className={cn('flex items-center gap-3 p-6 pt-0', className)}
       {...props}
     />
   );

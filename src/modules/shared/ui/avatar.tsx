@@ -5,7 +5,9 @@ import Image from 'next/image';
 
 import { cn } from '@/modules/shared/lib/utils';
 
-// Circular avatar with a subtle ring, per the Figma prototype's profile-photo treatment. Uses
+// Portrait frame with a hairline edge. Defaults to a rounded square rather than a circle: a
+// circular crop is the default everywhere on the web, and a squircle reads as a considered
+// editorial portrait instead — `shape="circle"` is still available where a circle is wanted. Uses
 // next/image: the R2 photo host is allow-listed in next.config.ts's remotePatterns (derived from
 // R2_PUBLIC_URL). Client component so a failed load (host not allow-listed, R2_PUBLIC_URL unset in
 // this environment, photo deleted, etc.) can fall back to the initials placeholder instead of
@@ -19,8 +21,18 @@ export interface AvatarProps {
   /** Fallback initials shown when there is no photo. */
   fallback: string;
   size?: 'sm' | 'md' | 'lg';
+  /** Portrait framing. Defaults to the squircle; `circle` is opt-in. */
+  shape?: 'squircle' | 'circle';
   className?: string;
 }
+
+// Concentric radii — the larger the frame, the softer its corner, so a big portrait and a small
+// one look like the same object at two scales instead of two different components.
+const SHAPE_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'rounded-[6px]',
+  md: 'rounded-[10px]',
+  lg: 'rounded-[16px]',
+};
 
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, string> = {
   sm: 'size-10 text-sm',
@@ -36,10 +48,20 @@ const FIXED_PIXEL_SIZES: Record<'sm' | 'md', number> = {
   md: 64,
 };
 
-export function Avatar({ src, alt, fallback, size = 'md', className }: AvatarProps) {
+export function Avatar({
+  src,
+  alt,
+  fallback,
+  size = 'md',
+  shape = 'squircle',
+  className,
+}: AvatarProps) {
   const [failed, setFailed] = useState(false);
+  // A hairline `currentColor` edge at low alpha, so the frame reads correctly on the ink masthead
+  // and on the paper page without each caller having to know which surface it is sitting on.
   const base = cn(
-    'shrink-0 overflow-hidden rounded-full ring-2 ring-navy-foreground/20',
+    'shrink-0 overflow-hidden ring-1 ring-current/15',
+    shape === 'circle' ? 'rounded-full' : SHAPE_CLASSES[size],
     SIZE_CLASSES[size],
     className,
   );

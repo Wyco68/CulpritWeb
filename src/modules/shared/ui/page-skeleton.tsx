@@ -1,6 +1,6 @@
 import { cn } from '@/modules/shared/lib/utils';
 
-// Generic content placeholder for route-level `loading.tsx` boundaries. The navy header/tab bar
+// Generic content placeholder for route-level `loading.tsx` boundaries. The masthead header/tab bar
 // lives in the layout and stays mounted across tab switches, so a skeleton only ever stands in
 // for the `<main>` content — a heading bar plus a few text rows, matching the shape every tab
 // renders. Purely decorative: the bars are hidden from assistive tech and a single polite status
