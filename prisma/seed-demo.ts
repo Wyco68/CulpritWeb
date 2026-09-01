@@ -6,9 +6,8 @@ import { config as loadEnv } from 'dotenv';
 // effect of `prisma migrate dev`.
 //
 // Additive and idempotent. Each section is skipped when its table already has rows, so re-running
-// can't duplicate content, and nothing here deletes anything — appointments in particular are
-// never hard-deleted anywhere in this codebase. `npm run db:seed:demo -- --undo` removes exactly
-// what this script created (matched by name — see DEMO_APPOINTMENT_NAMES below).
+// can't duplicate content, and nothing here deletes anything. `npm run db:seed:demo -- --undo`
+// removes exactly what this script created (matched by title — see DEMO_EVENT_TITLES below).
 
 loadEnv({ path: '.env.local' });
 loadEnv();
@@ -214,88 +213,62 @@ async function seed() {
     console.log('research groups: rows already present — skipped');
   }
 
-  if ((await prisma.appointment.count()) === 0) {
-    // Every row here is what the admin would type into "Add appointment" by hand — there is no
-    // Calendly-sourced path anymore. Mixed statuses on purpose: three of the four `scheduled`
-    // rows are `isPublic: true` (what the public Upcoming Events tab lists), one is kept private
-    // to demonstrate the toggle; the two `cancelled` rows exercise the status pill / cancellation
-    // reason as retained (soft-cancelled), never-deleted seed data.
-    await prisma.appointment.createMany({
+  if ((await prisma.event.count()) === 0) {
+    // A spread of dates either side of today, so the public Events tab has content in both its
+    // Upcoming and Past sections without the seed having to know what "now" is. Media are left
+    // empty: photo URLs would have to point at a real R2 bucket, and a broken <img> in demo data
+    // is worse than no gallery.
+    await prisma.event.createMany({
       data: [
         {
-          requesterName: 'Priya Raman',
-          requesterEmail: 'priya.raman@example.org',
-          researchGroup: 'Applied Cryptography Lab',
-          scheduledAt: daysFromNow(4, 10),
-          topic: 'Collaboration on post-quantum key rotation tooling.',
-          status: 'scheduled',
-          isPublic: true,
+          title: 'Guest lecture: post-quantum key rotation in practice',
+          description:
+            'A walkthrough of what migrating a live key hierarchy to post-quantum primitives actually costs, using tooling built with the Applied Cryptography Lab.',
+          eventDate: daysFromNow(16, 11),
         },
         {
-          requesterName: 'Daniel Okonkwo',
-          requesterEmail: 'd.okonkwo@example.org',
-          researchGroup: 'Secure Systems Group',
-          scheduledAt: daysFromNow(9, 14),
-          topic: 'Reproducible build attestations for a national registry.',
-          status: 'scheduled',
-          isPublic: true,
+          title: 'Workshop — reproducible build attestations',
+          description:
+            'Hands-on session on attesting builds end to end, run with the Secure Systems Group. Bring a laptop.',
+          eventDate: daysFromNow(9, 14),
         },
         {
-          requesterName: 'Lena Fischer',
-          requesterEmail: 'lena.fischer@example.org',
-          researchGroup: 'Security & Human Factors Unit',
-          scheduledAt: daysFromNow(16, 11),
-          topic: 'Joint study on warning comprehension in banking apps.',
-          status: 'scheduled',
-          isPublic: true,
+          title: 'Departmental seminar: warning comprehension in banking apps',
+          description:
+            'Results from a joint study with the Security & Human Factors Unit on whether anyone reads the warnings we ship.',
+          eventDate: daysFromNow(4, 10),
         },
         {
-          requesterName: 'Omar Haddadi',
-          requesterEmail: 'omar.haddadi@example.org',
-          researchGroup: 'Applied Cryptography Lab',
-          scheduledAt: daysFromNow(6, 9),
-          topic: 'MSc supervision enquiry.',
-          status: 'scheduled',
-          isPublic: false,
+          title: 'Panel: teaching security to non-specialists',
+          description:
+            'Faculty panel on getting security fundamentals across to students who will never write a line of C.',
+          eventDate: daysFromNow(-12, 15),
         },
         {
-          requesterName: 'Grace Adeyemi',
-          scheduledAt: daysFromNow(2, 15),
-          topic: 'Vendor pitch.',
-          status: 'cancelled',
-          cancelReason: 'Not relevant to current research priorities.',
-        },
-        {
-          requesterName: 'Henrik Solberg',
-          requesterEmail: 'h.solberg@example.org',
-          researchGroup: 'Secure Systems Group',
-          scheduledAt: daysFromNow(-3, 13),
-          topic: 'Rescheduling — clashed with a conference.',
-          status: 'cancelled',
-          cancelReason: 'Requester asked to move the meeting.',
+          title: 'Invited talk — threat modelling for small teams',
+          description:
+            'What survives when you strip threat modelling down to something a four-person team will actually do every sprint.',
+          eventDate: daysFromNow(-40, 13),
         },
       ],
     });
-    console.log(
-      'appointments: 6 created (4 scheduled — 3 public, 1 private — + 2 cancelled)',
-    );
+    console.log('events: 5 created (3 upcoming, 2 past)');
   } else {
-    console.log('appointments: rows already present — skipped');
+    console.log('events: rows already present — skipped');
   }
 }
 
-const DEMO_APPOINTMENT_NAMES = [
-  'Priya Raman',
-  'Daniel Okonkwo',
-  'Lena Fischer',
-  'Omar Haddadi',
-  'Grace Adeyemi',
-  'Henrik Solberg',
+const DEMO_EVENT_TITLES = [
+  'Guest lecture: post-quantum key rotation in practice',
+  'Workshop — reproducible build attestations',
+  'Departmental seminar: warning comprehension in banking apps',
+  'Panel: teaching security to non-specialists',
+  'Invited talk — threat modelling for small teams',
 ];
 
 async function undo() {
-  const appointments = await prisma.appointment.deleteMany({
-    where: { requesterName: { in: DEMO_APPOINTMENT_NAMES } },
+  const events = await prisma.event.deleteMany({
+    where: { title: { in: DEMO_EVENT_TITLES } },
   });
   const members = await prisma.teamMember.deleteMany({
     where: {
@@ -317,7 +290,7 @@ async function undo() {
 
   console.log(
     `undo: ${research.count} research, ${publications.count} publications, ${groups.count} groups, ` +
-      `${members.count} team members, ${appointments.count} appointments removed. ` +
+      `${members.count} team members, ${events.count} events removed. ` +
       'Profile left as-is (edit it in the admin UI).',
   );
 }
