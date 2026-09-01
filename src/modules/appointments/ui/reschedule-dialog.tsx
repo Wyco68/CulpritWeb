@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Dialog } from '@/modules/shared/ui/dialog';
+import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -63,14 +63,14 @@ export function RescheduleDialog({
             <Input {...fieldProps} type="datetime-local" {...register('scheduledAt')} />
           )}
         </FormField>
-        <div className="flex justify-end gap-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Back
           </Button>
           <Button type="submit" loading={loading}>
             Reschedule
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

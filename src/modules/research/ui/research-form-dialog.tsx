@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { Dialog } from '@/modules/shared/ui/dialog';
+import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
@@ -95,13 +95,20 @@ export function ResearchFormDialog({
         noValidate
         className="flex flex-col gap-4"
       >
-        <FormField label="Title" htmlFor="research-title" required error={errors.title?.message}>
+        <FormField
+          label="Title"
+          htmlFor="research-title"
+          required
+          description="The project name as it should appear on the public Research tab."
+          error={errors.title?.message}
+        >
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
         <FormField
           label="Area"
           htmlFor="research-area"
           required
+          description="The field this sits in, shown as the running head beside the entry — for example “Access Control”."
           error={errors.area?.message}
         >
           {(fieldProps) => <Input {...fieldProps} {...register('area')} />}
@@ -110,6 +117,7 @@ export function ResearchFormDialog({
           label="Summary"
           htmlFor="research-summary"
           required
+          description="A short paragraph describing the work. Plain text, no formatting."
           error={errors.summary?.message}
         >
           {(fieldProps) => <Textarea {...fieldProps} {...register('summary')} rows={4} />}
@@ -127,26 +135,31 @@ export function ResearchFormDialog({
         <FormField
           label="Sort order"
           htmlFor="research-sortOrder"
+          description="Lower numbers appear first on the public tab."
           error={errors.sortOrder?.message}
         >
+          {/* Sized to its content rather than stretched to the dialog width: a two-digit number in
+              a full-width box reads as a text field and invites a sentence. */}
           {(fieldProps) => (
             <Input
               {...fieldProps}
               type="number"
               min={0}
+              inputMode="numeric"
+              className="w-28"
               {...register('sortOrder', { valueAsNumber: true })}
             />
           )}
         </FormField>
 
-        <div className="mt-2 flex justify-end gap-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button type="submit" loading={isSubmitting || mutation.isPending}>
             Save changes
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );
