@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { UserRound } from 'lucide-react';
 import { getProfileCached, ProfileAffiliations, ProfileLinks } from '@/modules/profile';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -16,40 +16,38 @@ export default async function AboutPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">About</h2>
+      <PageHeading title="About" />
 
       {!result.ok || !result.data ? (
         <EmptyState
-          icon={UserRound}
-          title="Profile information is not available"
-          description="Please check back soon."
-          className="mt-6"
+          title="Profile not available"
+          className="mt-10"
         />
       ) : (
-        <div className="mt-8 space-y-8">
+        <div className="mt-12 space-y-10">
+          {/* The lead paragraph, set in the reading serif one step up from body size. It is the
+              first prose on the site and the thing most visitors actually came for, so it is
+              given the weight of a standfirst rather than the grey of secondary copy. */}
           {result.data.bio && (
-            <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
+            <p className="rise max-w-[62ch] text-pretty font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
               {result.data.bio}
             </p>
           )}
 
           <ProfileLinks profile={result.data} />
 
-          {/* Styled to match the structured sections below (accent rule + uppercase heading) so
-              the research statement reads as one of them rather than as stray body copy. */}
           {result.data.researchStatement && (
             <section
               aria-labelledby="research-statement-heading"
-              className="border-t border-border pt-6"
+              className="border-t border-border pt-8"
             >
               <h3
                 id="research-statement-heading"
-                className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-widest text-foreground"
+                className="font-serif text-xl text-foreground"
               >
-                <span className="h-3.5 w-0.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
                 Research statement
               </h3>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-4 max-w-[62ch] text-pretty leading-[1.75] text-muted-foreground">
                 {result.data.researchStatement}
               </p>
             </section>

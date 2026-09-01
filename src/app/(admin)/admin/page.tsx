@@ -1,90 +1,219 @@
 import type { Metadata } from 'next';
-import { FileText, FlaskConical, Users2, Building2, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent } from '@/modules/shared/ui/card';
+import { getProfileCached } from '@/modules/profile';
 import { getResearchService } from '@/modules/research';
 import { getPublicationService } from '@/modules/publications';
 import { getResearchGroupService, getTeamMemberService } from '@/modules/research-groups';
 import { getAppointmentService } from '@/modules/appointments';
+import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { YearColumns, DistributionBars, CompletenessMeter } from './_components/charts';
+import type { YearDatum } from './_components/charts';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Admin Dashboard' };
 }
 
-// The dashboard is deliberately light: at-a-glance counts (fetched directly through each
-// module's service — a Server Component read, no client round trip needed), each card doubling
-// as a link into that section's "Set Information" / "Manage Appointments" page. Nothing here is
-// itself editable.
-export default async function AdminDashboardPage() {
-  const [research, publications, groups, teamMembers, scheduled] = await Promise.all([
-    getResearchService().list(),
-    getPublicationService().list(),
-    getResearchGroupService().list(),
-    getTeamMemberService().list(),
-    // Every appointment is admin-declared, so there is no pending-review queue anymore — the one
-    // remaining count worth showing is how many are still scheduled (not yet cancelled).
-    getAppointmentService().list({ status: 'scheduled' }),
-  ]);
+// The dashboard reports on what is actually published, using only fields the admin has already
+// entered — publication years, research areas, group membership, appointment dates. Nothing here
+// is a vanity metric or an invented number; if the data isn't in the database, the panel isn't
+// rendered at all.
+//
+// The forms follow from the data's job rather than from what looks impressive: output over time is
+// a column chart, magnitude across named categories is a horizontal bar, a ratio against a ceiling
+// is a meter, and a lone number is just a number. Each is a single series in one hue, so length
+// carries the magnitude and colour carries nothing.
+//
+// Reads go through each module's service (a Server Component read, no client round trip). The
+// aggregation is done here in memory rather than as new repository queries: these are tens of
+// rows, not thousands, and it keeps Prisma where it belongs.
 
-  const stats = [
-    {
-      href: '/admin/research',
-      label: 'Research works',
-      icon: FlaskConical,
-      value: research.ok ? research.data.length : 0,
-    },
-    {
-      href: '/admin/publications',
-      label: 'Publications',
-      icon: FileText,
-      value: publications.ok ? publications.data.length : 0,
-    },
-    {
-      href: '/admin/groups',
-      label: 'Research groups',
-      icon: Building2,
-      value: groups.ok ? groups.data.length : 0,
-    },
-    {
-      href: '/admin/team-members',
-      label: 'Team members',
-      icon: Users2,
-      value: teamMembers.ok ? teamMembers.data.length : 0,
-    },
-    {
-      href: '/admin/appointments',
-      label: 'Scheduled appointments',
-      icon: CalendarClock,
-      value: scheduled.ok ? scheduled.data.length : 0,
-    },
-  ] as const;
+/** The structured profile fields that together make a complete public About tab. */
+const PROFILE_SECTIONS = [
+  'photoUrl',
+  'bio',
+  'researchStatement',
+  'positionAffiliation',
+  'education',
+  'fellowshipsVisiting',
+  'teachingRoles',
+  'teachingAwards',
+  'scholarshipsTravelAwards',
+  'researchInterests',
+  'invitedTalks',
+] as const;
+
+/** Counts per year, keeping the empty years in between — a gap in output is itself information. */
+function toYearSeries(years: number[]): YearDatum[] {
+  if (years.length === 0) return [];
+  const counts = new Map<number, number>();
+  for (const year of years) counts.set(year, (counts.get(year) ?? 0) + 1);
+  const min = Math.min(...years);
+  const max = Math.max(...years);
+  // Bound the span: one mistyped year would otherwise generate thousands of empty slots.
+  const from = Math.max(min, max - 19);
+  return Array.from({ length: max - from + 1 }, (_, index) => ({
+    year: from + index,
+    count: counts.get(from + index) ?? 0,
+  }));
+}
+
+function tally(values: string[]): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts].map(([label, count]) => ({ label, count }));
+}
+
+export default async function AdminDashboardPage() {
+  const [profileResult, research, publications, groups, teamMembers, appointments] =
+    await Promise.all([
+      getProfileCached(),
+      getResearchService().list(),
+      getPublicationService().list(),
+      getResearchGroupService().list(),
+      getTeamMemberService().list(),
+      getAppointmentService().list(),
+    ]);
+
+  const profile = profileResult.ok ? profileResult.data : null;
+  const researchItems = research.ok ? research.data : [];
+  const publicationItems = publications.ok ? publications.data : [];
+  const groupItems = groups.ok ? groups.data : [];
+  const memberItems = teamMembers.ok ? teamMembers.data : [];
+  const appointmentItems = appointments.ok ? appointments.data : [];
+
+  const years = toYearSeries(publicationItems.map((item) => item.year));
+  const byArea = tally(researchItems.map((item) => item.area));
+
+  const byGroup = groupItems.map((group) => ({
+    label: group.name,
+    count: group.teamMembers.length,
+  }));
+  const ungrouped = memberItems.filter((member) => member.researchGroupId === null).length;
+  if (ungrouped > 0) byGroup.push({ label: 'No group', count: ungrouped });
+
+  const now = new Date();
+  const upcoming = appointmentItems
+    .filter((item) => item.status === 'scheduled' && item.scheduledAt > now)
+    .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+  const publicUpcoming = upcoming.filter((item) => item.isPublic).length;
+
+  const filledSections = profile
+    ? PROFILE_SECTIONS.filter((field) => {
+        const value = profile[field];
+        return Array.isArray(value) ? value.length > 0 : Boolean(value);
+      }).length
+    : 0;
+
+  const nextDate = upcoming[0]
+    ? new Intl.DateTimeFormat('en', {
+        day: '2-digit',
+        month: 'short',
+        timeZone: INSTITUTION_TIME_ZONE,
+      }).format(upcoming[0].scheduledAt)
+    : null;
+
+  const latestYear =
+    publicationItems.length > 0 ? Math.max(...publicationItems.map((item) => item.year)) : null;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          A quick overview of the site&apos;s content.
-        </p>
-      </div>
+    <div className="flex flex-col gap-12">
+      <PageHeading as="h1" title="Dashboard" />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {stats.map(({ href, label, icon: Icon, value }) => (
-          <Link
-            key={label}
-            href={href}
-            className="block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <Card className="h-full transition-colors hover:border-accent/50 hover:bg-muted/40">
-              <CardContent className="flex flex-col gap-2 p-4">
-                <Icon className="size-4 text-accent" aria-hidden="true" />
-                <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      {/* Headline counts. A number with a label is the right form for a single current value — a
+          one-bar chart would say the same thing with more ink. */}
+      <dl className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-4">
+        <Figure href="/admin/publications" label="Publications" value={publicationItems.length} />
+        <Figure href="/admin/research" label="Research" value={researchItems.length} />
+        <Figure href="/admin/team-members" label="People" value={memberItems.length} />
+        <Figure
+          href="/admin/appointments"
+          label="Upcoming"
+          value={upcoming.length}
+          note={nextDate ? `next ${nextDate}` : undefined}
+        />
+      </dl>
+
+      {years.length > 0 && (
+        <Panel title="Output by year" note={latestYear ? `latest ${latestYear}` : undefined}>
+          <YearColumns data={years} />
+        </Panel>
+      )}
+
+      <div className="grid gap-12 lg:grid-cols-2">
+        {byArea.length > 0 && (
+          <Panel title="Research areas">
+            <DistributionBars data={byArea} />
+          </Panel>
+        )}
+
+        {byGroup.length > 0 && (
+          <Panel title="Group sizes">
+            <DistributionBars data={byGroup} />
+          </Panel>
+        )}
+
+        <Panel
+          title="Profile completeness"
+          note={filledSections < PROFILE_SECTIONS.length ? 'incomplete' : undefined}
+        >
+          <CompletenessMeter filled={filledSections} total={PROFILE_SECTIONS.length} />
+        </Panel>
+
+        {upcoming.length > 0 && (
+          <Panel title="Public on the site" note={`of ${upcoming.length} upcoming`}>
+            <CompletenessMeter filled={publicUpcoming} total={upcoming.length} />
+          </Panel>
+        )}
       </div>
     </div>
+  );
+}
+
+/** A headline count, linking into the screen that manages it. */
+function Figure({
+  href,
+  label,
+  value,
+  note,
+}: {
+  href: string;
+  label: string;
+  value: number;
+  note?: string;
+}) {
+  return (
+    <div>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="mt-1">
+        <Link
+          href={href}
+          className="tabular rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          {value}
+        </Link>
+        {note && <p className="mt-1.5 font-mono text-xs text-muted-foreground">{note}</p>}
+      </dd>
+    </div>
+  );
+}
+
+function Panel({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border-t border-border pt-5">
+      <div className="mb-5 flex items-baseline justify-between gap-4">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {note && <span className="font-mono text-xs text-muted-foreground">{note}</span>}
+      </div>
+      {children}
+    </section>
   );
 }

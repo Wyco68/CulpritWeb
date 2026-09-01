@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Users } from 'lucide-react';
 import {
   getResearchGroupService,
   getTeamMemberService,
   TeamMembersView,
 } from '@/modules/research-groups';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -29,17 +29,12 @@ export default async function TeamPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Team Members</h2>
+      <PageHeading title="Team Members" />
 
       {(!groupsResult.ok && !ungroupedResult.ok) || !hasAnyone ? (
-        <EmptyState
-          icon={Users}
-          title="No team members listed yet"
-          description="Please check back soon."
-          className="mt-6"
-        />
+        <EmptyState title="No team members listed yet" className="mt-10" />
       ) : (
-        <div className="mt-6">
+        <div className="mt-12">
           <TeamMembersView groups={groups} ungrouped={ungrouped} />
         </div>
       )}

@@ -7,6 +7,7 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 
 // Repeatable CV-style row editor (add / remove / reorder) shared by all 7 JSON list fields on the
 // profile form (education, fellowships, teaching roles/awards, scholarships, research interests,
@@ -33,18 +34,76 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
 
   const fieldErrors = errors[name];
 
+  const addItem = () => append({ title: '', subtitle: '', year: '', description: '' });
+
   return (
-    <fieldset className="rounded-lg border border-border p-4">
-      <legend className="px-1 text-sm font-semibold text-foreground">{heading}</legend>
+    // Rendered through the shared FormSection so all seven CV lists carry the same landmark
+    // treatment as the rest of the profile form. The count sits beside the heading because
+    // "how many entries does this section already have" is the first thing you want to know
+    // when scanning a form this long.
+    <FormSection
+      title={heading}
+      badge={<FormSectionCount count={fields.length} />}
+      action={
+        <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Plus className="size-4" aria-hidden="true" />
+          Add item
+        </Button>
+      }
+    >
+      {fields.length === 0 && (
+        <p className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+          No entries yet. Use “Add item” to create the first one.
+        </p>
+      )}
 
-      {fields.length === 0 && <p className="text-sm text-muted-foreground">No items yet.</p>}
-
-      <ol className="flex flex-col gap-4">
+      <ol className="flex flex-col">
         {fields.map((field, index) => {
           const rowError = Array.isArray(fieldErrors) ? fieldErrors[index] : undefined;
           return (
-            <li key={field.id} className="rounded-md border border-border/70 bg-muted/20 p-3">
-              <div className="grid gap-3 sm:grid-cols-2">
+            // Rule-separated and numbered rather than each row in its own tinted box. The fields
+            // inside are already bordered wells, so a box around them made three nested frames
+            // and buried the actual inputs.
+            <li key={field.id} className="border-t border-border py-6 first:border-t-0 first:pt-0">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <span className="tabular font-mono text-xs text-muted-foreground">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === 0}
+                    onClick={() => move(index, index - 1)}
+                    aria-label={`Move entry ${index + 1} up`}
+                  >
+                    <ArrowUp className="size-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === fields.length - 1}
+                    onClick={() => move(index, index + 1)}
+                    aria-label={`Move entry ${index + 1} down`}
+                  >
+                    <ArrowDown className="size-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => remove(index)}
+                    aria-label={`Remove entry ${index + 1}`}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
                 <FormField
                   label="Title"
                   htmlFor={`${name}.${index}.title`}
@@ -89,53 +148,10 @@ export function ListFieldEditor({ name, heading }: { name: ListFieldName; headin
                 </FormField>
               </div>
 
-              <div className="mt-3 flex justify-end gap-1.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={index === 0}
-                  onClick={() => move(index, index - 1)}
-                  aria-label="Move up"
-                >
-                  <ArrowUp className="size-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={index === fields.length - 1}
-                  onClick={() => move(index, index + 1)}
-                  aria-label="Move down"
-                >
-                  <ArrowDown className="size-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(index)}
-                  aria-label="Remove item"
-                  className="text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
             </li>
           );
         })}
       </ol>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="mt-3"
-        onClick={() => append({ title: '', subtitle: '', year: '', description: '' })}
-      >
-        <Plus className="size-4" aria-hidden="true" />
-        Add item
-      </Button>
-    </fieldset>
+    </FormSection>
   );
 }

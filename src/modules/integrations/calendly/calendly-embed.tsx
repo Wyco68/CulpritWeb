@@ -97,16 +97,15 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
       <div
         role="status"
         className={cn(
-          'flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-muted/30 px-6 py-16 text-center',
+          'flex flex-col items-start gap-2 rounded-lg border border-border bg-muted/50 px-7 py-12',
           className,
         )}
       >
-        <CalendarX2 className="size-8 text-muted-foreground" aria-hidden="true" />
-        <p className="text-base font-medium text-foreground">
-          Scheduling is temporarily unavailable
-        </p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Direct booking isn&apos;t configured right now. Please check back soon.
+        <CalendarX2 className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
+        <p className="font-serif text-lg text-foreground">The booking calendar didn&apos;t load</p>
+        <p className="max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground">
+          Reloading the page usually fixes this. If it keeps happening, the scheduling link has
+          not been configured yet.
         </p>
       </div>
     );

@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { Dialog } from '@/modules/shared/ui/dialog';
+import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
@@ -114,14 +114,14 @@ export function PublicationFormDialog({
           {(fieldProps) => <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />}
         </FormField>
 
-        <div className="mt-2 flex justify-end gap-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button type="submit" loading={isSubmitting || mutation.isPending}>
             Save changes
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

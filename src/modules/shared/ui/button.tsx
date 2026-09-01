@@ -8,8 +8,15 @@ import { cn } from '@/modules/shared/lib/utils';
 // explicitly for non-submit uses). Adds a `loading` prop (spinner + aria-busy) since every admin
 // mutation needs an in-flight state.
 
+// Motion notes: a weighted `--ease-out-expo` curve rather than the browser default, and an
+// `active:scale` that gives the control a physical press. Compositor-only properties, and both
+// collapse to ~0ms under `prefers-reduced-motion` via the global rule in globals.css.
+//
+// The transition list names `scale`, not `transform`: Tailwind v4 compiles `scale-*` to the
+// standalone `scale` property (verified in the built stylesheet — `.active\:scale-\[0\.98\]`
+// emits `scale: 0.98`), so a `transform` entry would match nothing and the press would snap.
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium tracking-tight transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium tracking-tight transition-[background-color,border-color,color,scale] duration-300 ease-[var(--ease-out-expo)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
   {
     variants: {
       variant: {
@@ -18,12 +25,12 @@ const buttonVariants = cva(
         secondary: 'bg-muted text-foreground hover:bg-muted/70',
         ghost: 'text-foreground hover:bg-muted',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        link: 'text-accent underline-offset-4 hover:underline',
+        link: 'text-accent underline-offset-4 hover:underline active:scale-100',
       },
       size: {
         default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-6',
+        sm: 'h-8 rounded-sm px-3 text-xs',
+        lg: 'h-10 rounded-sm px-6',
         icon: 'size-9 shrink-0',
       },
     },

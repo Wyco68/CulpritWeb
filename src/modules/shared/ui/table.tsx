@@ -44,7 +44,10 @@ export function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
       data-slot="table-head"
       scope="col"
       className={cn(
-        'h-10 whitespace-nowrap px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+        // Sentence case, not all-caps. Uppercase letter-spaced heads were the same treatment the
+        // site used for section headings, which flattened the difference between "this names a
+        // column" and "this names a section" — and all-caps is measurably slower to read.
+        'h-11 whitespace-nowrap px-4 text-left align-middle text-xs font-semibold text-muted-foreground',
         className,
       )}
       {...props}
@@ -56,7 +59,7 @@ export function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
   return (
     <td
       data-slot="table-cell"
-      className={cn('px-4 py-3 align-middle', className)}
+      className={cn('px-4 py-3.5 align-middle', className)}
       {...props}
     />
   );

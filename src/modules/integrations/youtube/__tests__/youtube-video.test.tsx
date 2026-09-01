@@ -34,6 +34,6 @@ describe('YouTubeVideo', () => {
 
     expect(screen.queryByTitle('Broken video')).not.toBeInTheDocument();
     expect(document.querySelector('iframe')).toBeNull();
-    expect(screen.getByRole('status')).toHaveTextContent('Video unavailable');
+    expect(screen.getByRole('status')).toHaveTextContent("This video didn't load");
   });
 });

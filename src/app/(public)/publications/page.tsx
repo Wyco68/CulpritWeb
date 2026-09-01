@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { BookMarked } from 'lucide-react';
 import { getPublicationService, PublicationsList } from '@/modules/publications';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -15,17 +15,12 @@ export default async function PublicationsPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Publications</h2>
+      <PageHeading title="Publications" />
 
       {!result.ok || result.data.length === 0 ? (
-        <EmptyState
-          icon={BookMarked}
-          title="No publications listed yet"
-          description="Please check back soon."
-          className="mt-6"
-        />
+        <EmptyState title="No publications listed yet" className="mt-10" />
       ) : (
-        <div className="mt-6">
+        <div className="mt-12">
           <PublicationsList items={result.data} />
         </div>
       )}

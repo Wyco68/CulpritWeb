@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { CalendarClock } from 'lucide-react';
 import {
   getUpcomingEventsService,
   toAppointmentView,
   UpcomingEventsList,
 } from '@/modules/appointments';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -22,17 +22,12 @@ export default async function EventsPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Upcoming Events</h2>
+      <PageHeading title="Upcoming Events" />
 
       {events.length === 0 ? (
-        <EmptyState
-          icon={CalendarClock}
-          title="No upcoming events"
-          description="There are no scheduled meetings at this time."
-          className="mt-6"
-        />
+        <EmptyState title="Nothing scheduled" className="mt-10" />
       ) : (
-        <div className="mt-6">
+        <div className="mt-12">
           <UpcomingEventsList events={events} />
         </div>
       )}

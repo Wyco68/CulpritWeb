@@ -1,13 +1,17 @@
 import { Ban, CalendarCheck2 } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
 
-// The one canonical appointment-status pill, reused everywhere the lifecycle is shown (public
+// The one canonical appointment-status marker, reused everywhere the lifecycle is shown (public
 // Upcoming Events, admin Manage Appointments). Status is conveyed by icon + text label, never
-// color alone (WCAG 2.1 AA — "use of color"). Works in Server Components too — plain literal
-// strings, no client-only i18n context required.
+// colour alone (WCAG 2.1 AA §1.4.1, "use of colour").
 //
 // Only two states exist: every appointment is admin-declared, so there is nothing to be pending,
 // approved, declined, or booked — it is either `scheduled` or `cancelled`.
+//
+// Deliberately drops the emerald/slate palette it used to carry. Emerald was a second accent in a
+// design that has exactly one, and it came with a `dark:` variant for a dark mode this site does
+// not have and will not get. The distinction is now carried by the design's own tokens: an
+// active item marked in the accent, an inactive one receded into the muted foreground.
 
 export type AppointmentStatus = 'scheduled' | 'cancelled';
 
@@ -17,13 +21,14 @@ const STATUS_STYLES: Record<
 > = {
   scheduled: {
     icon: CalendarCheck2,
-    dot: 'bg-emerald-500',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    dot: 'bg-accent',
+    text: 'text-foreground',
     label: 'Scheduled',
   },
   cancelled: {
     icon: Ban,
-    dot: 'bg-slate-400',
+    // Hollow rather than filled — an outline reads as "no longer live" before the label is read.
+    dot: 'bg-transparent ring-1 ring-current',
     text: 'text-muted-foreground',
     label: 'Cancelled',
   },
@@ -40,7 +45,9 @@ export function StatusPill({ status, className }: StatusPillProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium',
+        // Squared, not a rounded pill: the pill badge is the single most recognisable stock
+        // component shape on the web, and a tighter radius sits inside this design's radius scale.
+        'inline-flex items-center gap-1.5 rounded-xs border border-border bg-muted px-2 py-1 text-xs font-medium',
         text,
         className,
       )}

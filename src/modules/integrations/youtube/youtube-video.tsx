@@ -29,14 +29,14 @@ export function YouTubeVideo({ videoId, title, className }: YouTubeVideoProps) {
       <div
         role="status"
         className={cn(
-          'flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-muted/30 px-6 py-16 text-center',
+          'flex flex-col items-start gap-2 rounded-lg border border-border bg-muted/50 px-7 py-12',
           className,
         )}
       >
-        <VideoOff className="size-8 text-muted-foreground" aria-hidden="true" />
-        <p className="text-base font-medium text-foreground">Video unavailable</p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          This video couldn&apos;t be loaded right now. Please check back soon.
+        <VideoOff className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
+        <p className="font-serif text-lg text-foreground">This video didn&apos;t load</p>
+        <p className="max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground">
+          It may have been removed, or made private by whoever uploaded it.
         </p>
       </div>
     );

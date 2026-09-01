@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { Profile } from '@/modules/profile';
 
 // External academic/professional profiles. Rendered as a compact row directly under the bio,
@@ -20,17 +20,23 @@ export function ProfileLinks({ profile }: { profile: Profile }) {
   if (present.length === 0) return null;
 
   return (
-    <ul className="flex flex-wrap gap-2">
+    // Plain text links, not pill-shaped chips — the chip is stock-component shorthand for "tag",
+    // and these are two outbound links. No rules of its own either: this row sits immediately
+    // above a `border-t` section, so bounding it produced two horizontal lines a few pixels apart.
+    <ul className="flex flex-wrap items-center gap-x-7 gap-y-2">
       {present.map(({ key, href, label }) => (
         <li key={key}>
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="group inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-foreground underline-offset-4 transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             {label}
-            <ExternalLink className="size-3.5" aria-hidden="true" />
+            <ArrowUpRight
+              className="size-3.5 transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              aria-hidden="true"
+            />
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </li>

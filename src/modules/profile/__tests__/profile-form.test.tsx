@@ -83,7 +83,9 @@ describe('ProfileForm', () => {
 
     expect(screen.getByDisplayValue('Existing degree')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Remove item' }));
+    // Row actions are labelled with their row number ("Remove entry 1"), so a screen-reader user
+    // hearing three identical "Remove item" buttons can tell which entry each one belongs to.
+    await user.click(screen.getByRole('button', { name: 'Remove entry 1' }));
 
     expect(screen.queryByDisplayValue('Existing degree')).not.toBeInTheDocument();
   });

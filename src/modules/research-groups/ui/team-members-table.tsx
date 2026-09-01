@@ -7,9 +7,17 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/modules/shared/ui/table';
 // Deep imports, not the barrel — see research-group-form-dialog.tsx's comment.
 import type { ResearchGroup } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
@@ -46,26 +54,22 @@ export function TeamMembersTable({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Team Members
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage researchers and visiting professors.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(undefined);
-            setFormOpen(true);
-          }}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Add
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeading
+        as="h1"
+        title="Team Members"
+        action={
+          <Button
+            onClick={() => {
+              setEditing(undefined);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add
+          </Button>
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState
@@ -100,7 +104,9 @@ export function TeamMembersTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{item.role}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {item.researchGroupId ? (groupNameById.get(item.researchGroupId) ?? 'None') : 'None'}
+                  {item.researchGroupId
+                    ? (groupNameById.get(item.researchGroupId) ?? 'None')
+                    : 'None'}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1.5">

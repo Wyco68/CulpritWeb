@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Dialog } from '@/modules/shared/ui/dialog';
+import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -55,14 +55,14 @@ export function CancelDialog({
         >
           {(fieldProps) => <Textarea {...fieldProps} {...register('reason')} rows={3} />}
         </FormField>
-        <div className="flex justify-end gap-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Back
           </Button>
           <Button type="submit" variant="destructive" loading={loading}>
             Cancel
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

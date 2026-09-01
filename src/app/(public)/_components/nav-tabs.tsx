@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/modules/shared/lib/utils';
@@ -21,9 +22,19 @@ const TABS = [
 
 export function NavTabs() {
   const pathname = usePathname();
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // Keep the current tab visible in the scrolling strip on narrow screens, and only when the strip
+  // actually overflows — see the equivalent comment in the admin nav.
+  useEffect(() => {
+    const link = activeRef.current;
+    const strip = link?.closest('nav');
+    if (!link || !strip || strip.scrollWidth <= strip.clientWidth) return;
+    link.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, [pathname]);
 
   return (
-    <nav aria-label="Primary" className="-mb-px overflow-x-auto scrollbar-hidden">
+    <nav aria-label="Primary" className="scroll-fade -mb-px overflow-x-auto scrollbar-hidden">
       <ul className="flex min-w-max items-center gap-1 sm:gap-2">
         {TABS.map(({ href, label }) => {
           const active = pathname === href;
@@ -31,12 +42,11 @@ export function NavTabs() {
             <li key={href}>
               <Link
                 href={href}
+                ref={active ? activeRef : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium tracking-tight text-navy-foreground/65 transition-colors hover:text-navy-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  active
-                    ? 'border-accent font-semibold text-navy-foreground'
-                    : 'border-transparent',
+                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color] duration-500 ease-[var(--ease-out-expo)] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
+                  active ? 'border-accent-on-band text-masthead-foreground' : 'border-transparent',
                 )}
               >
                 {label}
