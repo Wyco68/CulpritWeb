@@ -63,18 +63,20 @@ export function Dialog({
         ref.current?.close();
       }}
       className={cn(
-        'w-full max-w-lg rounded-lg border border-border bg-background p-0 text-foreground shadow-xl backdrop:bg-foreground/40 backdrop:backdrop-blur-[1px]',
+        'w-full max-w-xl rounded-lg border border-border bg-background p-0 text-foreground shadow-raised backdrop:bg-foreground/40 backdrop:backdrop-blur-[1px]',
         'm-auto max-h-[85vh] overflow-y-auto',
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-border p-5">
+      {/* The header stays put while a long form scrolls beneath it, so the task you are in the
+          middle of is always named on screen. */}
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-5">
         <div>
-          <h2 id={titleId} className="text-base font-semibold tracking-tight text-foreground">
+          <h2 id={titleId} className="font-serif text-xl text-foreground">
             {title}
           </h2>
           {description && (
-            <p id={descriptionId} className="mt-1 text-sm text-muted-foreground">
+            <p id={descriptionId} className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
               {description}
             </p>
           )}
@@ -83,12 +85,31 @@ export function Dialog({
           type="button"
           aria-label={closeLabel}
           onClick={() => ref.current?.close()}
-          className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="-mr-1.5 -mt-1 shrink-0 rounded-md p-2 text-muted-foreground transition-colors duration-200 ease-[var(--ease-out-expo)] hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="px-6 py-6">{children}</div>
     </dialog>
+  );
+}
+
+// The action row for a form inside a Dialog. Sticks to the bottom of the dialog's scroll area, so
+// Cancel/Save stay reachable on a long form instead of sitting below the fold — previously you had
+// to scroll a form you had already filled in just to find the button that submits it.
+//
+// Negative margins pull it out of the body's `px-6 py-6` padding so its rule spans the full width
+// of the dialog, matching the header's.
+export function DialogFooter({ children, className }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      className={cn(
+        'sticky bottom-0 z-10 -mx-6 -mb-6 mt-2 flex items-center justify-end gap-3 border-t border-border bg-background px-6 py-4',
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }

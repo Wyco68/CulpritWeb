@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog } from './dialog';
+import { Dialog, DialogFooter } from './dialog';
 import { Button } from './button';
 
 // Reusable destructive-action confirmation step (delete / decline / cancel) built on the shared
@@ -31,14 +31,14 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={title} description={description}>
-      <div className="flex justify-end gap-3">
+      <DialogFooter>
         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
           {cancelLabel}
         </Button>
         <Button variant={variant} onClick={onConfirm} loading={loading}>
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }
