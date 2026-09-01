@@ -1,10 +1,15 @@
 ---
-status: current
-source_of_truth: true
-last_updated: 2026-08-13
-related_modules: [appointments, settings]
-related_decisions: [ADR-004]
+status: superseded
+superseded_by: ADR-011
+source_of_truth: false
+last_updated: 2026-09-01
+related_modules: [events]
+related_decisions: [ADR-004, ADR-011]
 ---
+
+> **Superseded on 2026-09-01 by [ADR-011](ADR-011-events-replace-appointments.md).** Hard delete,
+> reschedule and per-appointment `isPublic` all described a feature that has since been removed
+> outright. The `Setting` model deletion recorded here still stands. Retained as history.
 
 # ADR-010: Appointment hard-delete, reschedule, and per-appointment `isPublic` (replaces `Setting`)
 

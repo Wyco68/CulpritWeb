@@ -28,7 +28,7 @@ Grouped by concern in `.env.example` (the committed template — no secrets):
 | App | `NEXT_PUBLIC_APP_URL` | Recommended |
 | Database | `DATABASE_URL` (pooled), `DIRECT_URL` (direct, for migrations) | `DATABASE_URL` required |
 | Auth | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_INITIAL_PASSWORD` | Secret required in production (≥32 chars); optional in dev |
-| Email | `RESEND_API_KEY`, `EMAIL_FROM` | Optional — unused for appointments |
+| Email | `RESEND_API_KEY`, `EMAIL_FROM` | Optional — not wired to any feature today |
 | Bot defense | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional — no-ops (always passes) when unset |
 | Storage | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` | Optional — no-op (logs + returns an error Result) when unset |
 | Calendly | `NEXT_PUBLIC_CALENDLY_URL` | Optional — embed shows a graceful empty state when unset |

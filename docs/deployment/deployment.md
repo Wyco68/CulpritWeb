@@ -60,7 +60,7 @@ tier with backups included — see `requirements/scope.md`'s open questions.
 ## Observability
 
 Structured logs (`shared/lib/logger.ts`) plus the `AuditLog` table for domain-level audit of admin
-actions and appointment transitions. No dedicated uptime/error-monitoring integration is present
+actions. No dedicated uptime/error-monitoring integration is present
 in the codebase today — target is 99.5% uptime per the non-functional requirements, but no
 monitoring tool is wired up to measure it.
 

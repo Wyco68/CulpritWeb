@@ -33,19 +33,28 @@ the history inline. Concretely:
 - Calendly is **embed-only** today. A server-side REST/webhook integration existed 2026-08-02 →
   2026-08-08 and was removed — see [ADR-005](decisions/ADR-005-calendly-embed-only.md). Do not
   reintroduce a `CALENDLY_ACCESS_TOKEN`, REST client, or webhook receiver without a new ADR.
-- Appointments have **no review queue** today. A request → approve/decline → book workflow existed
-  through 2026-08-05 and was removed — see
-  [ADR-004](decisions/ADR-004-appointment-workflow-admin-only.md). Do not add
-  `pending`/`approved`/`booked` statuses back without a new ADR.
+- There are **no appointments** today, in any form. The admin feature was removed outright on
+  2026-09-01 and replaced by **Events** (`Event` model, `/events`, `/admin/events`) — see
+  [ADR-011](decisions/ADR-011-events-replace-appointments.md). The `appointment` table, its module,
+  its admin screen and its whole `scheduled`/`cancelled` lifecycle are gone.
+  [ADR-004](decisions/ADR-004-appointment-workflow-admin-only.md) and
+  [ADR-010](decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md) are
+  **superseded** and kept only as history. Do not build against either.
+- The public **Make Appointment** tab and its Calendly embed are unaffected and still exist. What
+  changed is that nothing a visitor books is ever recorded here, and there is no admin screen where
+  it could be re-typed.
 - There is **no i18n** today, at all — not even the translation-lookup layer without routing. See
   [ADR-006](decisions/ADR-006-remove-i18n-and-locale-routing.md).
 - Object storage is **Cloudflare R2** today. Supabase Storage was used 2026-08-05 → 2026-08-08 —
   see [ADR-002](decisions/ADR-002-object-storage-r2.md).
-- Appointments can be **hard-deleted** by the admin (audited, any status) today, alongside the
-  existing soft cancel; lifecycle also includes `scheduled → scheduled` (reschedule); the `Setting`
-  model/`settings` module are **gone** — Upcoming Events visibility is `Appointment.isPublic`,
-  per row. All since 2026-08-13 — see [ADR-010](decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md).
-  Do not resurrect a global visibility setting or reinstate "never hard-deleted" without a new ADR.
+- Events have **no visibility flag and no draft state** — saving publishes. The `Setting`
+  model/`settings` module are gone (2026-08-13,
+  [ADR-010](decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md)),
+  and the per-row `isPublic` that replaced them went with appointments. Do not resurrect either
+  without a new ADR.
+- **Event video is a YouTube embed, never an uploaded file.** Photos go to R2; video does not, and
+  must not — see [ADR-011](decisions/ADR-011-events-replace-appointments.md) and the free-tier rule
+  in `CLAUDE.md`.
 
 If a document you're reading (including this tree) doesn't clearly say "current," check its
 frontmatter `status:` field and its `last_updated` date before relying on it.
@@ -74,7 +83,9 @@ an agent doesn't trust the wrong source, and a human can decide what (if anythin
    [ADR-006](decisions/ADR-006-remove-i18n-and-locale-routing.md).
 2. **`.claude/skills/fullstack-nextjs-starter/references/{architecture,modules,data-model,security,integrations,ui-ux}.md`
    describe a superseded design**, not the shipped app: `[locale]` routing + next-intl, a
-   `notifications` module, a five-state appointment machine with `approve`/`decline`/`book`, a
+   `notifications` module, a five-state appointment machine with `approve`/`decline`/`book` (there
+   is no appointment machine at all now — see
+   [ADR-011](decisions/ADR-011-events-replace-appointments.md)), a
    `STORAGE_DRIVER=r2|supabase` toggle between two storage adapters, and a `middleware.ts`-based
    admin gate. None of that exists in `src/` today. `docs/architecture/*` and the ADRs in this
    tree are the corrected replacement; the skill's reference files were not updated after the

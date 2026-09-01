@@ -1,10 +1,16 @@
 ---
-status: current
-source_of_truth: true
-last_updated: 2026-08-08
-related_modules: [appointments]
-related_decisions: [ADR-005]
+status: superseded
+superseded_by: ADR-011
+source_of_truth: false
+last_updated: 2026-09-01
+related_modules: [events]
+related_decisions: [ADR-005, ADR-011]
 ---
+
+> **Superseded on 2026-09-01 by [ADR-011](ADR-011-events-replace-appointments.md).** The
+> appointment feature described below no longer exists: the `appointment` table, its module and its
+> admin screen were removed and replaced by `Event`. This file is retained as the record of how the
+> feature shrank before it was removed — do not build against it.
 
 # ADR-004: Appointment workflow — admin-declares-directly (supersedes the request/approve/decline/book queue)
 
