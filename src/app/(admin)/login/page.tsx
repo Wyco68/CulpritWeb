@@ -18,8 +18,8 @@ export default async function LoginPage() {
   if (session.ok) redirect('/admin');
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy px-6 py-12">
-      <Card className="w-full max-w-sm border-navy-foreground/10 bg-background shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-masthead px-6 py-12">
+      <Card className="w-full max-w-sm border-border bg-background shadow-raised">
         <CardHeader className="items-center text-center">
           <div className="mb-1 inline-flex size-11 items-center justify-center rounded-full bg-accent/10 text-accent">
             <ShieldCheck className="size-5" aria-hidden="true" />
