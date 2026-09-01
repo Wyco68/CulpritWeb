@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getProfileService, ProfileForm } from '@/modules/profile';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Admin — Profile' };
@@ -13,15 +14,8 @@ export default async function AdminProfilePage() {
   const profile = result.ok ? result.data : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Set Information — Profile
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Edit the structured bio shown on the public site.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeading as="h1" title="Profile" />
       <ProfileForm profile={profile} />
     </div>
   );

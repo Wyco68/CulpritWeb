@@ -9,6 +9,7 @@ import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { FormSection } from '@/modules/shared/ui/form-section';
 // Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx. The
 // barrel also re-exports the Prisma-backed `getProfileService`; even a type-only import of the
 // barrel drags Prisma/`pg` into the client bundle (confirmed empirically — SWC didn't elide it),
@@ -98,51 +99,80 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
       <form
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
         noValidate
-        className="flex flex-col gap-8"
+        className="flex flex-col gap-12 pb-24"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Full name" htmlFor="fullName" required error={errors.fullName?.message}>
-            {(fieldProps) => <Input {...fieldProps} {...register('fullName')} />}
-          </FormField>
-          <FormField label="Title" htmlFor="title" required error={errors.title?.message}>
-            {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
-          </FormField>
-          <PhotoUploadField />
-          {errors.photoUrl && (
-            <p role="alert" className="-mt-2 text-xs font-medium text-destructive sm:col-span-2">
-              {errors.photoUrl.message}
-            </p>
-          )}
-          <FormField
-            label="Position & affiliation"
-            htmlFor="positionAffiliation"
-            error={errors.positionAffiliation?.message}
-            className="sm:col-span-2"
-          >
-            {(fieldProps) => <Textarea {...fieldProps} {...register('positionAffiliation')} />}
-          </FormField>
-          <FormField
-            label="Short bio"
-            htmlFor="bio"
-            error={errors.bio?.message}
-            className="sm:col-span-2"
-          >
-            {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={4} />}
-          </FormField>
-          <FormField
-            label="Research statement"
-            htmlFor="researchStatement"
-            error={errors.researchStatement?.message}
-            className="sm:col-span-2"
-          >
-            {(fieldProps) => (
-              <Textarea {...fieldProps} {...register('researchStatement')} rows={4} />
-            )}
-          </FormField>
+        {/* Grouped into named sections rather than one flat column. This screen carries more
+            fields than any other in the app, and previously ran as an undivided run of boxes with
+            nothing to scan for. */}
+        <FormSection
+          title="Identity"
+          description="The name, role and portrait shown at the head of every page."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              label="Full name"
+              htmlFor="fullName"
+              required
+              error={errors.fullName?.message}
+            >
+              {(fieldProps) => <Input {...fieldProps} {...register('fullName')} />}
+            </FormField>
+            <FormField label="Title" htmlFor="title" required error={errors.title?.message}>
+              {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
+            </FormField>
+            <div className="sm:col-span-2">
+              <PhotoUploadField />
+              {errors.photoUrl && (
+                <p role="alert" className="mt-2 text-xs font-medium text-destructive">
+                  {errors.photoUrl.message}
+                </p>
+              )}
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Written profile"
+          description="The prose on the public About tab, in the order it appears there."
+        >
+          <div className="grid gap-5">
+            <FormField
+              label="Position & affiliation"
+              htmlFor="positionAffiliation"
+              description="One line, shown under the name in the site header."
+              error={errors.positionAffiliation?.message}
+            >
+              {(fieldProps) => <Textarea {...fieldProps} {...register('positionAffiliation')} />}
+            </FormField>
+            <FormField
+              label="Short bio"
+              htmlFor="bio"
+              description="The opening paragraph of the About tab."
+              error={errors.bio?.message}
+            >
+              {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={4} />}
+            </FormField>
+            <FormField
+              label="Research statement"
+              htmlFor="researchStatement"
+              description="A longer paragraph on research direction, shown below the bio."
+              error={errors.researchStatement?.message}
+            >
+              {(fieldProps) => (
+                <Textarea {...fieldProps} {...register('researchStatement')} rows={4} />
+              )}
+            </FormField>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="External profiles"
+          description="Optional. Shown as links directly under the bio on the About tab."
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             label="LinkedIn profile URL"
             htmlFor="linkedinUrl"
-            description="Optional. Shown as links on the public About tab."
             error={errors.linkedinUrl?.message}
           >
             {(fieldProps) => (
@@ -173,18 +203,22 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
               />
             )}
           </FormField>
-        </div>
+          </div>
+        </FormSection>
 
-        <div className="flex flex-col gap-5">
-          {LIST_FIELDS.map((field) => (
-            <ListFieldEditor key={field} name={field} heading={LIST_FIELD_LABELS[field]} />
-          ))}
-        </div>
+        {LIST_FIELDS.map((field) => (
+          <ListFieldEditor key={field} name={field} heading={LIST_FIELD_LABELS[field]} />
+        ))}
 
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
+        {/* Pinned to the bottom of the viewport. This form is long enough that the submit button
+            sat several screens below whatever you were editing, so saving meant scrolling to the
+            end of a page you were in the middle of. */}
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-6xl items-center justify-end gap-4 px-6 py-3">
+            <Button type="submit" size="lg" loading={isSubmitting || mutation.isPending}>
+              Save changes
+            </Button>
+          </div>
         </div>
       </form>
     </FormProvider>
