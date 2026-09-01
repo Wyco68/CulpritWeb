@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { publicEnv } from '@/modules/shared/lib/env';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { GatedCalendlyEmbed } from './_components/gated-calendly-embed';
 
 // Calendly-embed ONLY: no server-side Calendly integration exists in this app at all — no PAT, no
@@ -26,14 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AppointmentPage() {
   return (
     <div>
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Make Appointment</h2>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Pick an open 30-minute slot below. Your booking is confirmed instantly — no approval
-        needed.
-      </p>
+      <PageHeading title="Make Appointment" />
 
       {/* Widen past the article column: Calendly's calendar grid is cramped in a narrow column. */}
-      <div className="-mx-6 mt-8 sm:mx-0">
+      <div className="-mx-6 mt-12 sm:mx-0">
         <div className="mx-auto max-w-5xl px-6 sm:px-0">
           <GatedCalendlyEmbed url={publicEnv.calendlyUrl || undefined} minHeight={900} />
         </div>
