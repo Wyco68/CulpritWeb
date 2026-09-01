@@ -1,44 +1,84 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { Publication } from '@/modules/publications';
 
-// Monospaced two-digit numbered index (01, 02, …), per the Figma prototype's numbered-list
-// pattern for publications.
+// Grouped by year, newest first — the convention every academic profile uses (Google Scholar, and
+// the faculty pages this was modelled on), because "when was this published" is the first question
+// a reader brings to a publication list and the only axis they reliably scan by.
+//
+// This replaces a flat 01/02/03 index. That numbering was an arbitrary position in an ordered list
+// — it changed meaning the moment a paper was added, and told the reader nothing. The year rail
+// carries real information in the same space.
+//
+// The service already returns rows ordered by year descending, so grouping preserves that order
+// without re-sorting.
+
+function groupByYear(items: Publication[]): { year: number; items: Publication[] }[] {
+  const groups: { year: number; items: Publication[] }[] = [];
+  for (const item of items) {
+    const current = groups.at(-1);
+    if (current && current.year === item.year) current.items.push(item);
+    else groups.push({ year: item.year, items: [item] });
+  }
+  return groups.sort((a, b) => b.year - a.year);
+}
+
 export function PublicationsList({ items }: { items: Publication[] }) {
+  const groups = groupByYear(items);
+
   return (
-    <ol className="divide-y divide-border border-t border-border">
-      {items.map((item, index) => (
-        <li key={item.id} className="flex gap-4 py-5 sm:gap-6">
-          <span
-            aria-hidden="true"
-            className="shrink-0 pt-0.5 font-mono text-sm text-muted-foreground"
+    <div className="border-t border-border">
+      {groups.map((group, groupIndex) => (
+        <section
+          key={group.year}
+          aria-labelledby={`publications-${group.year}`}
+          style={{ '--i': groupIndex } as React.CSSProperties}
+          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[4rem_1fr]"
+        >
+          {/* The year holds the left rail as a running head. On a narrow screen it sits above its
+              group instead, where the grid collapses to one column. */}
+          <h3
+            id={`publications-${group.year}`}
+            className="tabular mb-3 font-mono text-sm text-accent sm:mb-0 sm:pt-1"
           >
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-base font-medium leading-snug tracking-tight text-foreground">
-              {item.title}
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">{item.authors}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="italic">{item.venue}</span>
-              {' · '}
-              <span className="font-mono">{item.year}</span>
-            </p>
-            {item.link && (
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 rounded text-sm font-medium text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            {group.year}
+          </h3>
+
+          <ol className="min-w-0">
+            {group.items.map((item) => (
+              <li
+                key={item.id}
+                className="group border-t border-border/70 py-5 first:border-t-0 first:pt-0 last:pb-0"
               >
-                View publication
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            )}
-          </div>
-        </li>
+                <h4 className="text-balance font-serif text-lg leading-snug text-foreground sm:text-xl">
+                  {item.title}
+                </h4>
+                <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                  {item.authors}
+                </p>
+                <p className="mt-1 font-serif text-sm italic text-muted-foreground">
+                  {item.venue}
+                </p>
+
+                {item.link && (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    View publication
+                    <ArrowUpRight
+                      className="size-4 transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      aria-hidden="true"
+                    />
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
       ))}
-    </ol>
+    </div>
   );
 }
