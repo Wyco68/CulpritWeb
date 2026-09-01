@@ -46,7 +46,10 @@ export function Switch({
       <span
         aria-hidden="true"
         className={cn(
-          'pointer-events-none inline-block size-4.5 translate-x-1 rounded-full bg-background shadow transition-transform',
+          // `transition-[translate]`, not `transition-transform`: Tailwind v4 compiles
+          // `translate-x-*` to the standalone `translate` property, so `transition-transform`
+          // matched nothing and the thumb snapped between positions instead of sliding.
+          'pointer-events-none inline-block size-4.5 translate-x-1 rounded-full bg-background shadow transition-[translate]',
           checked && 'translate-x-[22px]',
         )}
       />
