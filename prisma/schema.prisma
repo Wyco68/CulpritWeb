@@ -88,37 +88,30 @@ model TeamMember {
   @@map("team_member")
 }
 
-// No approve/decline/book review queue, and no Calendly sync of any kind: an appointment exists
-// ONLY because the admin declared it directly (Manage Appointments). `scheduled` is the only
-// creatable state; `cancelled` is terminal and retained (never hard-deleted). A visitor booking
-// through the Calendly embed happens entirely on Calendly's side and never reaches this table —
-// see src/modules/integrations/calendly/README.md.
-enum AppointmentStatus {
-  scheduled
-  cancelled
-}
+// --- Events -------------------------------------------------------------------------------------
+// Replaced the admin-declared Appointment table on 2026-09-01. An event is plain published
+// content: the admin writes it, every visitor sees it. There is no status, no lifecycle and no
+// per-row visibility flag — `eventDate` alone decides whether the public tab files it under
+// Upcoming or Past, evaluated at render time.
+//
+// Media are native Postgres text arrays, not Json: they are flat lists of URLs with no internal
+// structure, and an array column keeps them queryable and typed instead of opaque.
 
-model Appointment {
-  id            String            @id @default(cuid())
-  /// Who the meeting is with, entered by the admin.
-  requesterName String            @map("requester_name")
-  /// Optional — informational only. No email is ever sent by this app for an appointment
-  /// (Calendly sends its own confirmation for widget bookings; admin-declared entries send none).
-  requesterEmail String?          @map("requester_email")
-  researchGroup String?           @map("research_group")
-  scheduledAt   DateTime          @map("scheduled_at")
-  topic         String?           @db.Text
-  status        AppointmentStatus @default(scheduled)
-  cancelReason  String?           @map("cancel_reason") @db.Text
-  /// Drives public "Upcoming Events" visibility per-appointment (admin opt-in per row; replaces
-  /// the old global `upcoming_events_visible` setting — see ADR for the 2026-08-13 removal).
-  isPublic      Boolean           @default(false) @map("is_public")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  eventDate   DateTime @map("event_date")
+  /// Public R2 URLs, uploaded through POST /api/admin/events/photo.
+  photoUrls   String[] @map("photo_urls")
+  /// YouTube watch/share URLs (or bare 11-character video IDs). Embed-only — no video file is
+  /// ever stored or proxied by this app; see modules/integrations/youtube.
+  videoUrls   String[] @map("video_urls")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@index([status])
-  @@index([scheduledAt])
-  @@map("appointment")
+  @@index([eventDate])
+  @@map("event")
 }
 
 // --- Better Auth (single admin) ---------------------------------------------------------------
