@@ -6,9 +6,17 @@ import { Pencil, Plus, Trash2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/modules/shared/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/modules/shared/ui/table';
 // Deep import, not the barrel — see research-form-dialog.tsx's comment.
 import type { Research } from '../research.types';
 import { ResearchFormDialog } from './research-form-dialog';
@@ -37,24 +45,22 @@ export function ResearchTable({ items }: { items: Research[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Research</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage the public research listing.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(undefined);
-            setFormOpen(true);
-          }}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Add
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeading
+        as="h1"
+        title="Research"
+        action={
+          <Button
+            onClick={() => {
+              setEditing(undefined);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add
+          </Button>
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState

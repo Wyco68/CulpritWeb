@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
+import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { StatusPill } from '@/modules/shared/ui/status-pill';
 import { Switch } from '@/modules/shared/ui/switch';
@@ -141,27 +142,23 @@ export function AppointmentsTable({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Manage Appointments
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Appointments you declare directly. Visitors booking via Calendly are not recorded here
-            automatically — add them manually if they should appear on the public site.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(undefined);
-            setFormOpen(true);
-          }}
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Add appointment
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeading
+        as="h1"
+        title="Manage Appointments"
+        intro="Calendly bookings are not recorded here. Add them manually to show them publicly."
+        action={
+          <Button
+            onClick={() => {
+              setEditing(undefined);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add appointment
+          </Button>
+        }
+      />
 
       <nav aria-label="Manage Appointments" className="overflow-x-auto scrollbar-hidden">
         <ul className="flex min-w-max items-center gap-1.5">
