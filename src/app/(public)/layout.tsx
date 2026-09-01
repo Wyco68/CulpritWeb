@@ -1,8 +1,9 @@
 import { getProfileCached } from '@/modules/profile';
+import { SiteFooter } from './_components/site-footer';
 import { SiteHeader } from './_components/site-header';
 
 // Shared shell for every public tab (About, Research, Publications, Team Members, Upcoming
-// Events, Make Appointment): the navy hero band + tab bar render once here, so each page below
+// Events, Make Appointment): the masthead band + tab bar render once here, so each page below
 // only supplies its own tab content. Server Component — reads the profile directly through the
 // service layer (no internal HTTP round-trip) per the "public read pages fetch through services"
 // architecture rule.
@@ -25,9 +26,15 @@ export default async function PublicLayout({ children }: { children: React.React
   const profile = result.ok ? result.data : null;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-[100dvh] flex-col">
       <SiteHeader profile={profile} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12 sm:py-16">{children}</main>
+      {/* `id` is the target of the skip-link in the root layout (WCAG 2.4.1). The measure is
+          capped at 68ch on the prose column rather than the full 5xl shell — long-form CV copy
+          set edge-to-edge across 900px is unreadable no matter how good the type is. */}
+      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-6 pb-20 pt-10 sm:pb-28 sm:pt-12">
+        {children}
+      </main>
+      <SiteFooter fullName={profile?.fullName || 'The Culprit'} />
     </div>
   );
 }
