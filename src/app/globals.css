@@ -2,24 +2,64 @@
 
 /* Tailwind v4 CSS-first config. Design tokens live here — retune the palette in one place.
    Aesthetic: professional, minimalist, information-security — restrained neutrals + one accent.
-   One fixed look, matching the Figma prototype exactly — no light/dark theme switching. */
+   One fixed look, matching the Figma prototype exactly — no light/dark theme switching.
+
+   The palette is the customer's own choice and is deliberately left as specified; the only
+   addition is --accent-on-band below, which fixes a measured contrast failure without altering
+   the chosen hue. Retuning any pair here means re-checking it against WCAG 2.1 AA. */
 
 :root {
   --background: hsl(0 0% 100%);
-  --foreground: hsl(222 15% 12%);
+  --foreground: hsl(222 15% 12%); /* 16.91:1 on background */
   --muted: hsl(220 14% 96%);
-  --muted-foreground: hsl(220 9% 42%);
+  --muted-foreground: hsl(220 9% 42%); /* 5.61:1 on background */
   --border: hsl(220 13% 91%);
-  --accent: hsl(190 90% 30%);
-  --accent-foreground: hsl(0 0% 100%);
+  --accent: hsl(190 90% 30%); /* 4.97:1 on background */
+  --accent-foreground: hsl(0 0% 100%); /* 4.97:1 on accent */
   /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
      element distinct from the light page background used everywhere else. */
-  --navy: hsl(190 85% 88%);
-  --navy-foreground: hsl(215 59% 15%);
-  --destructive: hsl(3 72% 42%);
+  --masthead: hsl(190 85% 88%);
+  --masthead-foreground: hsl(215 59% 15%); /* 13.20:1 on the band */
+
+  /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.13:1
+     against the cyan band — below the 4.5:1 AA threshold for normal-size text, which the
+     professor's title line on the masthead is. This sibling measures 5.18:1 there. Text sitting
+     ON the band uses this; everything on the white page keeps --accent. */
+  --accent-on-band: hsl(190 90% 26%);
+
+  /* --- Form controls --------------------------------------------------------------------- */
+  /* Inputs used to be white-on-white with a 91%-light border, measuring 1.24:1 against the page.
+     WCAG 2.1 AA §1.4.11 asks for 3:1 on the visual information that identifies a control, so a
+     field was not reliably distinguishable from the page it sat on — the single biggest reason
+     the admin forms read as an undifferentiated stack of boxes.
+     A field is now a shallow well: a tinted fill plus a border measuring 3.24:1 against the page
+     and 3.02:1 against its own fill. On focus the fill lifts to white and the border takes the
+     accent, so the active field is unambiguous. */
+  --input: hsl(220 14% 97%);
+  --input-border: hsl(220 13% 58%);
+
+  --destructive: hsl(3 72% 42%); /* 6.30:1 on background */
   --destructive-foreground: hsl(0 0% 100%);
   --ring: hsl(190 90% 30%);
-  --radius: 0.5rem;
+
+  /* --- Radii ---------------------------------------------------------------------------- */
+  /* Deliberately not one uniform value. Containers are softer than the controls inside them. */
+  --radius-xs: 2px;
+  --radius: 4px;
+  --radius-container: 10px;
+
+  /* --- Shadows -------------------------------------------------------------------------- */
+  /* Tinted with the palette's own cool hue and heavily diffused, rather than flat black at low
+     opacity. A single consistent light source, from above. */
+  --shadow-hairline: 0 1px 2px hsl(220 20% 20% / 0.05);
+  --shadow-raised:
+    0 1px 2px hsl(220 20% 20% / 0.04), 0 4px 12px -2px hsl(220 20% 20% / 0.06),
+    0 12px 32px -8px hsl(220 20% 20% / 0.07);
+
+  /* --- Motion --------------------------------------------------------------------------- */
+  /* No linear, no ease-in-out. Weighted curves that decelerate like something with mass. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @theme inline {
@@ -30,31 +70,143 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-navy: var(--navy);
-  --color-navy-foreground: var(--navy-foreground);
+  --color-accent-on-band: var(--accent-on-band);
+  --color-masthead: var(--masthead);
+  --color-masthead-foreground: var(--masthead-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-container);
+
+  --shadow-hairline: var(--shadow-hairline);
+  --shadow-raised: var(--shadow-raised);
+
+  --ease-out-expo: var(--ease-out-expo);
+  --ease-spring: var(--ease-spring);
+
+  /* Three families with distinct jobs, loaded via next/font in app/layout.tsx:
+     sans  — interface: navigation, labels, controls, tables
+     serif — prose and headings: the reading voice of the site
+     mono  — data: years, indices, identifiers, timestamps */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /* Prose is set in the serif; the sans is reserved for interface chrome. */
+  text-rendering: optimizeLegibility;
+}
+
+/* Numerals carry meaning on this site — publication years, dates, list indices. Tabular figures
+   keep them in vertical alignment down a column instead of jittering. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Film grain. A fixed, non-interactive overlay that breaks the flatness of a pure vector page —
+   the reason printed paper never looks like a screen. Fixed (never inside a scroll container) so
+   it never triggers repaints while scrolling. */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Staggered entry. Content rises into place rather than snapping in — the delay is set per item
+   via the --i custom property so a list cascades instead of mounting all at once. Transform and
+   opacity only: no layout-triggering properties, so this stays on the compositor. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.rise {
+  animation: rise 700ms var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  /* Durations collapse to ~0 rather than the animation being removed: `rise` uses fill-mode
+     `both`, so the element still lands on its final (visible) state instead of being stranded
+     at opacity 0. */
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Exempt, not sped up. This one is driven by `animation-timeline: scroll()`, where progress
+     comes from scroll position and the blanket 0.01ms duration above would collapse it — the
+     strip would render as though fully scrolled from the start. Dropping the animation falls back
+     to the static both-edges mask on the base rule, which is the correct still frame. */
+  .scroll-fade {
+    animation: none !important;
+  }
+}
+
+/* Edge fade for a horizontally-scrollable tab strip. The strip stays on one line and scrolls; the
+   mask softens whichever edge still has content beyond it, which is the only cue a user gets that
+   there is more to reach once the scrollbar itself is hidden. `animation-timeline: scroll()` drives
+   it from the element's own scroll position, so the left fade stays off until you have actually
+   scrolled — and browsers without scroll-driven animation simply show both fades, which is a
+   harmless static hint rather than a broken state. */
+.scroll-fade {
+  --fade: 1.75rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent 100%
+  );
+}
+
+@supports (animation-timeline: scroll(self inline)) {
+  @keyframes scroll-fade-edges {
+    from {
+      mask-image: linear-gradient(
+        to right,
+        #000 0,
+        #000 calc(100% - var(--fade)),
+        transparent 100%
+      );
+    }
+    to {
+      mask-image: linear-gradient(to right, transparent 0, #000 var(--fade), #000 100%);
+    }
+  }
+
+  .scroll-fade {
+    animation: scroll-fade-edges linear both;
+    animation-timeline: scroll(self inline);
   }
 }
 
