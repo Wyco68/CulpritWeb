@@ -101,6 +101,15 @@
 
 html {
   scroll-behavior: smooth;
+
+  /* Reserve the scrollbar's track on every page, whether or not that page scrolls.
+     Without this, a tab whose content fits the viewport (Upcoming Events with a couple of entries)
+     renders with no scrollbar while a taller one (Make Appointment, with the Calendly embed) renders
+     with one. The 15px track appearing and disappearing changes the viewport width, which moves
+     every `mx-auto` container — the masthead, the tab bar and the content column — sideways by half
+     that on each navigation. That is the shake: not an animation, just the layout being measured
+     against two different widths. */
+  scrollbar-gutter: stable;
 }
 
 body {
