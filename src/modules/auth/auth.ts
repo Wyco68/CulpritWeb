@@ -8,7 +8,7 @@ import { publicEnv } from '@/modules/shared/lib/env';
 // BETTER_AUTH_SECRET) — NOT JWT. Single admin: email/password with public sign-up disabled.
 // NOTE: this is the one sanctioned place besides repositories that touches the Prisma client —
 // it only hands the client to Better Auth's adapter (which owns the user/session/account tables);
-// no appointment/domain query runs here.
+// no domain query runs here.
 
 const trustedOrigins = [env.BETTER_AUTH_URL, publicEnv.appUrl].filter(
   (value): value is string => Boolean(value),

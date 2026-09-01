@@ -47,8 +47,8 @@ export interface CalendlyEmbedProps {
  * Embeds the free Calendly inline scheduling widget — embed only, by design: the app has no
  * server-side Calendly integration of any kind (no PAT, no REST client, no webhook). A booking
  * made here happens entirely on Calendly's side, including Calendly's own confirmation email to
- * the visitor; nothing about it is recorded locally. If it should appear on the public Upcoming
- * Events tab, the admin adds it there manually (see modules/appointments/ui/appointment-form-dialog).
+ * the visitor; nothing about it is recorded locally. If a booking should appear on the public
+ * Events tab, the admin writes it up there as an event by hand (see modules/events).
  * Renders a graceful empty state when no Calendly URL is configured so the page never crashes.
  */
 export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbedProps) {

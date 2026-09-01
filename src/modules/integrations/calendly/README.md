@@ -18,9 +18,12 @@ guarantee forever: the public embed widget, which needs no token and no API acce
 
 ## If a booking should appear on the public site
 
-The public "Upcoming Events" tab is **not** wired to Calendly in any way. If the professor wants a
-Calendly booking to show there, they add it manually from **Admin → Manage Appointments** — see
-`src/modules/appointments`. That is the only way an appointment enters this app's database.
+The public **Events** tab is **not** wired to Calendly in any way. If the professor wants a Calendly
+booking to show there, they write it up as an event from **Admin → Events** — see
+`src/modules/events`. Nothing booked through the widget ever reaches this app's database.
+
+There is no admin-side appointment screen and no `appointment` table: both were removed on
+2026-09-01 when Events replaced them.
 
 ## Configuration
 
