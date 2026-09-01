@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-08
-related_modules: [shared, appointments]
+related_modules: [shared, events]
 related_decisions: []
 ---
 
@@ -27,27 +27,30 @@ npm run lint       # next lint
 
 ## What's actually covered (verified in `src/**/__tests__/`)
 
-- **Service/schema unit tests**: `appointment.schema.test.ts`, `appointment.serializer.test.ts`,
-  `appointment.service.test.ts`, `upcoming-events.service.test.ts`; equivalents for `profile`,
-  `research`, `publications`, `research-groups`/`team-member`, `settings`; `storage-adapter.test.ts`
-  + `storage-adapter.factory.test.ts`; `youtube-utils.test.ts`.
-- **Component tests**: `appointments-table.test.tsx`, `youtube-video.test.tsx`, admin
-  `layout.test.tsx` (guard redirect behavior).
-- **API/route tests**: `research.route.test.ts` (`src/app/api/admin/research/__tests__/`),
-  `upcoming.route.test.ts` (`src/app/api/events/upcoming/__tests__/`).
-- **E2E**: `tests/e2e/appointment.spec.ts`, `tests/e2e/login.spec.ts`.
+- **Service/schema unit tests**: `event.schema.test.ts`, `event.service.test.ts` (including
+  `splitByTiming`'s upcoming/past boundary); equivalents for `profile`, `research`, `publications`,
+  `research-groups`/`team-member`; `storage-adapter.test.ts` + `storage-adapter.factory.test.ts`;
+  `youtube-utils.test.ts`.
+- **Component tests**: `research-table.test.tsx`, `publications-table.test.tsx`,
+  `team-members-table.test.tsx`, `youtube-video.test.tsx`, admin `layout.test.tsx` (guard redirect
+  behavior).
+- **API/route tests**: `research.route.test.ts` (`src/app/api/admin/research/__tests__/`).
+- **E2E**: `tests/e2e/appointment.spec.ts` (the public Calendly tab, which still exists),
+  `tests/e2e/login.spec.ts`.
 
-Only the `appointments` module has API-route-level tests today (research CRUD, upcoming events).
-Other admin CRUD routes (`profile`, `publications`, `groups`, `team-members`, `settings`) do not
-yet have route-level tests — service/schema unit coverage exists for them, but not the boundary.
+Only `research` has API-route-level tests today. The other admin CRUD routes (`profile`,
+`publications`, `groups`, `team-members`, `events`) do not yet have route-level tests —
+service/schema unit coverage exists for them, but not the boundary. **`events` has no component
+test** for `events-table.tsx`/`event-form-dialog.tsx`; that is a known gap.
 
 ## Conventions carried over from the design guide (still valid)
 
 - **Services are the test priority** — inject a mocked repository/integrations, no real DB or
   network needed; framework-agnostic by design.
-- **Test both directions of every legal/illegal state transition** for the appointment machine:
-  `scheduled → cancelled` succeeds and writes an audit entry; cancelling an already-cancelled
-  appointment returns `ConflictError` with no side effects.
+- **Assert the audit entry, not just the mutation.** Every mutating service call writes an
+  `AuditLog` row; a delete additionally records the full before-state. There are no state
+  transitions left to test — no service returns `ConflictError`/`409` since
+  [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 - Query by role/label/text in component tests (never test-id for user-facing assertions);
   `@testing-library/user-event` for interactions.
 - Keep tests deterministic — no real time/network/random; inject clocks/ids where behavior depends
@@ -57,6 +60,6 @@ yet have route-level tests — service/schema unit coverage exists for them, but
 
 `.claude/skills/fullstack-nextjs-starter/references/testing.md` describes testing the old
 five-state appointment machine (`approve`/`decline`/`book`), visitor self-cancel via token, and
-notification-email side effects on every transition — **none of that exists anymore**. Don't write
-tests against those behaviors; see
-[ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md).
+notification-email side effects on every transition — **none of that exists anymore**, and neither
+does the two-state machine that replaced it. Don't write tests against any appointment behavior;
+see [ADR-011](../decisions/ADR-011-events-replace-appointments.md).

@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-08
-related_modules: [appointments, integrations]
+related_modules: [events, integrations]
 related_decisions: [ADR-004, ADR-005, ADR-006]
 ---
 
@@ -13,16 +13,16 @@ related_decisions: [ADR-004, ADR-005, ADR-006]
 
 ## In scope (current)
 
-- Public site: **About**, **Research**, **Publications**, **Team Members**, **Upcoming Events**
-  (admin-gated), **Make Appointment** — 6 tabs, flat routes under `src/app/(public)/`.
+- Public site: **About**, **Research**, **Publications**, **Team Members**, **Events**, **Make
+  Appointment** — 6 tabs, flat routes under `src/app/(public)/`.
 - Research groups & visiting-professor listing (CV-style) via **Team Members**.
 - Direct booking via embedded Calendly widget — Calendly's own flow, not recorded in this app.
-- Admin **directly declares** appointments — no requester-facing form or approval step.
-- Admin panel: **Set Information** tabs (Profile/Research/Publications/Groups/Team Members/Settings)
-  + **Manage Appointments**.
-- Appointment lifecycle: `scheduled → cancelled` only, reason required on cancel.
+- Admin **authors events** (title, date, description, photo uploads, YouTube embeds). Upcoming vs
+  past is derived from the date; every event is public.
+- Admin panel: Profile / Research / Publications / Groups / Team Members / **Events**.
 - Single admin authentication (Better Auth).
-- No appointment notification emails in either direction.
+- No appointment feature of any kind on the admin side, and no notification emails in either
+  direction. See [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 
 ## Explicitly out of scope
 
@@ -34,17 +34,21 @@ explicit decision:
   tier this project stays off of. See [ADR-005](../decisions/ADR-005-calendly-embed-only.md).
 - **NG3 — no public user accounts, logins, or profiles for visitors.**
 - **NG4 — no multi-admin, no per-researcher self-editing.** Single admin only.
-- **NG5 — no payments, no messaging/chat, no content approval workflow beyond appointments.**
-- **NG6 — no appointment request/review/approval queue**, and no server-side link between a
-  Calendly embed booking and this app's `Appointment` table. See
-  [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md).
+- **NG5 — no payments, no messaging/chat, no content approval or draft/publish workflow.**
+- **NG6 — no appointment feature at all.** No request/review/approval queue, no admin appointment
+  screen, no `Appointment` table, and no server-side link between a Calendly embed booking and
+  anything stored here. A booking worth publishing is written up by hand as an event. See
+  [ADR-011](../decisions/ADR-011-events-replace-appointments.md), and
+  [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md) for the history.
+- **No video files.** Event video is a YouTube embed; nothing uploads or proxies video, which keeps
+  the project inside R2's free tier.
 - **No i18n / multi-language support**, ever. See
   [ADR-006](../decisions/ADR-006-remove-i18n-and-locale-routing.md).
 - **No light/dark theme switching.** One fixed visual treatment (explicit client instruction).
 - Public search, tagging, or filtering of publications.
 - Analytics dashboard, native mobile apps.
-- Appointment confirmation/cancellation emails to the requester (the `notifications` module was
-  deleted; `EmailClient`/Resend infra remains, reserved for other future admin-facing features).
+- Scheduling emails of any kind (the `notifications` module was deleted; `EmailClient`/Resend infra
+  remains, reserved for other future admin-facing features).
 
 ## Open questions (unresolved — check before assuming an answer)
 

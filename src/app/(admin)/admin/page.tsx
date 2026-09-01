@@ -4,7 +4,7 @@ import { getProfileCached } from '@/modules/profile';
 import { getResearchService } from '@/modules/research';
 import { getPublicationService } from '@/modules/publications';
 import { getResearchGroupService, getTeamMemberService } from '@/modules/research-groups';
-import { getAppointmentService } from '@/modules/appointments';
+import { getEventService, splitByTiming } from '@/modules/events';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { YearColumns, DistributionBars, CompletenessMeter } from './_components/charts';
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // The dashboard reports on what is actually published, using only fields the admin has already
-// entered — publication years, research areas, group membership, appointment dates. Nothing here
+// entered — publication years, research areas, group membership, event dates. Nothing here
 // is a vanity metric or an invented number; if the data isn't in the database, the panel isn't
 // rendered at all.
 //
@@ -65,22 +65,21 @@ function tally(values: string[]): { label: string; count: number }[] {
 }
 
 export default async function AdminDashboardPage() {
-  const [profileResult, research, publications, groups, teamMembers, appointments] =
-    await Promise.all([
-      getProfileCached(),
-      getResearchService().list(),
-      getPublicationService().list(),
-      getResearchGroupService().list(),
-      getTeamMemberService().list(),
-      getAppointmentService().list(),
-    ]);
+  const [profileResult, research, publications, groups, teamMembers, events] = await Promise.all([
+    getProfileCached(),
+    getResearchService().list(),
+    getPublicationService().list(),
+    getResearchGroupService().list(),
+    getTeamMemberService().list(),
+    getEventService().list(),
+  ]);
 
   const profile = profileResult.ok ? profileResult.data : null;
   const researchItems = research.ok ? research.data : [];
   const publicationItems = publications.ok ? publications.data : [];
   const groupItems = groups.ok ? groups.data : [];
   const memberItems = teamMembers.ok ? teamMembers.data : [];
-  const appointmentItems = appointments.ok ? appointments.data : [];
+  const eventItems = events.ok ? events.data : [];
 
   const years = toYearSeries(publicationItems.map((item) => item.year));
   const byArea = tally(researchItems.map((item) => item.area));
@@ -92,11 +91,8 @@ export default async function AdminDashboardPage() {
   const ungrouped = memberItems.filter((member) => member.researchGroupId === null).length;
   if (ungrouped > 0) byGroup.push({ label: 'No group', count: ungrouped });
 
-  const now = new Date();
-  const upcoming = appointmentItems
-    .filter((item) => item.status === 'scheduled' && item.scheduledAt > now)
-    .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
-  const publicUpcoming = upcoming.filter((item) => item.isPublic).length;
+  // Same split the public tab uses, so the two never disagree about what counts as upcoming.
+  const { upcoming } = splitByTiming(eventItems);
 
   const filledSections = profile
     ? PROFILE_SECTIONS.filter((field) => {
@@ -110,7 +106,7 @@ export default async function AdminDashboardPage() {
         day: '2-digit',
         month: 'short',
         timeZone: INSTITUTION_TIME_ZONE,
-      }).format(upcoming[0].scheduledAt)
+      }).format(upcoming[0].eventDate)
     : null;
 
   const latestYear =
@@ -127,7 +123,7 @@ export default async function AdminDashboardPage() {
         <Figure href="/admin/research" label="Research" value={researchItems.length} />
         <Figure href="/admin/team-members" label="People" value={memberItems.length} />
         <Figure
-          href="/admin/appointments"
+          href="/admin/events"
           label="Upcoming"
           value={upcoming.length}
           note={nextDate ? `next ${nextDate}` : undefined}
@@ -160,9 +156,11 @@ export default async function AdminDashboardPage() {
           <CompletenessMeter filled={filledSections} total={PROFILE_SECTIONS.length} />
         </Panel>
 
-        {upcoming.length > 0 && (
-          <Panel title="Public on the site" note={`of ${upcoming.length} upcoming`}>
-            <CompletenessMeter filled={publicUpcoming} total={upcoming.length} />
+        {/* Every event is public now — there is no visibility flag to report on — so the useful
+            ratio here is how much of the events list is still ahead rather than already archive. */}
+        {eventItems.length > 0 && (
+          <Panel title="Events still to come" note={`of ${eventItems.length} total`}>
+            <CompletenessMeter filled={upcoming.length} total={eventItems.length} />
           </Panel>
         )}
       </div>

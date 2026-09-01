@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [appointments, auth, integrations, shared]
+related_modules: [events, auth, integrations, shared]
 related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008, ADR-010]
 ---
 
@@ -19,24 +19,21 @@ rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decid
 | Method | Path |
 |---|---|
 | GET | `/api/profile`, `/api/research`, `/api/publications`, `/api/groups`, `/api/team-members` (unfiltered), `/api/team-members/group/{groupId}` (filtered) |
-| GET | `/api/events/upcoming` (empty/403 if visibility off) |
+| GET | `/api/events` — returns `{ upcoming, past }`, both possibly empty; never a 403 |
 
-### Appointments — admin only, entire surface
+### Events — admin only
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/admin/appointments` | List, optional `?status=` filter |
-| POST | `/api/admin/appointments` | Declare directly → `scheduled` |
-| PUT | `/api/admin/appointments/{id}` | Edit a `scheduled` appointment; `409` if cancelled |
-| DELETE | `/api/admin/appointments/{id}` | Hard-delete, any status, audited before removal (ADR-010) |
-| POST | `/api/admin/appointments/{id}/cancel` | `scheduled → cancelled` + required reason; `409` if already cancelled |
-| POST | `/api/admin/appointments/{id}/reschedule` | `scheduled → scheduled`, `scheduledAt` only; `409` if not `scheduled` (ADR-010) |
-| PATCH | `/api/admin/appointments/{id}/visibility` | Toggle `isPublic`; no status restriction (ADR-010) |
+| POST | `/api/admin/events` | Create; public immediately |
+| PUT | `/api/admin/events/{id}` | Partial update; a media array present in the body replaces that array wholesale |
+| DELETE | `/api/admin/events/{id}` | Delete; full before-state written to `AuditLog` in the same transaction |
+| POST | `/api/admin/events/photo` | Multipart single-file upload to the R2 `events` bucket → `{ url }`. Random object key per upload, 5 MB cap, image types only |
 
-**No public appointment-writing endpoint exists** (`POST /api/appointments` was removed
-outright) and **no Calendly integration route exists** (no `/api/integrations/calendly/*`) — see
-[ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md) and
-[ADR-005](../decisions/ADR-005-calendly-embed-only.md).
+Nothing here returns `409` — events have no lifecycle. **There is no appointment API of any kind**
+since 2026-09-01 (see [ADR-011](../decisions/ADR-011-events-replace-appointments.md)), **no public
+event-writing endpoint**, and **no Calendly integration route** (no `/api/integrations/calendly/*`)
+— see [ADR-005](../decisions/ADR-005-calendly-embed-only.md).
 
 ### Admin content & auth
 
@@ -54,8 +51,8 @@ outright) and **no Calendly integration route exists** (no `/api/integrations/ca
 
 ## Route handler contract
 
-Every handler follows the same shape (see `src/app/api/admin/appointments/[id]/cancel/route.ts`
-or `src/app/api/turnstile/verify/route.ts` for concrete examples):
+Every handler follows the same shape (see `src/app/api/admin/events/[id]/route.ts` or
+`src/app/api/turnstile/verify/route.ts` for concrete examples):
 
 1. `await` params/searchParams; authenticate admin routes via `requireAdmin()`.
 2. Parse body/query with the module's Zod schema → structured `400` via `apiValidationError()` on failure.
@@ -88,14 +85,14 @@ the standardized envelope `{ ok: true, data }` / `{ ok: false, error: { code, me
 ## Service / domain layer
 
 One service per module (`src/modules/<name>/<name>.service.ts`), constructed via a small
-composition-root `container.ts` per module (e.g. `getAppointmentService()` in
-`appointments/container.ts`) — no DI framework, just a cached factory function.
+composition-root `container.ts` per module (e.g. `getEventService()` in `events/container.ts`) —
+no DI framework, just a cached factory function.
 
-The **appointment state machine** (`appointment.service.ts`) is the most important piece:
-`scheduled → cancelled` is the only transition, enforced by checking `current.status` before
-calling the repository; any other attempt returns `ConflictError` → `409`. There is no
-`TRANSITIONS` allow-map data structure (the two-state machine doesn't need one) — that's a
-simplification versus the originally-designed five-state machine, not a missing feature.
+**There is no state machine anywhere in the codebase.** The appointment lifecycle that used to be
+the most important piece of this layer was removed on 2026-09-01
+([ADR-011](../decisions/ADR-011-events-replace-appointments.md)). Every service is now a thin
+existence-check-plus-audit wrapper, and no service returns `ConflictError`/`409`. The one piece of
+real domain logic left in `events` is `splitByTiming`, which is pure and clock-injectable.
 
 ## Validation
 
@@ -118,10 +115,11 @@ Two layers, both native Next.js — no Redis app-cache, no CDN, no cache-tag sys
 - **Full Route Cache for public pages.** Every `(public)` page is a prerendered Server Component
   served from Next's Full Route Cache (`x-nextjs-cache: HIT`, ~5ms).
 - **ISR-style caching on all six public GET API routes** (`/api/profile`, `/api/research`,
-  `/api/publications`, `/api/groups`, `/api/team-members`, `/api/events/upcoming`) via
+  `/api/publications`, `/api/groups`, `/api/team-members`, `/api/events`) via
   `export const revalidate` on each route module — the same on-demand cache Next already manages
-  for pages, not a separate mechanism. `/api/events/upcoming` uses 300s (time-sensitive: a
-  scheduled appointment can pass into the past between invalidations); the rest use 3600s.
+  for pages, not a separate mechanism. `/api/events` uses 300s (time-sensitive: the upcoming/past
+  boundary is computed against the clock at render time, so an event can cross it with nobody
+  editing); the rest use 3600s.
   `/api/team-members` was restructured (see
   [ADR-007's addendum](../decisions/ADR-007-fix-cache-invalidation-and-cache-public-api-routes.md#addendum-2026-08-11-apiteam-members-restructured-to-cache))
   into two route modules to get here: the unfiltered `/api/team-members` route no longer reads

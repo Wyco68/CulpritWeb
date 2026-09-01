@@ -48,7 +48,14 @@ export interface StorageAdapter {
 }
 
 function objectKey(bucket: StorageBucket, path: string): string {
-  const cleanPath = path.split('/').filter(Boolean).join('/');
+  // No caller passes user-controlled path segments today, but strip `.`/`..` regardless — an S3
+  // Key is a flat string, not a filesystem path, so a segment like `..` doesn't "traverse" the way
+  // it would on disk; it just becomes an attacker-chosen literal key. Blocking it here means a
+  // future upload route can accept a user-supplied filename without reopening this as a review item.
+  const cleanPath = path
+    .split('/')
+    .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
+    .join('/');
   return `${bucket}/${cleanPath}`;
 }
 

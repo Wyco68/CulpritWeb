@@ -20,14 +20,15 @@ hard project rules and subagent routing. Search all of it with
 1. **Read the relevant requirements.** Check `docs/requirements/` (functional,
    non-functional, scope) for the feature area you're touching. If the request looks like it
    revives something explicitly out of scope (`docs/requirements/scope.md`'s "Explicitly out of
-   scope" list — e.g. a visitor appointment request form, server-side Calendly sync, i18n), stop
+   scope" list — e.g. any appointment feature at all, server-side Calendly sync, video-file uploads,
+   i18n), stop
    and confirm with the user before building it.
 2. **Search for related architecture and decisions**:
    `npm run docs:search -- "<feature or concept>"`. Read the matching `docs/architecture/*.md`
    page(s) and any linked ADR (`docs/decisions/ADR-*.md`) — ADRs carry `source_of_truth: true` and
    are the authoritative record of *why* something is built the way it is.
 3. **Check for superseded/deprecated decisions.** If your change resembles something an ADR marks
-   as superseded (review-queue appointments, server-side Calendly REST/webhooks, Supabase Storage,
+   as superseded (appointments in any form, server-side Calendly REST/webhooks, Supabase Storage,
    i18n/locale routing), read that ADR's "Alternatives considered" and "Consequences" sections
    before reintroducing it — there's usually a documented reason it was removed, not just an
    oversight. See [`docs/README.md#known-contradictions--gaps`](docs/README.md#known-contradictions--gaps)
@@ -75,7 +76,7 @@ a change.
 ## Searching the docs
 
 ```bash
-npm run docs:search -- "appointment workflow"
+npm run docs:search -- "event content model"
 npm run docs:search -- "why postgres" --json
 npm run docs:search -- "old calendly integration" --include-superseded
 ```

@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [appointments, profile, research, publications, research-groups, auth]
+related_modules: [events, profile, research, publications, research-groups, auth]
 related_decisions: [ADR-001, ADR-004, ADR-010]
 ---
 
@@ -32,41 +32,36 @@ related_decisions: [ADR-001, ADR-004, ADR-010]
 | `Publication` | Publications | `link` nullable (conference/book-chapter entries often have no stable URL). |
 | `ResearchGroup` | Research groups | Has-many `TeamMember`. `members` JSON blob was **removed** — replaced by the relational entity below. |
 | `TeamMember` | Researchers & visiting professors | `researchGroupId` nullable FK (`onDelete: SetNull`) — a member may be unaffiliated. |
-| `Appointment` | Admin-declared appointments | See below — minimal after the 2026-08-08 rewrite, extended 2026-08-13 (ADR-010) with `isPublic` + hard delete + reschedule. |
-| ~~`Setting`~~ | ~~Key/value flags~~ | **Deleted 2026-08-13 (ADR-010).** Held one key, `upcoming_events_visible`; replaced by `Appointment.isPublic`. |
+| `Event` | Admin-authored events on the public Events tab | See below. |
+| ~~`Appointment`~~ | ~~Admin-declared appointments~~ | **Deleted 2026-09-01 ([ADR-011](../decisions/ADR-011-events-replace-appointments.md)),** along with the `AppointmentStatus` enum and every row. Replaced by `Event`. |
+| ~~`Setting`~~ | ~~Key/value flags~~ | **Deleted 2026-08-13 (ADR-010).** Held one key, `upcoming_events_visible`. |
 | `User`/`Session`/`Account`/`Verification` | Better Auth's own tables | Owned by Better Auth's Prisma adapter — **never query these from domain code**; only `src/modules/auth/auth.ts` hands the client to the adapter. |
 | `AuditLog` | Append-only audit trail | Written by repositories, not services — see [architecture/backend.md](backend.md#audit-logging). |
 
-### `Appointment` — current shape
+### `Event` — current shape
 
 ```prisma
-enum AppointmentStatus { scheduled cancelled }
-
-model Appointment {
-  id             String            @id @default(cuid())
-  requesterName  String
-  requesterEmail String?           // informational only — no email is ever sent for this
-  researchGroup  String?
-  scheduledAt    DateTime          // changeable via reschedule (scheduled -> scheduled)
-  topic          String?
-  status         AppointmentStatus @default(scheduled)
-  cancelReason   String?
-  isPublic       Boolean           @default(false) // drives public Upcoming Events listing (ADR-010)
-  createdAt      DateTime
-  updatedAt      DateTime
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  eventDate   DateTime            // the only thing that decides Upcoming vs Past
+  photoUrls   String[]            // public R2 URLs
+  videoUrls   String[]            // parsed 11-character YouTube video IDs, never files
+  createdAt   DateTime
+  updatedAt   DateTime
 }
 ```
 
-**Fields that do not exist** (removed 2026-08-08, do not resurrect without a new ADR):
-`source`, `pending`/`approved`/`booked` status values, `calendlyEventRef` /
-`calendlyEventUri`/`calendlyInviteeUri`/`calendlyEventTypeUri`/`meetingUrl`/`cancelledAt`,
-`requestedTime` (renamed `scheduledAt`, now admin-set exactly), `cancelToken` (no visitor
-self-cancel flow exists). See [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md).
+**Fields that deliberately do not exist:** any status or lifecycle enum, `isPublic`/draft flag, and
+any stored upcoming/past marker. An event is published the moment it is saved, and whether it is
+upcoming is derived from `eventDate` against the clock at render time (`splitByTiming` in
+`event.service.ts`) — a stored flag would be wrong the moment the date passed with nobody editing.
+See [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 
-**Added 2026-08-13** ([ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md)):
-`isPublic` (per-row Upcoming Events visibility, replaces the deleted `Setting` model); hard delete
-(`delete()` on the repository/service, any status, audited via `AuditLog` before removal); reschedule
-(`scheduled -> scheduled`, `scheduledAt`-only, audited).
+**Media are native Postgres `text[]`,** not `Json`: flat lists of URLs with no internal structure.
+A partial update replaces an array wholesale (`{ set: [...] }`), so a PUT carrying `photoUrls: []`
+clears the gallery rather than reading as "no change".
 
 ## Conventions
 
@@ -75,7 +70,7 @@ self-cancel flow exists). See [ADR-004](../decisions/ADR-004-appointment-workflo
 - IDs: `String @id @default(cuid())`.
 - Every domain entity has `createdAt`/`updatedAt` (`@default(now())` / `@updatedAt`).
 - Domain code never sees Prisma's generated types directly outside repositories — repositories
-  map rows to plain domain types (e.g. `toDomain()` in `appointment.repository.ts`).
+  map rows to plain domain types (e.g. `toDomain()` in `event.repository.ts`).
 
 ## Relationships
 
@@ -85,38 +80,33 @@ erDiagram
     PROFILE ||--o{ PUBLICATION : "has"
     PROFILE ||--o{ RESEARCHGROUP : "leads"
     RESEARCHGROUP ||--o{ TEAMMEMBER : "has (optional)"
-    ADMIN ||--o{ APPOINTMENT : "declares directly"
+    ADMIN ||--o{ EVENT : "publishes"
 ```
 
-There is no `Setting` model anymore (deleted 2026-08-13, ADR-010) — public Upcoming Events
-visibility is `Appointment.isPublic`, a column on the entity itself.
+There is no `Setting` model (deleted 2026-08-13, ADR-010) and no `Appointment` model (deleted
+2026-09-01, ADR-011). Nothing gates event visibility: every event is public.
 
-## Appointment status transitions
+## Event lifecycle
 
-```mermaid
-stateDiagram-v2
-    [*] --> scheduled : admin declares an appointment directly
-    scheduled --> scheduled : admin reschedules (scheduledAt only)
-    scheduled --> cancelled : admin cancels (reason required)
-    cancelled --> [*]
-```
+There isn't one. `Event` has no status column and no state machine, so no event operation can
+return `409` — the only transitions are create, edit, delete. Deleting is audited: `AuditLog`
+captures the full before-state inside the same transaction as the delete.
 
-`cancelled` is terminal but **retained** (soft) — the cancel action alone never deletes a row. Any
-illegal transition attempt (cancelling/rescheduling an already-cancelled row) → `ConflictError` →
-`409`.
-
-**Hard delete (2026-08-13, ADR-010):** separate admin action, not part of the state machine above —
-any row, any status, can be permanently deleted. `AuditLog` captures the full before-state before
-the row is removed.
+The appointment state machine that used to be documented here (`scheduled → cancelled`, reschedule,
+hard delete) was removed on 2026-09-01 — see
+[ADR-011](../decisions/ADR-011-events-replace-appointments.md), and
+[ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md)
+for the history.
 
 ## Migration strategy
 
 - Dev: `npm run db:migrate` (`prisma migrate dev`). **Never** run `migrate dev` against
   production — CI/CD runs `npm run db:deploy` (`prisma migrate deploy`).
 - Migration history (`prisma/migrations/`) is itself a readable record of the schema's evolution —
-  e.g. `20260807143226_simplify_appointments_admin_only`,
-  `20260808044253_appointment_embed_only_no_calendly_sync` document the 2026-08-08 rewrite at the
-  SQL level.
+  e.g. `20260807143226_simplify_appointments_admin_only` and
+  `20260808044253_appointment_embed_only_no_calendly_sync` document the 2026-08-08 rewrite, and
+  `20260901120000_events_replace_appointments` the removal, at the SQL level. That last one is
+  **destructive and has no down path** — it drops `appointment` and every row in it.
 - `prisma/seed.ts` provisions the single admin from `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD`;
   `prisma/seed-demo.ts` adds demo content for local dev. Guard seed scripts so they never run
   destructively in production.

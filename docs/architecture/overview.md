@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [shared, auth, appointments, integrations]
+related_modules: [shared, auth, events, integrations]
 related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008, ADR-010]
 ---
 
@@ -38,7 +38,7 @@ Data flows one direction; each layer depends only on the one below it.
 ┌───────────────────────────────────────────────────────────┐
 │ Boundary   — route handlers (src/app/api/**/route.ts)      │  auth → parse/validate → call service → respond
 ├───────────────────────────────────────────────────────────┤
-│ Service    — domain logic (src/modules/*/*.service.ts)     │  appointment lifecycle, business rules
+│ Service    — domain logic (src/modules/*/*.service.ts)     │  existence checks, audit context, business rules
 ├───────────────────────────────────────────────────────────┤
 │ Repository — the ONLY place Prisma is imported             │  typed CRUD + audit-log write, in one transaction
 ├───────────────────────────────────────────────────────────┤
@@ -49,7 +49,7 @@ Data flows one direction; each layer depends only on the one below it.
 **Deviation from the original design doc:** the audit-log write happens **inside the repository**
 (`createWithAudit`/`updateWithAudit`, same DB transaction as the mutation), not in the service
 layer as `.claude/skills/fullstack-nextjs-starter/references/{data-model,security}.md` describe.
-Verified across every repository that mutates state (`appointment`, `research`, `publications`,
+Verified across every repository that mutates state (`event`, `research`, `publications`,
 `profile`, `research-group`, `team-member`). This is intentional — it makes the audit
 entry atomic with the mutation — but it means "no business logic in repositories" (CLAUDE.md) does
 not extend to "no audit writes in repositories."
@@ -61,26 +61,30 @@ not extend to "no audit writes in repositories."
 - **research** — research works CRUD.
 - **publications** — publications CRUD.
 - **research-groups** — research groups + `TeamMember` (relational, not a JSON blob).
-- **appointments** — admin-declared create/update/cancel/reschedule/hard-delete, per-row
-  `isPublic` visibility, audit trail, the Upcoming Events read model. No request intake.
+- **events** — admin-authored events CRUD with photo uploads and YouTube embeds, plus
+  `splitByTiming` (the upcoming/past read model). No status, no lifecycle, no visibility flag.
+  Replaced the `appointments` module on 2026-09-01 — see
+  [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 - **integrations** — Calendly embed (no server-side client), Cloudflare R2 storage adapter,
   YouTube embed helper, Turnstile verifier, in-process rate limiter (fallback behind the
   Cloudflare edge rule — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)),
-  `guardPublicWrite` composite guard, Resend email client (unused for appointments).
+  `guardPublicWrite` composite guard, Resend email client (not wired to anything today). The
+  YouTube helper is what `events` plays its videos through.
 - **shared** — `Result`/error types, structured logger, API response envelope, Prisma client
   singleton, UI primitives (`shared/ui/*`), `query-client.ts`.
 
-There is **no `notifications` module** — it was deleted along with the appointment review-queue
-workflow. There is **no `i18n`/`messages` directory** — fully removed, not just the routing layer.
-There is **no `settings` module** (deleted 2026-08-13, ADR-010) — the global visibility flag it
-held is now `Appointment.isPublic`, owned by `appointments`.
+There is **no `appointments` module** (deleted 2026-09-01, ADR-011) — and with it went the only
+state machine in the codebase. There is **no `notifications` module** — it was deleted along with
+the appointment review-queue workflow. There is **no `i18n`/`messages` directory** — fully removed,
+not just the routing layer. There is **no `settings` module** (deleted 2026-08-13, ADR-010) — the
+global visibility flag it held has no successor, because every event is public.
 
 ## Route groups
 
 ```
 src/app/
 ├── (public)/    # About, research, publications, team, events, appointment — flat paths, no [locale]
-├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,appointments}, login
+├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,events}, login
 └── api/         # route handlers — see architecture/backend.md
 ```
 

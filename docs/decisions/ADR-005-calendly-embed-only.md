@@ -2,7 +2,7 @@
 status: current
 source_of_truth: true
 last_updated: 2026-08-08
-related_modules: [integrations, appointments]
+related_modules: [integrations, events]
 related_decisions: [ADR-004]
 ---
 
@@ -39,7 +39,8 @@ third-party service must stay usable on its free tier.
 `NEXT_PUBLIC_CALENDLY_URL` — a client-side `<iframe>`, nothing else. Remove the server-side
 integration outright: no PAT, no REST client, no webhook receiver, no `calendlyEventRef`-style
 metadata field. A booking made in the widget is never recorded in this app; if it should appear on
-the public Upcoming Events tab or in Manage Appointments, the admin adds it manually (see
+the public Events tab, the admin writes it up there as an event by hand (see
+[ADR-011](ADR-011-events-replace-appointments.md); before 2026-09-01 this was Manage Appointments,
 [ADR-004](ADR-004-appointment-workflow-admin-only.md)).
 
 ## Alternatives considered
@@ -57,7 +58,8 @@ the public Upcoming Events tab or in Manage Appointments, the admin adds it manu
 
 - Zero Calendly API surface to maintain, zero token to rotate or leak.
 - No live availability data or booking metadata ever reaches this app automatically — the admin is
-  the sole source of truth for what appears in Manage Appointments / Upcoming Events.
+  the sole source of truth for what appears on the public site. Since 2026-09-01 that means the
+  admin Events screen ([ADR-011](ADR-011-events-replace-appointments.md)).
 - `src/modules/integrations/calendly/README.md` documents this rationale in the codebase itself,
   co-located with the embed component.
 - `.claude/skills/fullstack-nextjs-starter/references/integrations.md` still describes only the

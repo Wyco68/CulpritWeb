@@ -1,0 +1,28 @@
+// events module — admin-authored events shown on the public Events tab, split into Upcoming and
+// Past by `eventDate` at render time. Replaced the appointments module on 2026-09-01: the public
+// Make Appointment tab (Calendly embed) is unaffected and still exists, but nothing a visitor
+// books there is recorded locally, so there is no admin-side appointment screen anymore.
+
+export {
+  createEventSchema,
+  updateEventSchema,
+  eventIdSchema,
+  type CreateEventInput,
+  type UpdateEventInput,
+} from './event.schema';
+
+export type { Event, EventTiming, AuditContext } from './event.types';
+
+export {
+  createEventService,
+  splitByTiming,
+  type EventService,
+  type EventServiceDeps,
+} from './event.service';
+
+export type { EventRepository } from './event.repository';
+
+export { getEventService } from './container';
+
+export { EventList } from './ui/event-list';
+export { EventsTable } from './ui/events-table';

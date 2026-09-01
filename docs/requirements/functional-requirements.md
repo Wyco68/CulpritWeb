@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-13
-related_modules: [profile, research, publications, research-groups, appointments, auth]
-related_decisions: [ADR-004, ADR-005, ADR-010]
+last_updated: 2026-09-01
+related_modules: [profile, research, publications, research-groups, events, auth]
+related_decisions: [ADR-005, ADR-011]
 ---
 
 # Functional requirements
@@ -20,12 +20,12 @@ related_decisions: [ADR-004, ADR-005, ADR-010]
 | FR-2 | Visitor can view the **Research** tab: a simple list of research works (title + summary + area). |
 | FR-3 | Visitor can view **Publications**: title, authors, venue, year, and an external link. `link` is nullable — shown only when present. |
 | FR-4 | Visitor can view **Team Members**, grouped by research group (CV-style: works & achievements). Backed by the relational `TeamMember` entity, not a "Research Groups" tab. |
-| FR-5 | Visitor can view the **Upcoming Events** tab, showing `scheduled` appointments the admin has individually marked `isPublic`. Per-appointment since ADR-010 (was one global visibility setting). |
+| FR-5 | Visitor can view the **Events** tab: admin-authored events split into Upcoming and Past by `Event.eventDate` at render time, each with a title, description, photo gallery and YouTube embeds. Every event is public — there is no visibility flag. See [ADR-011](../decisions/ADR-011-events-replace-appointments.md). |
 | FR-6 | The site is fully readable without any login. |
 
 ## Appointments (visitor)
 
-There is **no visitor-facing appointment request form** — see [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md). Only one visitor-facing appointment behavior exists:
+There is **no visitor-facing appointment request form**, and since [ADR-011](../decisions/ADR-011-events-replace-appointments.md) no admin-facing appointment feature either — nothing a visitor books is recorded by this app at all. One visitor-facing appointment behavior exists:
 
 | ID | Requirement |
 |----|-------------|
@@ -39,20 +39,18 @@ There is **no visitor-facing appointment request form** — see [ADR-004](../dec
 | FR-13 | Admin can log in via a single admin account. |
 | FR-14 | Admin can edit the structured **Bio** (position/affiliation, education, fellowships & visiting appointments, teaching roles, teaching awards, scholarships & travel awards, research interests, research statement, invited talks, LinkedIn/Google Scholar links), Research, Publications, Research Groups, and Team Members via simple forms. |
 | FR-15 | Each editing form has a clear **"Save changes"** action with success/error feedback. |
-| FR-16b | Admin can toggle whether an individual appointment appears on the public **Upcoming Events** tab (`Appointment.isPublic`). Replaces the removed global FR-16/`Setting` toggle — see [ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md). |
+| FR-16c | Admin uploads event photos through `POST /api/admin/events/photo` (R2 `events` bucket, 5 MB per file, up to 20 per event) and adds videos by pasting a YouTube link, which is stored as a parsed video ID. No video file is ever uploaded or proxied. |
 
-## Admin — appointment management
+## Admin — event management
 
-There is **no review queue** — see [ADR-004](../decisions/ADR-004-appointment-workflow-admin-only.md). An appointment exists only because the admin declared it directly.
+Events are plain published content: no status, no lifecycle, no approval step and no draft state, so nothing here can return `409`. See [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 
 | ID | Requirement |
 |----|-------------|
-| FR-17 | Admin sees a table/list of appointments: name, research group, scheduled time, status. |
-| FR-17a | Admin can **add** an appointment directly: requester name (required), email (optional, informational only), research group (optional), scheduled time, topic (optional). Lands as `scheduled` immediately — no approval step. |
-| FR-17b | Admin can **edit** a `scheduled` appointment's details. `409` if it has already been cancelled. |
-| FR-17c | Admin can **reschedule** a `scheduled` appointment (`scheduled → scheduled`, `scheduledAt` only, audited). `409` if not currently `scheduled`. See [ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md). |
-| FR-21 | Admin can **cancel** a `scheduled` appointment (status → `cancelled`, reason required, record retained — soft). `409` if already cancelled. |
-| FR-22 | Admin can **hard-delete** an appointment (any status), audited via `AuditLog` before removal. Separate, explicit action alongside cancel — not a lifecycle transition. See [ADR-010](../decisions/ADR-010-appointment-hard-delete-reschedule-per-appointment-visibility.md). |
+| FR-17 | Admin sees a table of events: title, date, whether it reads as Upcoming or Past, and how many photos and videos it carries. |
+| FR-17a | Admin can **add** an event: title (required), date and time (required, entered as institution-local wall-clock), description (required), photos (optional), YouTube videos (optional). It is public immediately. |
+| FR-17b | Admin can **edit** any event, including moving its date, which is what moves it between Upcoming and Past. |
+| FR-17c | Admin can **delete** an event. `AuditLog` records the full before-state inside the delete transaction. Uploaded photos are left in R2 — see [ADR-011](../decisions/ADR-011-events-replace-appointments.md). |
 
 ## Historical (removed 2026-08-08) — do not implement
 
@@ -71,6 +69,14 @@ agent recognizes them as deliberately removed, not as a gap to fill:
 **Removed 2026-08-13 (ADR-010):**
 
 - ~~FR-16~~ — global admin toggle for Upcoming Events visibility (`Setting.upcoming_events_visible`).
-  Replaced by FR-16b (per-appointment `isPublic`).
+  Replaced at the time by FR-16b (per-appointment `isPublic`), itself removed below.
+
+**Removed 2026-09-01 ([ADR-011](../decisions/ADR-011-events-replace-appointments.md)):** the whole
+admin appointment feature, replaced by Events. The `appointment` table and every row in it were
+dropped.
+
+- ~~FR-16b~~ — per-appointment `isPublic` toggle. Every event is public; there is no flag.
+- ~~FR-21~~ — cancel a `scheduled` appointment. No lifecycle exists to cancel within.
+- ~~FR-22~~ — hard-delete an appointment. Superseded by FR-17c (delete an event).
 
 Full rationale: [PROJECT_SPEC.md §5.2/§5.4](../../PROJECT_SPEC.md#52-appointment-request-visitor).

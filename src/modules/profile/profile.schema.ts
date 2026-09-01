@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
 
 // Single source of truth for profile I/O. Free-text fields are sanitized (HTML stripped) via
-// `.transform` AFTER shape validation — same convention as the appointments module.
+// `.transform` AFTER shape validation — same convention as every other module here.
 
 const safeText = (max: number) => z.string().trim().min(1).max(max).transform(stripHtml);
 const optionalSafeText = (max: number) =>

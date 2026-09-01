@@ -37,11 +37,11 @@ describe('revalidatePublic', () => {
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/api/team-members');
   });
 
-  it('revalidates the events page and the upcoming-events API route', () => {
+  it('revalidates the events page and the events API route', () => {
     revalidatePublic('events');
 
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/events');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/api/events/upcoming');
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/api/events');
   });
 
   it('revalidates only the appointment page (no matching public API route)', () => {

@@ -35,9 +35,13 @@ const AREA_PATHS = {
    * because group membership changes are rare and low-stakes if briefly stale.
    */
   team: ['/team', '/api/groups', '/api/team-members'],
-  /** Upcoming Events: both the appointment list and the admin visibility toggle. */
-  events: ['/events', '/api/events/upcoming'],
-  /** The Make Appointment tab (Calendly embed only). No matching public API route. */
+  /** The Events tab — both halves (upcoming and past) come from the same list. */
+  events: ['/events', '/api/events'],
+  /**
+   * The Make Appointment tab (Calendly embed only). No matching public API route, and nothing
+   * server-side writes to it — kept because the page exists and the area name is part of this
+   * module's public contract, not because any current mutation invalidates it.
+   */
   appointment: ['/appointment'],
 } as const;
 

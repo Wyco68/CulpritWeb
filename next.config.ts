@@ -19,6 +19,62 @@ function r2RemotePatterns(): NonNullable<NextConfig['images']>['remotePatterns']
   }
 }
 
+// The public R2 host, if configured, needs to appear in img-src alongside the app's own origin —
+// same derivation as r2RemotePatterns() above, kept separate since CSP wants a bare host string.
+function r2ImgSrc(): string {
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (!publicUrl) return '';
+  try {
+    return new URL(publicUrl).origin;
+  } catch {
+    return '';
+  }
+}
+
+// Third-party embeds are the only reason this isn't a same-origin-only policy: the Calendly widget
+// (script + iframe, see calendly-embed.tsx), the Turnstile challenge (script + iframe, see
+// turnstile-challenge.tsx), and the YouTube players on the Events tab (iframe only — the embed is
+// a plain <iframe src>, so youtube-nocookie.com needs frame-src but not script-src). No inline <script> is used anywhere in the app (grepped — every script
+// is an external chunk or a next/script src=), so script-src omits 'unsafe-inline' entirely. style-src
+// keeps it: React inline `style={{...}}` attributes (dynamic widths/heights) are used across the UI
+// and CSP has no practical hash/nonce story for those.
+function buildCsp(): string {
+  const r2Origin = r2ImgSrc();
+  // Next.js dev mode (Fast Refresh / HMR) both eval()-wraps modules and injects the hot-update
+  // runtime as dynamically-created inline <script> elements — needs 'unsafe-eval' and
+  // 'unsafe-inline' script-src or dev breaks entirely (confirmed by running it: without these two,
+  // every HMR update throws a CSP violation in the browser console). The production build emits
+  // real external chunk files instead of either, so neither exception reaches the policy actually
+  // served in prod — verified separately against a prod build before shipping this.
+  const isDev = process.env.NODE_ENV !== 'production';
+  const directives: Record<string, string[]> = {
+    'default-src': [`'self'`],
+    'script-src': [
+      `'self'`,
+      'https://assets.calendly.com',
+      'https://challenges.cloudflare.com',
+      ...(isDev ? [`'unsafe-eval'`, `'unsafe-inline'`] : []),
+    ],
+    'style-src': [`'self'`, `'unsafe-inline'`],
+    'img-src': [`'self'`, 'data:', ...(r2Origin ? [r2Origin] : [])],
+    'font-src': [`'self'`, 'data:'],
+    'connect-src': [`'self'`, 'https://calendly.com', 'https://*.calendly.com', 'https://challenges.cloudflare.com'],
+    'frame-src': [
+      'https://calendly.com',
+      'https://*.calendly.com',
+      'https://challenges.cloudflare.com',
+      'https://www.youtube-nocookie.com',
+    ],
+    'object-src': [`'none'`],
+    'base-uri': [`'self'`],
+    'form-action': [`'self'`],
+    'frame-ancestors': [`'none'`],
+  };
+  return Object.entries(directives)
+    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+    .join('; ');
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Self-contained server bundle (server.js + pruned prod-only node_modules) — the production
@@ -39,6 +95,20 @@ const nextConfig: NextConfig = {
   // instead of 404ing.
   images: {
     remotePatterns: r2RemotePatterns(),
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Content-Security-Policy', value: buildCsp() },
+        ],
+      },
+    ];
   },
 };
 
