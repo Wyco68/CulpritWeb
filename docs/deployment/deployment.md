@@ -1,17 +1,43 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-12
+last_updated: 2026-09-02
 related_modules: [shared, integrations]
 related_decisions: [ADR-001, ADR-002]
 ---
 
 # Deployment
 
+## Two remotes
+
+The code lives in two GitHub repositories, and they do different jobs. Push to both; never assume
+one is a superset of the other.
+
+| Remote | Repository | Serves | Runs |
+|---|---|---|---|
+| `origin` | `Wyco68/CulpritWeb` | Staging on the VPS — `culprit.wyco-dev.com` | All of `.github/workflows/` |
+| `deploy` | `culpritteam/web` | Production on Vercel — `web-sepia-psi-97.vercel.app` | Nothing. Vercel only. |
+
+`culpritteam/web` is a mirror that exists so Vercel has something to build from. Vercel deploys
+through its own GitHub integration, so it needs no workflow file and has none of the secrets the
+VPS pipeline uses. Every job in `.github/workflows/` is therefore gated:
+
+```yaml
+if: github.repository == 'Wyco68/CulpritWeb'
+```
+
+Without that guard the mirror would try to publish images to GHCR, SSH to the VPS and apply
+migrations with credentials it does not hold, and fail on every push. **Any new workflow job needs
+the same line.**
+
+There is also an `all` remote configured with two push URLs, which pushes to both repositories at
+once. Prefer pushing to `origin` and `deploy` separately — one repository at a time makes it
+obvious which one a mistake landed in.
+
 ## Platform
 
-Self-hosted: one prebuilt Docker container on a low-resource VPS, built and pushed by CI, never
-built on the VPS itself. `NEXT_PUBLIC_APP_URL`/`BETTER_AUTH_URL` are set to the deployed domain.
+Staging is self-hosted: one prebuilt Docker container on a low-resource VPS, built and pushed by
+CI, never built on the VPS itself. Production is Vercel, built by Vercel from the mirror. `NEXT_PUBLIC_APP_URL`/`BETTER_AUTH_URL` are set to the deployed domain.
 See [architecture/overview.md](../architecture/overview.md) for the full adopted stack and
 [docker-vps.md](docker-vps.md) for the pipeline itself; everything below (build command,
 migrations, connection pooling) is the platform-agnostic part that pipeline relies on.
@@ -26,6 +52,11 @@ npm run build   # prisma generate && next build
 must run `prisma migrate deploy` as an explicit release step, separate from the build command.
 
 ## Migrations
+
+Each environment has its own database, so a migration applied to one is **not** applied to the
+other. The VPS pipeline runs `prisma migrate deploy` as its own job; Vercel does not, so a schema
+change reaches production only when someone runs it against the production database. Do that
+before the deploy that depends on it, not after.
 
 - **Never** run `prisma migrate dev` against production.
 - Release step: `npm run db:deploy` (`prisma migrate deploy`), using `DIRECT_URL` (unpooled) —

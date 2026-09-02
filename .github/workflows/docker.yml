@@ -18,7 +18,13 @@ name: Docker build & publish
 #
 # The VPS is shared with other apps behind a single Caddy reverse proxy — see
 # docs/deployment/docker-vps.md for the ~/server/apps/<app>/ layout this job assumes already
-# exists (bootstrapped once by hand: directory, .env.production, Caddy site block).
+# exists (bootstrapped once by hand: directory, .env.production, Caddy site block).#
+# Repository guard: every job below is gated on `github.repository`. The code is mirrored to a
+# second remote, culpritteam/web, which exists only to give Vercel something to deploy from.
+# Vercel builds through its own GitHub integration and needs no workflow, so nothing in .github/
+# should run there — without the guard, the mirror would try to publish images, SSH to the VPS and
+# apply migrations with secrets it does not have, and fail on every push.
+# See docs/deployment/deployment.md#two-remotes.
 
 on:
   push:
@@ -45,6 +51,7 @@ env:
 jobs:
   test:
     name: Lint, typecheck, unit test
+    if: github.repository == 'Wyco68/CulpritWeb'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +77,7 @@ jobs:
 
   migrate:
     name: Apply database migrations
+    if: github.repository == 'Wyco68/CulpritWeb'
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -92,6 +100,7 @@ jobs:
 
   build-and-push:
     name: Build & push image
+    if: github.repository == 'Wyco68/CulpritWeb'
     needs: [test, migrate]
     runs-on: ubuntu-latest
     outputs:
@@ -158,6 +167,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
+    if: github.repository == 'Wyco68/CulpritWeb'
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
