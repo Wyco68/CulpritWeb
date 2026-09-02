@@ -2,8 +2,8 @@ import { getProfileCached } from '@/modules/profile';
 import { SiteFooter } from './_components/site-footer';
 import { SiteHeader } from './_components/site-header';
 
-// Shared shell for every public tab (About, Research, Publications, Team Members, Events, Make
-// Appointment): the masthead band + tab bar render once here, so each page below
+// Shared shell for every public tab (About, Research, Publications, Teaching, Team Members,
+// Events, Make Appointment): the masthead band + tab bar render once here, so each page below
 // only supplies its own tab content. Server Component — reads the profile directly through the
 // service layer (no internal HTTP round-trip) per the "public read pages fetch through services"
 // architecture rule.
