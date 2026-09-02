@@ -9,21 +9,27 @@
    the chosen hue. Retuning any pair here means re-checking it against WCAG 2.1 AA. */
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(222 15% 12%); /* 16.91:1 on background */
+  /* A hair off pure white, same hue as the masthead band, so the page ground and the cyan band
+     read as one family instead of a cool band dropped onto a neutral page. Still reads as white —
+     rgb(251 253 253), 2-4 points off 255 — not an off-white/grey. */
+  --background: hsl(190 40% 99%);
+  --foreground: hsl(222 15% 12%); /* 16.54:1 on background */
   --muted: hsl(220 14% 96%);
   --muted-foreground: hsl(220 9% 42%); /* 5.61:1 on background */
   --border: hsl(220 13% 91%);
   --accent: hsl(190 90% 30%); /* 4.97:1 on background */
   --accent-foreground: hsl(0 0% 100%); /* 4.97:1 on accent */
   /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
-     element distinct from the light page background used everywhere else. */
-  --masthead: hsl(190 85% 88%);
-  --masthead-foreground: hsl(215 59% 15%); /* 13.20:1 on the band */
+     element distinct from the light page background used everywhere else. Same hue as the
+     original 190/85/88, lifted a touch brighter/lighter on request — contrast against both
+     --masthead-foreground and --accent-on-band only improves at this lightness, so no other token
+     needed to move with it. */
+  --masthead: hsl(190 90% 92%);
+  --masthead-foreground: hsl(215 59% 15%); /* 14.08:1 on the band */
 
   /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.13:1
      against the cyan band — below the 4.5:1 AA threshold for normal-size text, which the
-     professor's title line on the masthead is. This sibling measures 5.18:1 there. Text sitting
+     professor's title line on the masthead is. This sibling measures 5.52:1 there. Text sitting
      ON the band uses this; everything on the white page keeps --accent. */
   --accent-on-band: hsl(190 90% 26%);
 
