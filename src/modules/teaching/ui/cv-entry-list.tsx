@@ -17,7 +17,10 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
   const headingId = `cv-section-${section}`;
 
   return (
-    <section aria-labelledby={headingId} className="border-t border-border pt-8">
+    <section
+      aria-labelledby={headingId}
+      className="break-inside-avoid border-t border-border pt-8"
+    >
       <h3 id={headingId} className="font-serif text-xl text-foreground">
         {CV_SECTION_LABELS[section]}
       </h3>

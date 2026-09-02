@@ -5,8 +5,10 @@
  * Which list a CV entry belongs to. Owned here rather than imported from Prisma so nothing
  * generated crosses the service boundary — same convention the old appointment status used.
  *
- * The first five render on About, the last two on Teaching. That split is the whole reason the
- * seven Json columns became rows: a single whole-document profile PUT could not serve two pages.
+ * Education/fellowship/scholarship/invited_talk render on About, research_interest on Research
+ * (moved off About to keep that tab biographical rather than a second research page), and
+ * teaching_role/teaching_award on Teaching. That split is the whole reason the seven Json columns
+ * became rows: a single whole-document profile PUT could not serve three pages.
  */
 export const CV_SECTIONS = [
   'education',
@@ -25,9 +27,11 @@ export const ABOUT_SECTIONS = [
   'education',
   'fellowship',
   'scholarship',
-  'research_interest',
   'invited_talk',
 ] as const satisfies readonly CvSection[];
+
+/** The sections the public Research tab renders, in the order it renders them. */
+export const RESEARCH_SECTIONS = ['research_interest'] as const satisfies readonly CvSection[];
 
 /** The sections the public Teaching tab renders, in the order it renders them. */
 export const TEACHING_SECTIONS = ['teaching_role', 'teaching_award'] as const satisfies readonly CvSection[];

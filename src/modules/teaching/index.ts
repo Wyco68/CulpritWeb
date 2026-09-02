@@ -19,6 +19,7 @@ export {
 export {
   CV_SECTIONS,
   ABOUT_SECTIONS,
+  RESEARCH_SECTIONS,
   TEACHING_SECTIONS,
   CV_SECTION_LABELS,
   type CvSection,

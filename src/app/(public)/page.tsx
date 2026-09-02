@@ -12,7 +12,7 @@ import { PageHeading } from '@/modules/shared/ui/page-heading';
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'About',
-    description: 'Position, education, fellowships, teaching, and research interests.',
+    description: 'Position, education, fellowships, scholarships, and invited talks.',
   };
 }
 
@@ -52,24 +52,14 @@ export default async function AboutPage() {
 
           <ProfileLinks profile={result.data} />
 
-          {result.data.researchStatement && (
-            <section
-              aria-labelledby="research-statement-heading"
-              className="border-t border-border pt-8"
-            >
-              <h3
-                id="research-statement-heading"
-                className="font-serif text-xl text-foreground"
-              >
-                Research statement
-              </h3>
-              <p className="mt-4 max-w-[62ch] text-pretty leading-[1.75] text-muted-foreground">
-                {result.data.researchStatement}
-              </p>
-            </section>
-          )}
-
-          <CvEntryList groups={entryGroups} />
+          {/* Two-column flow at sm+: `columns-2` lets each section's own height decide the
+              balance instead of a rigid grid. `break-inside-avoid` on every CvEntryList section
+              (see cv-entry-list.tsx) keeps a section's heading and its entries together, so a
+              column break never lands mid-list — the boundary between sections stays as
+              unambiguous as it is in the single-column Teaching tab. */}
+          <div className="sm:columns-2 sm:gap-x-10">
+            <CvEntryList groups={entryGroups} />
+          </div>
         </div>
       )}
     </div>
