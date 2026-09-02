@@ -53,10 +53,22 @@ must run `prisma migrate deploy` as an explicit release step, separate from the 
 
 ## Migrations
 
-Each environment has its own database, so a migration applied to one is **not** applied to the
-other. The VPS pipeline runs `prisma migrate deploy` as its own job; Vercel does not, so a schema
-change reaches production only when someone runs it against the production database. Do that
-before the deploy that depends on it, not after.
+**All three environments currently share one Supabase database.** Local development, staging on
+the VPS and production on Vercel all point at the same project — verified 2026-09-02: each returns
+profile id `cmsfr2ii80000ewcq96y5h6dj`. There is no separate production database.
+
+Two consequences, both easy to get wrong:
+
+- **Every migration is a production migration.** The VPS pipeline runs `prisma migrate deploy` as
+  its own job, so a migration merged to `main` reaches production data the moment staging deploys
+  — not when Vercel next builds, and with no second chance to review it. `npm run predev` applies
+  migrations before `next dev`, so running the app locally does the same thing.
+- **Staging writes land in production data.** Anything typed into the staging admin, seeded with
+  `npm run db:seed:demo`, or written by the admin e2e specs is live on the public site.
+
+This is a known gap, not a design: the Supabase free tier allows two projects and only one is in
+use. Splitting them is the highest-value item outstanding. Until that happens, treat every schema
+change and every staging write as production traffic.
 
 - **Never** run `prisma migrate dev` against production.
 - Release step: `npm run db:deploy` (`prisma migrate deploy`), using `DIRECT_URL` (unpooled) —
