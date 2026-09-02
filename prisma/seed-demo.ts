@@ -25,40 +25,77 @@ const DEMO_PROFILE = {
   positionAffiliation: 'Chair of Applied Security · Department of Computing, Northgate University',
   researchStatement:
     'Security properties that hold only on paper are not security properties. My research programme is built on measuring real deployments — protocol implementations, key-management workflows, incident-response practice — and feeding what breaks there back into designs that survive contact with production.',
-  education: [
-    { title: 'PhD, Computer Science', subtitle: 'Northgate University', year: '2009' },
-    { title: 'MSc, Cryptography', subtitle: 'University of Rhyswick', year: '2005' },
-    { title: 'BSc, Mathematics', subtitle: 'University of Rhyswick', year: '2003' },
-  ],
-  fellowshipsVisiting: [
-    { title: 'Visiting Researcher', subtitle: 'Institute for Secure Systems, Aalborg', year: '2021' },
-    { title: 'Senior Fellow', subtitle: 'National Cyber Resilience Programme', year: '2018–2020' },
-  ],
-  teachingRoles: [
-    { title: 'Applied Cryptography', subtitle: 'Postgraduate core module', year: '2014–present' },
-    { title: 'Secure Systems Engineering', subtitle: 'Undergraduate, final year', year: '2011–present' },
-    { title: 'Incident Response Practicum', subtitle: 'Postgraduate elective', year: '2019–present' },
-  ],
-  teachingAwards: [
-    { title: 'Faculty Teaching Prize', subtitle: 'Northgate University', year: '2022' },
-    { title: 'Student-Nominated Supervisor of the Year', subtitle: 'Department of Computing', year: '2019' },
-  ],
-  scholarshipsTravelAwards: [
-    { title: 'Doctoral Scholarship', subtitle: 'Rhyswick Trust', year: '2005–2009' },
-    { title: 'Conference Travel Award', subtitle: 'European Security Forum', year: '2016' },
-  ],
-  researchInterests: [
-    { title: 'Applied cryptography', description: 'Protocol design and the gap between specification and implementation.' },
-    { title: 'Systems security', description: 'Isolation, supply-chain integrity and trustworthy build pipelines.' },
-    { title: 'Human factors', description: 'How operators and developers actually make security decisions under load.' },
-    { title: 'Security measurement', description: 'Large-scale empirical study of deployed defences.' },
-  ],
-  invitedTalks: [
-    { title: 'Why Your Threat Model Is a Wish List', subtitle: 'European Security Forum', year: '2024' },
-    { title: 'Key Rotation Nobody Performs', subtitle: 'Northgate Industry Day', year: '2023' },
-    { title: 'Measuring Defences That Were Never Tested', subtitle: 'Institute for Secure Systems', year: '2022' },
-  ],
 };
+
+// CV entries. One flat list with a `section` on each row — the shape the `cv_entry` table stores,
+// rather than seven separate arrays hanging off the profile (ADR-012). `sortOrder` is per section.
+const DEMO_CV_ENTRIES = [
+  { section: 'education', title: 'PhD, Computer Science', subtitle: 'Northgate University', year: '2009', sortOrder: 0 },
+  { section: 'education', title: 'MSc, Cryptography', subtitle: 'University of Rhyswick', year: '2005', sortOrder: 1 },
+  { section: 'education', title: 'BSc, Mathematics', subtitle: 'University of Rhyswick', year: '2003', sortOrder: 2 },
+
+  { section: 'fellowship', title: 'Visiting Researcher', subtitle: 'Institute for Secure Systems, Aalborg', year: '2021', sortOrder: 0 },
+  { section: 'fellowship', title: 'Senior Fellow', subtitle: 'National Cyber Resilience Programme', year: '2018–2020', sortOrder: 1 },
+
+  { section: 'scholarship', title: 'Doctoral Scholarship', subtitle: 'Rhyswick Trust', year: '2005–2009', sortOrder: 0 },
+  { section: 'scholarship', title: 'Conference Travel Award', subtitle: 'European Security Forum', year: '2016', sortOrder: 1 },
+
+  { section: 'research_interest', title: 'Applied cryptography', description: 'Protocol design and the gap between specification and implementation.', sortOrder: 0 },
+  { section: 'research_interest', title: 'Systems security', description: 'Isolation, supply-chain integrity and trustworthy build pipelines.', sortOrder: 1 },
+  { section: 'research_interest', title: 'Human factors', description: 'How operators and developers actually make security decisions under load.', sortOrder: 2 },
+  { section: 'research_interest', title: 'Security measurement', description: 'Large-scale empirical study of deployed defences.', sortOrder: 3 },
+
+  { section: 'invited_talk', title: 'Why Your Threat Model Is a Wish List', subtitle: 'European Security Forum', year: '2024', sortOrder: 0 },
+  { section: 'invited_talk', title: 'Key Rotation Nobody Performs', subtitle: 'Northgate Industry Day', year: '2023', sortOrder: 1 },
+  { section: 'invited_talk', title: 'Measuring Defences That Were Never Tested', subtitle: 'Institute for Secure Systems', year: '2022', sortOrder: 2 },
+
+  { section: 'teaching_role', title: 'Module Convenor, Applied Cryptography', subtitle: 'Postgraduate core module', year: '2014–present', sortOrder: 0 },
+  { section: 'teaching_role', title: 'Doctoral Supervisor', subtitle: 'Department of Computing', year: '2011–present', sortOrder: 1 },
+
+  { section: 'teaching_award', title: 'Faculty Teaching Prize', subtitle: 'Northgate University', year: '2022', sortOrder: 0 },
+  { section: 'teaching_award', title: 'Student-Nominated Supervisor of the Year', subtitle: 'Department of Computing', year: '2019', sortOrder: 1 },
+] as const;
+
+// Courses taught. Grouped by `level` on the public Teaching tab, in the order the first course of
+// each level appears here.
+const DEMO_COURSES = [
+  {
+    code: 'CS 7420',
+    title: 'Applied Cryptography',
+    level: 'Postgraduate',
+    term: 'Autumn 2026',
+    description:
+      'Protocol design, key management and the distance between a specification and the code that ships. Coursework is a build-and-break exercise on a real library.',
+    sortOrder: 0,
+  },
+  {
+    code: 'CS 7455',
+    title: 'Incident Response Practicum',
+    level: 'Postgraduate',
+    term: 'Spring 2027',
+    description:
+      'A hands-on elective run against recorded incidents. Students work in rotation as responder, scribe and communications lead.',
+    sortOrder: 1,
+  },
+  {
+    code: 'CS 3310',
+    title: 'Secure Systems Engineering',
+    level: 'Undergraduate',
+    term: 'Autumn 2026',
+    description:
+      'Final-year core module on isolation, least privilege and supply-chain integrity, taught through the failures rather than the theory.',
+    sortOrder: 2,
+  },
+  {
+    code: 'CS 2140',
+    title: 'Foundations of Computer Security',
+    level: 'Undergraduate',
+    term: 'Spring 2027',
+    description:
+      'Second-year introduction: threat modelling, authentication, and why most real breaches need no cryptography at all.',
+    sortOrder: 3,
+  },
+];
 
 const DEMO_RESEARCH = [
   {
@@ -184,6 +221,20 @@ async function seed() {
   }
   console.log('profile: seeded');
 
+  if ((await prisma.cvEntry.count()) === 0) {
+    await prisma.cvEntry.createMany({ data: [...DEMO_CV_ENTRIES] });
+    console.log(`cv entries: ${DEMO_CV_ENTRIES.length} created`);
+  } else {
+    console.log('cv entries: rows already present — skipped');
+  }
+
+  if ((await prisma.course.count()) === 0) {
+    await prisma.course.createMany({ data: DEMO_COURSES });
+    console.log(`courses: ${DEMO_COURSES.length} created`);
+  } else {
+    console.log('courses: rows already present — skipped');
+  }
+
   if ((await prisma.research.count()) === 0) {
     await prisma.research.createMany({ data: DEMO_RESEARCH });
     console.log(`research: ${DEMO_RESEARCH.length} created`);
@@ -270,6 +321,12 @@ async function undo() {
   const events = await prisma.event.deleteMany({
     where: { title: { in: DEMO_EVENT_TITLES } },
   });
+  const courses = await prisma.course.deleteMany({
+    where: { title: { in: DEMO_COURSES.map((c) => c.title) } },
+  });
+  const cvEntries = await prisma.cvEntry.deleteMany({
+    where: { title: { in: DEMO_CV_ENTRIES.map((e) => e.title) } },
+  });
   const members = await prisma.teamMember.deleteMany({
     where: {
       OR: [
@@ -290,7 +347,8 @@ async function undo() {
 
   console.log(
     `undo: ${research.count} research, ${publications.count} publications, ${groups.count} groups, ` +
-      `${members.count} team members, ${events.count} events removed. ` +
+      `${members.count} team members, ${events.count} events, ${courses.count} courses, ` +
+      `${cvEntries.count} CV entries removed. ` +
       'Profile left as-is (edit it in the admin UI).',
   );
 }
