@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Profile as PrismaProfile } from '@prisma/client';
-import type { AuditContext, Profile, ProfileListItem } from './profile.types';
+import type { AuditContext, Profile } from './profile.types';
 import type { UpdateProfileInput } from './profile.schema';
 
 // The ONLY place Prisma is used for profile data. Singleton: exactly one row is ever read/written.
@@ -16,11 +16,6 @@ export interface ProfileRepository {
   updateWithAudit(input: { data: UpdateProfileData; audit: AuditContext }): Promise<Profile>;
 }
 
-function toListItems(value: Prisma.JsonValue | null): ProfileListItem[] | null {
-  if (value === null || value === undefined) return null;
-  return value as unknown as ProfileListItem[];
-}
-
 function toDomain(row: PrismaProfile): Profile {
   return {
     id: row.id,
@@ -29,14 +24,7 @@ function toDomain(row: PrismaProfile): Profile {
     photoUrl: row.photoUrl,
     bio: row.bio,
     positionAffiliation: row.positionAffiliation,
-    education: toListItems(row.education),
-    fellowshipsVisiting: toListItems(row.fellowshipsVisiting),
-    teachingRoles: toListItems(row.teachingRoles),
-    teachingAwards: toListItems(row.teachingAwards),
-    scholarshipsTravelAwards: toListItems(row.scholarshipsTravelAwards),
-    researchInterests: toListItems(row.researchInterests),
     researchStatement: row.researchStatement,
-    invitedTalks: toListItems(row.invitedTalks),
     linkedinUrl: row.linkedinUrl,
     googleScholarUrl: row.googleScholarUrl,
     updatedAt: row.updatedAt,
@@ -73,29 +61,17 @@ export class PrismaProfileRepository implements ProfileRepository {
   }): Promise<Profile> {
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.profile.findFirst();
-      // Plain scalar fields — assignable to BOTH ProfileUpdateInput and ProfileCreateInput (the
-      // update-operations union, e.g. StringFieldUpdateOperationsInput, is only needed for atomic
-      // ops like `{ increment: 1 }`, which this module never uses).
+      // Every field is a plain scalar now that the Json lists have moved to `cv_entry` —
+      // assignable to BOTH ProfileUpdateInput and ProfileCreateInput (the update-operations
+      // union, e.g. StringFieldUpdateOperationsInput, is only needed for atomic ops like
+      // `{ increment: 1 }`, which this module never uses).
       const fields = {
         fullName: input.data.fullName,
         title: input.data.title,
         photoUrl: input.data.photoUrl ?? null,
         bio: input.data.bio ?? null,
         positionAffiliation: input.data.positionAffiliation ?? null,
-        education: (input.data.education ?? undefined) as Prisma.InputJsonValue | undefined,
-        fellowshipsVisiting: (input.data.fellowshipsVisiting ?? undefined) as
-          | Prisma.InputJsonValue
-          | undefined,
-        teachingRoles: (input.data.teachingRoles ?? undefined) as Prisma.InputJsonValue | undefined,
-        teachingAwards: (input.data.teachingAwards ?? undefined) as Prisma.InputJsonValue | undefined,
-        scholarshipsTravelAwards: (input.data.scholarshipsTravelAwards ?? undefined) as
-          | Prisma.InputJsonValue
-          | undefined,
-        researchInterests: (input.data.researchInterests ?? undefined) as
-          | Prisma.InputJsonValue
-          | undefined,
         researchStatement: input.data.researchStatement ?? null,
-        invitedTalks: (input.data.invitedTalks ?? undefined) as Prisma.InputJsonValue | undefined,
         linkedinUrl: input.data.linkedinUrl ?? null,
         googleScholarUrl: input.data.googleScholarUrl ?? null,
       };

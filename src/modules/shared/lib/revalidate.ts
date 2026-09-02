@@ -37,6 +37,14 @@ const AREA_PATHS = {
   team: ['/team', '/api/groups', '/api/team-members'],
   /** The Events tab — both halves (upcoming and past) come from the same list. */
   events: ['/events', '/api/events'],
+  /** The Teaching tab: courses plus the two teaching CV lists. */
+  teaching: ['/teaching', '/api/teaching'],
+  /**
+   * The About tab alone. Separate from `'profile'`, which drops the whole layout subtree because
+   * the professor's name and photo render in the site header on every page. A CV entry only
+   * changes the body of `/`, so purging the entire tree for it would be indiscriminate.
+   */
+  about: ['/'],
   /**
    * The Make Appointment tab (Calendly embed only). No matching public API route, and nothing
    * server-side writes to it — kept because the page exists and the area name is part of this

@@ -1,13 +1,9 @@
 // Domain model — the shape services/routes work with. Mapped from the Prisma row inside the
 // repository so Prisma's generated types never leak across the service boundary.
-
-/** Flexible list-item shape shared by every CV-style Json field (education, awards, talks, …). */
-export type ProfileListItem = {
-  title: string;
-  subtitle?: string;
-  year?: string;
-  description?: string;
-};
+//
+// The seven CV-style list fields that used to live here as Json columns moved to the `teaching`
+// module's `cv_entry` table on 2026-09-02 (ADR-012). What is left is the singleton identity and
+// prose: name, title, photo, bio, position, research statement and the two profile links.
 
 export type Profile = {
   id: string;
@@ -16,14 +12,7 @@ export type Profile = {
   photoUrl: string | null;
   bio: string | null;
   positionAffiliation: string | null;
-  education: ProfileListItem[] | null;
-  fellowshipsVisiting: ProfileListItem[] | null;
-  teachingRoles: ProfileListItem[] | null;
-  teachingAwards: ProfileListItem[] | null;
-  scholarshipsTravelAwards: ProfileListItem[] | null;
-  researchInterests: ProfileListItem[] | null;
   researchStatement: string | null;
-  invitedTalks: ProfileListItem[] | null;
   linkedinUrl: string | null;
   googleScholarUrl: string | null;
   updatedAt: Date;
