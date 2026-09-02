@@ -29,7 +29,11 @@ rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decid
 | POST | `/api/admin/events` | Create; public immediately |
 | PUT | `/api/admin/events/{id}` | Partial update; a media array present in the body replaces that array wholesale |
 | DELETE | `/api/admin/events/{id}` | Delete; full before-state written to `AuditLog` in the same transaction |
-| POST | `/api/admin/events/photo` | Multipart single-file upload to the R2 `events` bucket → `{ url }`. Random object key per upload, 5 MB cap, image types only |
+| POST | `/api/admin/events/photo` | Multipart single-file upload to the R2 `events` bucket → `{ url }`. Random object key per upload, 4 MB cap, image types only |
+
+The 4 MB cap sits under Vercel's 4.5 MB serverless request-body limit, which rejects larger
+bodies at the platform edge before the handler runs. Raising it means moving to a presigned
+direct-to-R2 upload.
 
 Nothing here returns `409` — events have no lifecycle. **There is no appointment API of any kind**
 since 2026-09-01 (see [ADR-011](../decisions/ADR-011-events-replace-appointments.md)), **no public

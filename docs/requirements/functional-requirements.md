@@ -41,7 +41,7 @@ There is **no visitor-facing appointment request form**, and since [ADR-011](../
 | FR-14 *(rewritten 2026-09-02, [ADR-012](../decisions/ADR-012-cv-entries-and-courses.md))* | Admin can edit the **Profile** (name, title, photo, position/affiliation, bio, research statement, LinkedIn/Google Scholar links), Research, Publications, Research Groups, and Team Members via simple forms. The seven CV lists — education, fellowships, scholarships, research interests, invited talks, teaching roles, teaching awards — are now `cv_entry` rows edited one at a time on the **Teaching** screen, not part of the profile document. |
 | FR-14a *(new, 2026-09-02)* | Admin can create, edit and delete **courses** (code, title, level, term, description, link, order) and **CV entries** (section, title, subtitle, year, description, order) on `/admin/teaching`. |
 | FR-15 | Each editing form has a clear **"Save changes"** action with success/error feedback. |
-| FR-16c | Admin uploads event photos through `POST /api/admin/events/photo` (R2 `events` bucket, 5 MB per file, up to 20 per event) and adds videos by pasting a YouTube link, which is stored as a parsed video ID. No video file is ever uploaded or proxied. |
+| FR-16c | Admin uploads event photos through `POST /api/admin/events/photo` (R2 `events` bucket, 4 MB per file, up to 20 per event) and adds videos by pasting a YouTube link, which is stored as a parsed video ID. No video file is ever uploaded or proxied. |
 
 ## Admin — event management
 
