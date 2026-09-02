@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [events, profile, research, publications, research-groups, auth]
+related_modules: [events, teaching, profile, research, publications, research-groups, auth]
 related_decisions: [ADR-001, ADR-004, ADR-010]
 ---
 
@@ -27,7 +27,9 @@ related_decisions: [ADR-001, ADR-004, ADR-010]
 
 | Model | Purpose | Notes |
 |---|---|---|
-| `Profile` | Singleton professor bio | Structured fields are `Json` (list-shaped, admin-edited as a whole): `education`, `fellowshipsVisiting`, `teachingRoles`, `teachingAwards`, `scholarshipsTravelAwards`, `researchInterests`, `invitedTalks`. Plus `linkedinUrl`/`googleScholarUrl` (nullable). |
+| `Profile` | Singleton professor bio | Identity and prose only: name, title, photo, bio, position, research statement, `linkedinUrl`/`googleScholarUrl`. The seven `Json` list columns moved to `cv_entry` on 2026-09-02 ([ADR-012](../decisions/ADR-012-cv-entries-and-courses.md)). |
+| `CvEntry` | CV lines, tagged by `section` | One table with a `CvSection` discriminator, not seven — every section carries the same four fields. Five sections render on About, two on Teaching. |
+| `Course` | Taught courses | Backs the Teaching tab, grouped by free-text `level`. |
 | `Research` | Research works | `link` nullable. |
 | `Publication` | Publications | `link` nullable (conference/book-chapter entries often have no stable URL). |
 | `ResearchGroup` | Research groups | Has-many `TeamMember`. `members` JSON blob was **removed** — replaced by the relational entity below. |

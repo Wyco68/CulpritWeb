@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-08
-related_modules: [shared, profile, research, publications, research-groups, events, auth]
+related_modules: [shared, profile, research, publications, research-groups, events, teaching, auth]
 related_decisions: [ADR-006]
 ---
 
@@ -58,17 +58,18 @@ client on the server and a cached singleton in the browser.
   schema validates client-side (UX) and server-side (source of truth) — see
   [development/coding-conventions.md](../development/coding-conventions.md).
 
-## Public tabs (6)
+## Public tabs (7)
 
 Routed as real pages under `src/app/(public)/`: About (`/`), Research (`/research`), Publications
-(`/publications`), Team Members (`/team`), Events (`/events` — Upcoming and Past, split by date at
+(`/publications`), Teaching (`/teaching` — courses grouped by level, then teaching roles and
+awards), Team Members (`/team`), Events (`/events` — Upcoming and Past, split by date at
 render time; every event is public), Make Appointment (`/appointment`, Turnstile-gated Calendly
 embed only).
 
 ## Admin pages
 
 `src/app/(admin)/admin/`: Dashboard (`/admin`), Profile, Research, Publications, Research Groups
-(`groups`), Team Members, Events, plus `(admin)/login`. There is no Appointments screen (removed
+(`groups`), Team Members, Teaching (courses + all seven CV lists), Events, plus `(admin)/login`. There is no Appointments screen (removed
 2026-09-01, [ADR-011](../decisions/ADR-011-events-replace-appointments.md)) and no Settings screen
 (removed 2026-08-13, ADR-010). **No Audit-log viewer
 page exists, and none is planned** (confirmed 2026-08-08) — `AuditLog` rows are written by every
