@@ -2,8 +2,8 @@
 status: current
 source_of_truth: false
 last_updated: 2026-09-01
-related_modules: [profile, research, publications, research-groups, events, auth]
-related_decisions: [ADR-005, ADR-011]
+related_modules: [profile, research, publications, research-groups, events, teaching, auth]
+related_decisions: [ADR-005, ADR-011, ADR-012]
 ---
 
 # Functional requirements
@@ -21,6 +21,7 @@ related_decisions: [ADR-005, ADR-011]
 | FR-3 | Visitor can view **Publications**: title, authors, venue, year, and an external link. `link` is nullable — shown only when present. |
 | FR-4 | Visitor can view **Team Members**, grouped by research group (CV-style: works & achievements). Backed by the relational `TeamMember` entity, not a "Research Groups" tab. |
 | FR-5 | Visitor can view the **Events** tab: admin-authored events split into Upcoming and Past by `Event.eventDate` at render time, each with a title, description, photo gallery and YouTube embeds. Every event is public — there is no visibility flag. See [ADR-011](../decisions/ADR-011-events-replace-appointments.md). |
+| FR-5a *(new, 2026-09-02, [ADR-012](../decisions/ADR-012-cv-entries-and-courses.md))* | Visitor can view the **Teaching** tab: courses grouped by level (code, title, term, description, optional link), followed by teaching roles and teaching awards. |
 | FR-6 | The site is fully readable without any login. |
 
 ## Appointments (visitor)
@@ -37,7 +38,8 @@ There is **no visitor-facing appointment request form**, and since [ADR-011](../
 | ID | Requirement |
 |----|-------------|
 | FR-13 | Admin can log in via a single admin account. |
-| FR-14 | Admin can edit the structured **Bio** (position/affiliation, education, fellowships & visiting appointments, teaching roles, teaching awards, scholarships & travel awards, research interests, research statement, invited talks, LinkedIn/Google Scholar links), Research, Publications, Research Groups, and Team Members via simple forms. |
+| FR-14 *(rewritten 2026-09-02, [ADR-012](../decisions/ADR-012-cv-entries-and-courses.md))* | Admin can edit the **Profile** (name, title, photo, position/affiliation, bio, research statement, LinkedIn/Google Scholar links), Research, Publications, Research Groups, and Team Members via simple forms. The seven CV lists — education, fellowships, scholarships, research interests, invited talks, teaching roles, teaching awards — are now `cv_entry` rows edited one at a time on the **Teaching** screen, not part of the profile document. |
+| FR-14a *(new, 2026-09-02)* | Admin can create, edit and delete **courses** (code, title, level, term, description, link, order) and **CV entries** (section, title, subtitle, year, description, order) on `/admin/teaching`. |
 | FR-15 | Each editing form has a clear **"Save changes"** action with success/error feedback. |
 | FR-16c | Admin uploads event photos through `POST /api/admin/events/photo` (R2 `events` bucket, 5 MB per file, up to 20 per event) and adds videos by pasting a YouTube link, which is stored as a parsed video ID. No video file is ever uploaded or proxied. |
 

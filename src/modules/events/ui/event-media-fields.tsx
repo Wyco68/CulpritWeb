@@ -80,7 +80,7 @@ export function PhotoUploadList({
     <div className="flex flex-col gap-2">
       <Label htmlFor={inputId}>Photos</Label>
       <p className="-mt-0.5 text-xs leading-relaxed text-muted-foreground">
-        Optional. JPEG, PNG, WebP or GIF, 5 MB each, up to {MAX_PHOTOS} per event. They appear as a
+        Optional. JPEG, PNG, WebP or GIF, 4 MB each, up to {MAX_PHOTOS} per event. They appear as a
         gallery under the event on the public tab.
       </p>
 

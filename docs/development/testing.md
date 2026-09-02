@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-08
-related_modules: [shared, events]
+related_modules: [shared, events, teaching]
 related_decisions: []
 ---
 
@@ -30,7 +30,8 @@ npm run lint       # next lint
 - **Service/schema unit tests**: `event.schema.test.ts`, `event.service.test.ts` (including
   `splitByTiming`'s upcoming/past boundary); equivalents for `profile`, `research`, `publications`,
   `research-groups`/`team-member`; `storage-adapter.test.ts` + `storage-adapter.factory.test.ts`;
-  `youtube-utils.test.ts`.
+  `youtube-utils.test.ts`; `teaching.schema.test.ts` and `teaching.service.test.ts` (including
+  `groupBySection`/`groupByLevel`).
 - **Component tests**: `research-table.test.tsx`, `publications-table.test.tsx`,
   `team-members-table.test.tsx`, `youtube-video.test.tsx`, admin `layout.test.tsx` (guard redirect
   behavior).

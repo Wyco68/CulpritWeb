@@ -16,28 +16,7 @@ import { FormSection } from '@/modules/shared/ui/form-section';
 // so both the schema AND the type import here go straight to their concrete files.
 import type { Profile } from '../profile.types';
 import { updateProfileSchema, type UpdateProfileInput } from '../profile.schema';
-import { ListFieldEditor } from './list-field-editor';
 import { PhotoUploadField } from './photo-upload-field';
-
-const LIST_FIELDS = [
-  'education',
-  'fellowshipsVisiting',
-  'teachingRoles',
-  'teachingAwards',
-  'scholarshipsTravelAwards',
-  'researchInterests',
-  'invitedTalks',
-] as const;
-
-const LIST_FIELD_LABELS: Record<(typeof LIST_FIELDS)[number], string> = {
-  education: 'Education',
-  fellowshipsVisiting: 'Fellowships & visiting appointments',
-  teachingRoles: 'Teaching roles',
-  teachingAwards: 'Teaching awards',
-  scholarshipsTravelAwards: 'Scholarships & travel awards',
-  researchInterests: 'Research interests',
-  invitedTalks: 'Invited talks',
-};
 
 function toFormDefaults(profile: Profile | null): UpdateProfileInput {
   return {
@@ -49,13 +28,6 @@ function toFormDefaults(profile: Profile | null): UpdateProfileInput {
     researchStatement: profile?.researchStatement ?? undefined,
     linkedinUrl: profile?.linkedinUrl ?? undefined,
     googleScholarUrl: profile?.googleScholarUrl ?? undefined,
-    education: profile?.education ?? [],
-    fellowshipsVisiting: profile?.fellowshipsVisiting ?? [],
-    teachingRoles: profile?.teachingRoles ?? [],
-    teachingAwards: profile?.teachingAwards ?? [],
-    scholarshipsTravelAwards: profile?.scholarshipsTravelAwards ?? [],
-    researchInterests: profile?.researchInterests ?? [],
-    invitedTalks: profile?.invitedTalks ?? [],
   };
 }
 
@@ -101,9 +73,7 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
         noValidate
         className="flex flex-col gap-12 pb-24"
       >
-        {/* Grouped into named sections rather than one flat column. This screen carries more
-            fields than any other in the app, and previously ran as an undivided run of boxes with
-            nothing to scan for. */}
+        {/* Grouped into named sections rather than one flat column. */}
         <FormSection
           title="Identity"
           description="The name, role and portrait shown at the head of every page."
@@ -206,10 +176,9 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
           </div>
         </FormSection>
 
-        {LIST_FIELDS.map((field) => (
-          <ListFieldEditor key={field} name={field} heading={LIST_FIELD_LABELS[field]} />
-        ))}
-
+        {/* Education, fellowships, teaching roles and the rest are no longer edited here. They
+            are `cv_entry` rows, managed one at a time on the Teaching screen — see ADR-012. This
+            form is back to being what its name says: the singleton profile. */}
         {/* Pinned to the bottom of the viewport. This form is long enough that the submit button
             sat several screens below whatever you were editing, so saving meant scrolling to the
             end of a page you were in the middle of. */}

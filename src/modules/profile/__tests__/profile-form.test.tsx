@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProfileForm } from '../ui/profile-form';
 import type { Profile } from '../profile.types';
 
+// Since ADR-012 this form owns the singleton profile only — identity, prose and the two external
+// links. The seven CV lists it used to carry are `cv_entry` rows, edited on the Teaching screen,
+// so the repeatable-row tests that lived here moved out with them.
+
 function renderWithQuery(profile: Profile | null) {
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
@@ -23,6 +27,19 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+const EXISTING: Profile = {
+  id: '1',
+  fullName: 'Dr. Jane Doe',
+  title: 'Professor',
+  photoUrl: null,
+  bio: 'Studies adversarial failure.',
+  positionAffiliation: null,
+  researchStatement: null,
+  linkedinUrl: null,
+  googleScholarUrl: null,
+  updatedAt: new Date('2026-09-02T00:00:00Z'),
+};
+
 describe('ProfileForm', () => {
   beforeEach(() => {
     refreshMock.mockReset();
@@ -30,63 +47,40 @@ describe('ProfileForm', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  it('adds a new education row and includes it in the PUT payload on save', async () => {
-    fetchMock.mockResolvedValue({
-      json: async () => ({ ok: true, data: {} }),
-    });
+  it('sends the profile fields as a whole-document PUT and refreshes', async () => {
+    fetchMock.mockResolvedValue({ json: async () => ({ ok: true, data: {} }) });
     const user = userEvent.setup();
     renderWithQuery(null);
 
     await user.type(screen.getByLabelText('Full name', { exact: false }), 'Dr. Jane Doe');
     await user.type(screen.getByLabelText('Title', { exact: false }), 'Professor');
-
-    const addButtons = screen.getAllByRole('button', { name: 'Add item' });
-    await user.click(addButtons[0]!);
-
-    // A substring/case-insensitive label match for "Title" would also catch the professor's own
-    // "Title" field and the row's "Subtitle" field (which contains "title" as a substring), so the
-    // new row's title input is targeted by its RHF-generated id instead of by label text.
-    const titleInput = document.getElementById('education.0.title') as HTMLInputElement;
-    await user.type(titleInput, 'PhD in Computer Science');
-
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [, options] = fetchMock.mock.calls[0]!;
+    const [url, options] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('/api/admin/profile');
+    expect((options as RequestInit).method).toBe('PUT');
+
     const body = JSON.parse((options as RequestInit).body as string);
-    expect(body.education[0].title).toBe('PhD in Computer Science');
     expect(body.fullName).toBe('Dr. Jane Doe');
+    expect(body.title).toBe('Professor');
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });
 
-  it('removes a row when its delete action is used', async () => {
-    const user = userEvent.setup();
-    renderWithQuery({
-      id: '1',
-      fullName: 'Dr. Jane Doe',
-      title: 'Professor',
-      photoUrl: null,
-      bio: null,
-      positionAffiliation: null,
-      education: [{ title: 'Existing degree' }],
-      fellowshipsVisiting: [],
-      teachingRoles: [],
-      teachingAwards: [],
-      scholarshipsTravelAwards: [],
-      researchInterests: [],
-      researchStatement: null,
-      invitedTalks: [],
-      linkedinUrl: null,
-      googleScholarUrl: null,
-      updatedAt: new Date(),
-    });
+  it('prefills from an existing profile', () => {
+    renderWithQuery(EXISTING);
 
-    expect(screen.getByDisplayValue('Existing degree')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Dr. Jane Doe')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Studies adversarial failure.')).toBeInTheDocument();
+  });
 
-    // Row actions are labelled with their row number ("Remove entry 1"), so a screen-reader user
-    // hearing three identical "Remove item" buttons can tell which entry each one belongs to.
-    await user.click(screen.getByRole('button', { name: 'Remove entry 1' }));
+  it('no longer renders the CV list editors', () => {
+    renderWithQuery(EXISTING);
 
-    expect(screen.queryByDisplayValue('Existing degree')).not.toBeInTheDocument();
+    // These moved to /admin/teaching. If they reappear here, the whole-document PUT is back and
+    // ADR-012's split has been undone by accident.
+    expect(screen.queryByRole('button', { name: 'Add item' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Education')).not.toBeInTheDocument();
+    expect(screen.queryByText('Teaching roles')).not.toBeInTheDocument();
   });
 });

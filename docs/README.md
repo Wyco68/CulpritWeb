@@ -43,6 +43,11 @@ the history inline. Concretely:
 - The public **Make Appointment** tab and its Calendly embed are unaffected and still exist. What
   changed is that nothing a visitor books is ever recorded here, and there is no admin screen where
   it could be re-typed.
+- CV content (education, fellowships, scholarships, research interests, invited talks, teaching
+  roles, teaching awards) lives in the **`cv_entry` table**, one row per line with a `section`
+  discriminator — not in `Json` columns on `profile`, which were dropped on 2026-09-02. Courses are
+  their own table. See [ADR-012](decisions/ADR-012-cv-entries-and-courses.md). Do not add list
+  columns back to `profile`.
 - There is **no i18n** today, at all — not even the translation-lookup layer without routing. See
   [ADR-006](decisions/ADR-006-remove-i18n-and-locale-routing.md).
 - Object storage is **Cloudflare R2** today. Supabase Storage was used 2026-08-05 → 2026-08-08 —

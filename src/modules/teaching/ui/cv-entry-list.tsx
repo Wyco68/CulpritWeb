@@ -1,0 +1,71 @@
+import { CV_SECTION_LABELS, type CvEntry, type CvSection } from '../teaching.types';
+
+// Renders grouped CV entries under their section headings. Used by both public tabs — About for
+// education/fellowships/scholarships/interests/talks, Teaching for roles/awards — because the
+// entries are the same shape wherever they appear.
+//
+// Visually this is exactly what `ProfileAffiliations` used to draw, kept deliberately unchanged
+// when the data moved out of Json columns: a single stacked column, never a two-column grid. These
+// sections hold entries of wildly different lengths (two awards next to seven fellowships), and
+// side-by-side columns left the eye with no reliable cue for where one section ended and the next
+// began. Each section opens with a full-width rule, so the boundaries are unambiguous at any width.
+//
+// Section headings are set in the serif at reading size, not as uppercase letter-spaced labels —
+// all-caps removes the word-shape cue that fluent reading depends on.
+
+function Section({ section, entries }: { section: CvSection; entries: CvEntry[] }) {
+  const headingId = `cv-section-${section}`;
+
+  return (
+    <section aria-labelledby={headingId} className="border-t border-border pt-8">
+      <h3 id={headingId} className="font-serif text-xl text-foreground">
+        {CV_SECTION_LABELS[section]}
+      </h3>
+
+      <ul className="mt-5 space-y-5">
+        {entries.map((entry) => (
+          <li key={entry.id} className="text-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+              <span className="text-pretty font-medium leading-snug text-foreground">
+                {entry.title}
+              </span>
+              {/* Tabular figures so the year column stays in a straight line down the list
+                  instead of ragging with each entry's digit widths. */}
+              {entry.year && (
+                <span className="tabular shrink-0 font-mono text-xs text-muted-foreground">
+                  {entry.year}
+                </span>
+              )}
+            </div>
+            {entry.subtitle && (
+              <p className="mt-0.5 max-w-[62ch] text-pretty leading-relaxed text-muted-foreground">
+                {entry.subtitle}
+              </p>
+            )}
+            {entry.description && (
+              <p className="mt-1 max-w-[62ch] text-pretty leading-relaxed text-muted-foreground">
+                {entry.description}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function CvEntryList({
+  groups,
+}: {
+  groups: { section: CvSection; entries: CvEntry[] }[];
+}) {
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="space-y-10">
+      {groups.map((group) => (
+        <Section key={group.section} section={group.section} entries={group.entries} />
+      ))}
+    </div>
+  );
+}

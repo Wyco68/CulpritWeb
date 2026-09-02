@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [shared, auth, events, integrations]
+related_modules: [shared, auth, events, teaching, integrations]
 related_decisions: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008, ADR-010]
 ---
 
@@ -65,6 +65,9 @@ not extend to "no audit writes in repositories."
   `splitByTiming` (the upcoming/past read model). No status, no lifecycle, no visibility flag.
   Replaced the `appointments` module on 2026-09-01 — see
   [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
+- **teaching** — courses plus `cv_entry` (CV lines tagged by `section`). Owns the Teaching tab and
+  the five CV lists the About tab renders. Replaced seven `Json` columns on `profile` — see
+  [ADR-012](../decisions/ADR-012-cv-entries-and-courses.md).
 - **integrations** — Calendly embed (no server-side client), Cloudflare R2 storage adapter,
   YouTube embed helper, Turnstile verifier, in-process rate limiter (fallback behind the
   Cloudflare edge rule — see [ADR-008](../decisions/ADR-008-cloudflare-rate-limiting.md)),
@@ -83,8 +86,8 @@ global visibility flag it held has no successor, because every event is public.
 
 ```
 src/app/
-├── (public)/    # About, research, publications, team, events, appointment — flat paths, no [locale]
-├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,events}, login
+├── (public)/    # About, research, publications, teaching, team, events, appointment — flat paths
+├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,teaching,events}, login
 └── api/         # route handlers — see architecture/backend.md
 ```
 

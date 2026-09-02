@@ -13,6 +13,7 @@ const TABS = [
   { href: '/admin/profile', label: 'Profile' },
   { href: '/admin/research', label: 'Research' },
   { href: '/admin/publications', label: 'Publications' },
+  { href: '/admin/teaching', label: 'Teaching' },
   { href: '/admin/groups', label: 'Research Groups' },
   { href: '/admin/team-members', label: 'Team Members' },
   { href: '/admin/events', label: 'Events' },
@@ -23,7 +24,7 @@ export function AdminNav() {
   const activeRef = useRef<HTMLAnchorElement>(null);
 
   // On a narrow screen the tab just navigated to can sit outside the visible run — landing on
-  // Events and finding its own tab clipped at the edge. Pull it into view on mount and
+  // the last tab and finding it clipped at the edge. Pull it into view on mount and
   // whenever the route changes.
   //
   // Guarded on the strip actually overflowing. `scrollIntoView` walks every scrollable ancestor,
@@ -37,7 +38,7 @@ export function AdminNav() {
   }, [pathname]);
 
   return (
-    // One line always. Seven destinations don't fit the band on a narrow screen, so the strip
+    // One line always. Eight destinations don't fit the band on a narrow screen, so the strip
     // scrolls horizontally rather than wrapping — and `.scroll-fade` softens whichever edge still
     // has tabs beyond it, since the scrollbar itself is hidden and would otherwise leave no cue
     // that there is more to reach.

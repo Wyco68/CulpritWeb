@@ -3,7 +3,7 @@
 
 export { updateProfileSchema, type UpdateProfileInput } from './profile.schema';
 
-export type { Profile, ProfileListItem, AuditContext } from './profile.types';
+export type { Profile, AuditContext } from './profile.types';
 
 export {
   createProfileService,
@@ -15,6 +15,5 @@ export type { ProfileRepository } from './profile.repository';
 
 export { getProfileService, getProfileCached } from './container';
 
-export { ProfileAffiliations } from './ui/profile-affiliations';
 export { ProfileLinks } from './ui/profile-links';
 export { ProfileForm } from './ui/profile-form';

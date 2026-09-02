@@ -56,21 +56,17 @@ describe('updateProfileSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('bounds the number of list items', () => {
-    const result = updateProfileSchema.safeParse({
-      fullName: 'Dr. Cavallaro',
-      title: 'Professor',
-      education: Array.from({ length: 51 }, (_, i) => ({ title: `Degree ${i}` })),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('requires a title on each list item', () => {
+  // The CV list fields left this schema in ADR-012 — Zod now strips them as unknown keys, so
+  // asserting on them here would only test Zod. Their validation lives in the teaching module's
+  // `teaching.schema.test.ts` instead.
+  it('ignores CV list fields, which are no longer part of the profile document', () => {
     const result = updateProfileSchema.safeParse({
       fullName: 'Dr. Cavallaro',
       title: 'Professor',
       education: [{ subtitle: 'MIT' }],
     });
-    expect(result.success).toBe(false);
+
+    expect(result.success).toBe(true);
+    expect(result.success && 'education' in result.data).toBe(false);
   });
 });

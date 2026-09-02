@@ -2,7 +2,7 @@
 status: current
 source_of_truth: false
 last_updated: 2026-08-13
-related_modules: [events, auth, integrations, shared]
+related_modules: [events, teaching, auth, integrations, shared]
 related_decisions: [ADR-004, ADR-005, ADR-007, ADR-008, ADR-010]
 ---
 
@@ -20,6 +20,7 @@ rate-limit fallback on `/api/auth/*` and mutating `/api/admin/*`; it never decid
 |---|---|
 | GET | `/api/profile`, `/api/research`, `/api/publications`, `/api/groups`, `/api/team-members` (unfiltered), `/api/team-members/group/{groupId}` (filtered) |
 | GET | `/api/events` — returns `{ upcoming, past }`, both possibly empty; never a 403 |
+| GET | `/api/teaching` — returns `{ courses, entries }` for the Teaching tab |
 
 ### Events — admin only
 
@@ -34,6 +35,19 @@ Nothing here returns `409` — events have no lifecycle. **There is no appointme
 since 2026-09-01 (see [ADR-011](../decisions/ADR-011-events-replace-appointments.md)), **no public
 event-writing endpoint**, and **no Calendly integration route** (no `/api/integrations/calendly/*`)
 — see [ADR-005](../decisions/ADR-005-calendly-embed-only.md).
+
+### Teaching — admin only
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/admin/teaching/courses` | Create a course |
+| PUT/DELETE | `/api/admin/teaching/courses/{id}` | Update or delete a course |
+| POST | `/api/admin/teaching/entries` | Create a CV entry (any of the seven sections) |
+| PUT/DELETE | `/api/admin/teaching/entries/{id}` | Update or delete a CV entry |
+
+CV-entry writes purge both the `teaching` and `about` cache areas, because `section` is editable
+and one edit can move an entry between the two tabs. See
+[ADR-012](../decisions/ADR-012-cv-entries-and-courses.md).
 
 ### Admin content & auth
 

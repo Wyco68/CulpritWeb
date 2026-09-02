@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
-import { getProfileCached, ProfileAffiliations, ProfileLinks } from '@/modules/profile';
+import { getProfileCached, ProfileLinks } from '@/modules/profile';
+import {
+  ABOUT_SECTIONS,
+  CvEntryList,
+  getCvEntryService,
+  groupBySection,
+} from '@/modules/teaching';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
 
@@ -11,8 +17,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  // Same request-scoped read the layout's site header uses — one query serves both.
-  const result = await getProfileCached();
+  // Two reads: the singleton profile (request-scoped, shared with the layout's site header) and
+  // the five CV lists this tab renders. Teaching roles and awards are deliberately absent — they
+  // live on /teaching now (ADR-012).
+  const [result, entriesResult] = await Promise.all([
+    getProfileCached(),
+    getCvEntryService().listBySections(ABOUT_SECTIONS),
+  ]);
+
+  const entryGroups = groupBySection(
+    entriesResult.ok ? entriesResult.data : [],
+    ABOUT_SECTIONS,
+  );
 
   return (
     <div>
@@ -53,7 +69,7 @@ export default async function AboutPage() {
             </section>
           )}
 
-          <ProfileAffiliations profile={result.data} />
+          <CvEntryList groups={entryGroups} />
         </div>
       )}
     </div>
