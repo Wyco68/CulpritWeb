@@ -11,7 +11,12 @@ import { ValidationError } from '@/modules/shared/lib/errors';
 // so every upload overwrites the same object (upsert) rather than accumulating orphaned files
 // under different names. The real content type is still passed to the storage adapter, so the
 // object serves with the correct Content-Type header regardless of the (extension-less) key.
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+// Vercel caps a serverless function's request body at 4.5 MB, and rejects anything larger at the
+// platform edge — before this handler runs, so the admin would get an opaque 413 instead of the
+// message below. The cap is set under that ceiling so the app's own validation is what the admin
+// actually sees. Raising it means moving uploads to a presigned direct-to-R2 PUT, where the file
+// never passes through a function at all.
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024; // 4 MB — see the Vercel body limit above
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export async function POST(request: NextRequest) {
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
     if (file.size > MAX_PHOTO_BYTES) {
       return apiError(
-        new ValidationError('Photo is too large (5 MB max).', { file: ['Photo is too large (5 MB max).'] }),
+        new ValidationError('Photo is too large (4 MB max).', { file: ['Photo is too large (4 MB max).'] }),
       );
     }
 

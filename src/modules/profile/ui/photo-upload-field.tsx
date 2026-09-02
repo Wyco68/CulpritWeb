@@ -96,7 +96,7 @@ export function PhotoUploadField() {
               </Button>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or GIF. 5 MB max.</p>
+          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or GIF. 4 MB max.</p>
         </div>
       </div>
       <input
