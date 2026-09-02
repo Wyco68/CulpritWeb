@@ -34,11 +34,14 @@ async function deleteEvent(id: string) {
 
 // Pinned to the institution's zone for the same reason the public list is — the admin table and
 // the public page must not disagree about what day an event is on.
+// `timeStyle` can't be combined with explicit date component options (day/month/year) — Intl
+// throws "Invalid option : option" if you try. Spell the time out as hour/minute instead.
 const dateTimeFormatter = new Intl.DateTimeFormat('en', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
-  timeStyle: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
