@@ -1,5 +1,6 @@
 // Prisma schema for "The Culprit". See PROJECT_SPEC.md §7 (internal) for the authoritative model.
-// Structured profile fields are Json (list-shaped, admin-edited as a whole).
+// CV-style list content lives in `cv_entry` rows, not in Json columns on `profile` — see
+// docs/decisions/ADR-012-cv-entries-and-courses.md.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,23 +13,16 @@ datasource db {
 }
 
 model Profile {
-  id                       String   @id @default(cuid())
-  fullName                 String   @map("full_name")
-  title                    String
-  photoUrl                 String?  @map("photo_url")
-  bio                      String?  @db.Text
-  positionAffiliation      String?  @map("position_affiliation") @db.Text
-  education                Json?
-  fellowshipsVisiting      Json?    @map("fellowships_visiting")
-  teachingRoles            Json?    @map("teaching_roles")
-  teachingAwards           Json?    @map("teaching_awards")
-  scholarshipsTravelAwards Json?    @map("scholarships_travel_awards")
-  researchInterests        Json?    @map("research_interests")
-  researchStatement        String?  @map("research_statement") @db.Text
-  invitedTalks             Json?    @map("invited_talks")
-  linkedinUrl              String?  @map("linkedin_url")
-  googleScholarUrl         String?  @map("google_scholar_url")
-  updatedAt                DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(cuid())
+  fullName            String   @map("full_name")
+  title               String
+  photoUrl            String?  @map("photo_url")
+  bio                 String?  @db.Text
+  positionAffiliation String?  @map("position_affiliation") @db.Text
+  researchStatement   String?  @map("research_statement") @db.Text
+  linkedinUrl         String?  @map("linkedin_url")
+  googleScholarUrl    String?  @map("google_scholar_url")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
 }
@@ -86,6 +80,70 @@ model TeamMember {
 
   @@index([researchGroupId])
   @@map("team_member")
+}
+
+// --- Teaching & CV -------------------------------------------------------------------------------
+// Two tables back the About and Teaching tabs.
+//
+// `cv_entry` replaced seven Json columns on `profile` on 2026-09-02 (ADR-012). Those columns were
+// a 1NF violation — a repeating group in a single field — and, more practically, they could only
+// ever be written by a whole-document profile PUT, which made it impossible to split them across
+// two pages or edit one entry without rewriting all seven lists.
+//
+// It is ONE table with a `section` discriminator rather than seven tables, because all seven
+// sections carry an identical attribute set: this is one entity with a category, not seven
+// entities. Every section renders the same way; only the heading and the page differ.
+
+enum CvSection {
+  education
+  fellowship
+  scholarship
+  research_interest
+  invited_talk
+  teaching_role
+  teaching_award
+}
+
+model CvEntry {
+  id       String    @id @default(cuid())
+  /// Decides which tab and which heading this entry renders under.
+  section  CvSection
+  title    String
+  subtitle String?
+  /// Free text, not an Int: entries are routinely a range ("2019-2023") or "present".
+  year     String?
+
+  description String?  @db.Text
+  /// Ordering is per-section, so `sortOrder` is only meaningful within one `section`.
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([section, sortOrder])
+  @@map("cv_entry")
+}
+
+/// A taught course. A real entity rather than a `CvEntry` section — it carries a code, a term and
+/// a level that no CV line has.
+model Course {
+  id          String   @id @default(cuid())
+  /// Course code as the institution prints it, e.g. "CS 4235". Optional — seminars often have none.
+  code        String?
+  title       String
+  /// Grouping key on the public tab, e.g. "Undergraduate" / "Graduate". Free text, matching the
+  /// `Research.area` precedent — level naming differs per institution.
+  level       String
+  /// When it was or is taught, e.g. "Fall 2025".
+  term        String?
+  description String?  @db.Text
+  /// Optional syllabus or course-page link.
+  link        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@map("course")
 }
 
 // --- Events -------------------------------------------------------------------------------------
