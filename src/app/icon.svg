@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="7 6 120 120" width="120" height="120" role="img" aria-label="The Culprit">
+  <!-- Site icon: a kite. Next.js app-router file convention — this is emitted as
+       <link rel="icon" type="image/svg+xml">, which browsers prefer over favicon.ico.
+       favicon.ico stays beside it on purpose: browsers request /favicon.ico regardless, and
+       without a file there the request falls through to the app (see commit 1383258).
+       viewBox is cropped to the artwork's bounds so the kite fills a 16px tab icon. -->
+  <defs>
+    <linearGradient id="sail" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#57C066"/>
+      <stop offset="1" stop-color="#2C8339"/>
+    </linearGradient>
+    <linearGradient id="line" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2F80C8"/>
+      <stop offset="1" stop-color="#7FC0EA"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="rotate(-12 64 58)">
+    <!-- sail: rounded diamond, stroked in its own fill for soft corners -->
+    <path d="M64 14 L110 56 L64 102 L18 56 Z"
+          fill="url(#sail)" stroke="url(#sail)" stroke-width="10"
+          stroke-linejoin="round"/>
+    <!-- spars -->
+    <path d="M64 14 L64 102 M18 56 L110 56"
+          stroke="#ffffff" stroke-opacity="0.28" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- flying line trailing off the lower-left -->
+  <path d="M73 101
+           C 75 119, 61 130, 47 125
+           C 31 120, 27 104, 39 102
+           C 48 100, 51 111, 44 114"
+        fill="none" stroke="url(#line)" stroke-width="8"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
