@@ -31,7 +31,10 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* `id` is the target of the skip-link in the root layout (WCAG 2.4.1). The measure is
           capped at 68ch on the prose column rather than the full 5xl shell — long-form CV copy
           set edge-to-edge across 900px is unreadable no matter how good the type is. */}
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-6 pb-20 pt-10 sm:pb-28 sm:pt-12">
+      <main
+        id="main"
+        className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-12 sm:px-8 sm:pb-32 sm:pt-20"
+      >
         {children}
       </main>
       <SiteFooter fullName={profile?.fullName || 'The Culprit'} />

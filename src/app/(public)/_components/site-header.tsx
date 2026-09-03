@@ -24,7 +24,7 @@ export async function SiteHeader({ profile }: { profile: Profile | null }) {
 
   return (
     <header className="relative bg-masthead text-masthead-foreground">
-      <div className="mx-auto max-w-5xl px-6 pt-14 sm:pt-20">
+      <div className="mx-auto max-w-6xl px-6 pt-14 sm:px-8 sm:pt-20">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-8">
           <Link
             href="/"

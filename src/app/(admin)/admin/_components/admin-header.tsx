@@ -9,7 +9,7 @@ import { AdminNav } from './admin-nav';
 export async function AdminHeader({ adminName }: { adminName: string }) {
   return (
     <header className="bg-masthead text-masthead-foreground">
-      <div className="mx-auto max-w-6xl px-6 pt-6">
+      <div className="mx-auto max-w-6xl px-6 pt-6 sm:px-8">
         <div className="flex items-center justify-between gap-4">
           <Link
             href="/admin"

@@ -12,7 +12,7 @@ export function SiteFooter({ fullName }: { fullName: string }) {
     // No top margin: `main` already ends on its own py-24, and stacking the two left ~190px of
     // dead space above the rule that read as a rendering fault rather than as breathing room.
     <footer className="border-t border-border">
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-12 sm:px-8">
         <p className="text-sm text-muted-foreground">
           <span className="tabular">{year}</span> {fullName}
         </p>

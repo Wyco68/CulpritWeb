@@ -23,7 +23,10 @@ export default async function NotFound() {
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <SiteHeader profile={profile} />
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-6 pb-20 pt-10 sm:pb-28 sm:pt-12">
+      <main
+        id="main"
+        className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-12 sm:px-8 sm:pb-32 sm:pt-20"
+      >
         {/* No icon and no boxed panel here. A compass glyph above a 404 is decoration standing in
             for an explanation; the sentence and the way out are the useful parts. */}
         <PageHeading
