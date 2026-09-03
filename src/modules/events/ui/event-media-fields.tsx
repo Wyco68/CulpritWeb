@@ -22,9 +22,66 @@ const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 const MAX_PHOTOS = 20;
 const MAX_VIDEOS = 10;
 
+// Kept in step with the route's own cap (src/app/api/admin/events/photo/route.ts). A phone photo is
+// routinely 5–12 MB, well over this, which is the single most common reason an upload was rejected
+// with a 400 before `prepareForUpload` shrank it here.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+// Longest edge kept after downscale. A public gallery tile is a few hundred px; 2000 leaves plenty
+// of headroom for a full-bleed view without shipping a 6000px original.
+const MAX_EDGE = 2000;
+
+/**
+ * Downscale and re-encode a photo to a JPEG that fits under the route's size cap, so the admin can
+ * pick a photo straight off a phone or camera rather than having to shrink it by hand first.
+ *
+ * Only touches files that actually need it — one already small and in an accepted format is sent
+ * untouched, so a deliberately-chosen PNG or GIF is not silently flattened. Anything the browser
+ * cannot decode (a HEIC straight off an iPhone, in every browser but Safari) can't be drawn to a
+ * canvas at all; that falls through to the original file, and the server answers with its own
+ * "Unsupported file type" message rather than this swallowing the problem.
+ */
+async function prepareForUpload(file: File): Promise<File> {
+  const accepted = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+  if (accepted.has(file.type) && file.size <= MAX_UPLOAD_BYTES) return file;
+
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      // `window.Image`, not `new Image()`: this module imports `next/image` as `Image`, so the bare
+      // constructor would resolve to that component instead of the DOM image element.
+      const img = new window.Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('decode failed'));
+      img.src = url;
+    });
+
+    const scale = Math.min(1, MAX_EDGE / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.85),
+    );
+    // If the re-encode somehow lands larger than the original (already-optimised small JPEG), keep
+    // whichever is smaller; never send back something bigger than what we started with.
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+  } catch {
+    // Undecodable (e.g. HEIC): hand back the original and let the server validate it.
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function uploadEventPhoto(file: File): Promise<string> {
+  const prepared = await prepareForUpload(file);
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', prepared);
   const response = await fetch('/api/admin/events/photo', { method: 'POST', body: formData });
   const body = await response.json();
   if (!body.ok) throw new Error(body.error?.message ?? 'Upload failed');
@@ -69,8 +126,10 @@ export function PhotoUploadList({
         uploaded.push(await uploadEventPhoto(file));
       }
       onChange([...urls, ...uploaded]);
-    } catch {
-      toast.error('Could not upload the photo. Please try again.');
+    } catch (error) {
+      // Surface the server's own reason ("Unsupported file type", "Photo is too large") rather
+      // than a generic line, so the admin knows whether to convert the file or pick another.
+      toast.error(error instanceof Error ? error.message : 'Could not upload the photo.');
     } finally {
       setUploading(false);
     }
