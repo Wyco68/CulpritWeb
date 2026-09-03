@@ -13,11 +13,22 @@ import { CV_SECTION_LABELS, type CvEntry, type CvSection } from '../teaching.typ
 // Section headings are set in the serif at reading size, not as uppercase letter-spaced labels —
 // all-caps removes the word-shape cue that fluent reading depends on.
 
+/**
+ * The `id` a CV section is reachable at from the in-page section nav — `/teaching#teaching-role`.
+ * Exported so the pages that build the jump list and the component that renders the targets stay
+ * in step; underscores become hyphens because the section key is a database value and the id is a
+ * URL people can be given.
+ */
+export function cvSectionAnchorId(section: CvSection): string {
+  return section.replace(/_/g, '-');
+}
+
 function Section({ section, entries }: { section: CvSection; entries: CvEntry[] }) {
   const headingId = `cv-section-${section}`;
 
   return (
     <section
+      id={cvSectionAnchorId(section)}
       aria-labelledby={headingId}
       className="break-inside-avoid border-t border-border pt-8"
     >
@@ -29,7 +40,10 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
         {entries.map((entry) => (
           <li key={entry.id} className="text-sm">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-              <span className="text-pretty font-medium leading-snug text-foreground">
+              {/* `min-w-0` + `break-words`: a title can be an unbroken string the admin pasted
+                  (a DOI, a URL-shaped award name). Without both, the flex item refuses to shrink
+                  below its content and pushes the year off the row. */}
+              <span className="min-w-0 text-pretty break-words font-medium leading-snug text-foreground">
                 {entry.title}
               </span>
               {/* Tabular figures so the year column stays in a straight line down the list
@@ -41,12 +55,12 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
               )}
             </div>
             {entry.subtitle && (
-              <p className="mt-0.5 max-w-[62ch] text-pretty leading-relaxed text-muted-foreground">
+              <p className="mt-0.5 max-w-[62ch] text-pretty break-words leading-relaxed text-muted-foreground">
                 {entry.subtitle}
               </p>
             )}
             {entry.description && (
-              <p className="mt-1 max-w-[62ch] text-pretty leading-relaxed text-muted-foreground">
+              <p className="mt-1 max-w-[62ch] text-pretty break-words leading-relaxed text-muted-foreground">
                 {entry.description}
               </p>
             )}
