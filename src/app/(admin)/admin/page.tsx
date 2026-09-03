@@ -120,7 +120,7 @@ export default async function AdminDashboardPage() {
       <dl className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
         <Figure href="/admin/publications" label="Publications" value={publicationItems.length} />
         <Figure href="/admin/research" label="Research" value={researchItems.length} />
-        <Figure href="/admin/team-members" label="People" value={memberItems.length} />
+        <Figure href="/admin/team" label="People" value={memberItems.length} />
         <Figure
           href="/admin/teaching"
           label="Courses"

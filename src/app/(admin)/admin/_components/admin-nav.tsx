@@ -5,18 +5,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/modules/shared/lib/utils';
 
-// The admin section's tab bar — same visual language as the public `NavTabs` (underlined active
+// The admin section's tab bar. Each entry mirrors one public tab, so the admin edits a page by
+// going to the screen of the same name — the old entity-shaped nav (Profile / Groups / Team
+// Members) spread a single public tab across two or three screens.
+//
+// Same visual language as the public `NavTabs` (underlined active
 // tab on the masthead band) but a real `nav`/links list here too: each destination is a distinct
 // routed page with its own data load, not a same-document panel.
 const TABS = [
   { href: '/admin', label: 'Dashboard' },
-  { href: '/admin/profile', label: 'Profile' },
+  { href: '/admin/about', label: 'About' },
   { href: '/admin/research', label: 'Research' },
   { href: '/admin/publications', label: 'Publications' },
   { href: '/admin/teaching', label: 'Teaching' },
-  { href: '/admin/groups', label: 'Research Groups' },
-  { href: '/admin/team-members', label: 'Team Members' },
+  { href: '/admin/team', label: 'Team' },
   { href: '/admin/events', label: 'Events' },
+  { href: '/admin/appointment', label: 'Appointment' },
 ] as const;
 
 export function AdminNav() {

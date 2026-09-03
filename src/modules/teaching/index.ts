@@ -44,4 +44,5 @@ export { getCvEntryService, getCourseService } from './container';
 
 export { CvEntryList } from './ui/cv-entry-list';
 export { CourseList } from './ui/course-list';
-export { TeachingAdmin } from './ui/teaching-admin';
+export { CoursesAdmin } from './ui/courses-admin';
+export { CvEntriesAdmin, type CvEntriesAdminProps } from './ui/cv-entries-admin';

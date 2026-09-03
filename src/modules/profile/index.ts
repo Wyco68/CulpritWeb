@@ -22,4 +22,9 @@ export type { ProfileRepository } from './profile.repository';
 export { getProfileService, getProfileCached } from './container';
 
 export { ProfileLinks } from './ui/profile-links';
-export { ProfileForm } from './ui/profile-form';
+export {
+  ProfileFieldsForm,
+  PROFILE_FIELD_KEYS,
+  type ProfileFieldKey,
+  type ProfileFormSection,
+} from './ui/profile-fields-form';

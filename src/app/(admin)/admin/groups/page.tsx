@@ -1,13 +1,7 @@
-import type { Metadata } from 'next';
-import { getResearchGroupService, ResearchGroupsTable } from '@/modules/research-groups';
+import { redirect } from 'next/navigation';
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Admin — Research Groups' };
-}
-
-export default async function AdminGroupsPage() {
-  const result = await getResearchGroupService().list();
-  const items = result.ok ? result.data : [];
-
-  return <ResearchGroupsTable items={items} />;
+// Moved: the admin IA now mirrors the public tabs, so this screen's content lives on
+// /admin/team. Kept as a redirect so existing bookmarks and links still land somewhere.
+export default function MovedPage() {
+  redirect('/admin/team');
 }
