@@ -16,6 +16,7 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     id: 'evt_1',
     title: 'Guest lecture',
     description: 'A talk.',
+    content: null,
     eventDate: new Date('2026-10-14T04:00:00Z'),
     photoUrls: [],
     videoUrls: [],
@@ -75,7 +76,9 @@ class FakeRepository implements EventRepository {
 
   async createWithAudit(input: { data: Partial<Event>; audit: AuditContext }): Promise<Event> {
     const id = `evt_${++this.seq}`;
-    const event = makeEvent({ ...input.data, id });
+    // `content` is optional on the input but required on Event, so it is normalised here rather
+    // than spread straight through.
+    const event = makeEvent({ ...input.data, content: input.data.content ?? null, id });
     this.store.set(id, event);
     this.audits.push({ ...input.audit, entityId: id });
     return { ...event };

@@ -188,6 +188,10 @@ model Event {
   id           String             @id @default(cuid())
   title        String
   description  String             @db.Text
+  /// Long-form write-up, shown only inside the event's detail dialog. `description` stays the
+  /// short summary the event card itself renders, which is what lets every card keep the same
+  /// height no matter how much has been written here.
+  content      String?            @db.Text
   eventDate    DateTime           @map("event_date")
   /// Public R2 URLs, uploaded through POST /api/admin/events/photo.
   photoUrls    String[]           @map("photo_urls")

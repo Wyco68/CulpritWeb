@@ -48,6 +48,15 @@ const videoRefSchema = z
 export const createEventSchema = z.object({
   title: safeText(300),
   description: safeText(10_000),
+  // Nullable as well as optional so clearing it writes NULL — an undefined key vanishes from the
+  // JSON body, which the update route reads as "leave the column alone".
+  content: z
+    .string()
+    .trim()
+    .max(50_000)
+    .transform((v) => stripHtml(v) || null)
+    .nullable()
+    .optional(),
   eventDate: institutionDate,
   photoUrls: z.array(photoUrlSchema).max(20).optional(),
   videoUrls: z.array(videoRefSchema).max(10).optional(),

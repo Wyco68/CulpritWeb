@@ -66,6 +66,7 @@ export function EventFormDialog({
     values: {
       title: event?.title ?? '',
       description: event?.description ?? '',
+      content: event?.content ?? '',
       // The input is a bare `datetime-local`, so it must be prefilled in the INSTITUTION's
       // wall-clock time, not the admin's browser zone — otherwise editing an event from a
       // different timezone would silently shift it on save.
@@ -137,10 +138,26 @@ export function EventFormDialog({
           label="Description"
           htmlFor="event-description"
           required
-          description="What the event was or will be. Plain text; line breaks are kept."
+          description="A short summary for the event card. Keep it to a line or two — the full write-up goes below."
           error={errors.description?.message}
         >
-          {(fieldProps) => <Textarea {...fieldProps} {...register('description')} rows={5} />}
+          {(fieldProps) => <Textarea {...fieldProps} {...register('description')} rows={3} />}
+        </FormField>
+        <FormField
+          label="Full write-up"
+          htmlFor="event-content"
+          description="Optional. Shown only inside Show detail on the public tab, so the card itself stays one fixed size however long this gets."
+          error={errors.content?.message}
+        >
+          {(fieldProps) => (
+            <Textarea
+              {...fieldProps}
+              {...register('content', {
+                setValueAs: (value: string) => (value.trim() === '' ? null : value),
+              })}
+              rows={8}
+            />
+          )}
         </FormField>
 
         <PhotoUploadList

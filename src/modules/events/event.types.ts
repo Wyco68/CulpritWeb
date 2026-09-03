@@ -22,7 +22,10 @@ export type EventParticipant = {
 export type Event = {
   id: string;
   title: string;
+  /** Short summary, rendered on the card itself. */
   description: string;
+  /** Long-form write-up, rendered only in the detail dialog. */
+  content: string | null;
   eventDate: Date;
   /** Public R2 URLs, in the order the admin arranged them. */
   photoUrls: string[];

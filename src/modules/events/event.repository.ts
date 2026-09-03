@@ -76,6 +76,7 @@ function toDomain(row: PrismaEvent & { participants?: PrismaEventParticipant[] }
     id: row.id,
     title: row.title,
     description: row.description,
+    content: row.content,
     eventDate: row.eventDate,
     photoUrls: row.photoUrls,
     videoUrls: row.videoUrls,
@@ -138,6 +139,7 @@ export class PrismaEventRepository implements EventRepository {
         data: {
           title: input.data.title,
           description: input.data.description,
+          content: input.data.content ?? null,
           eventDate: input.data.eventDate,
           photoUrls: input.data.photoUrls ?? [],
           videoUrls: input.data.videoUrls ?? [],
@@ -160,6 +162,7 @@ export class PrismaEventRepository implements EventRepository {
         data: {
           ...(input.data.title !== undefined ? { title: input.data.title } : {}),
           ...(input.data.description !== undefined ? { description: input.data.description } : {}),
+          ...(input.data.content !== undefined ? { content: input.data.content } : {}),
           ...(input.data.eventDate !== undefined ? { eventDate: input.data.eventDate } : {}),
           // A media array is replaced wholesale when present — `set` says so explicitly, so a PUT
           // carrying `photoUrls: []` clears the gallery rather than reading as "no change".
