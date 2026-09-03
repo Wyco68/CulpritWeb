@@ -46,7 +46,7 @@ export function NavTabs() {
                 ref={active ? activeRef : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color] duration-500 ease-[var(--ease-out-expo)] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
+                  'inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3.5 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color,background-color] duration-500 ease-[var(--ease-out-expo)] hover:bg-masthead-foreground/[0.06] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
                   active ? 'border-accent-on-band text-masthead-foreground' : 'border-transparent',
                 )}
               >

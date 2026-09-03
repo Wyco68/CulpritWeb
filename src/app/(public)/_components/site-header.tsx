@@ -33,13 +33,13 @@ export async function SiteHeader({ profile }: { profile: Profile | null }) {
             {/* Mounted-print portrait: the photo sits on a small card (padding + a raised
                 shadow) rather than bare on the band, like a print mounted on stock. The mount is
                 a shade of the band itself, not white — see --masthead-mount. */}
-            <div className="rounded-[20px] bg-masthead-mount p-2 shadow-raised transition-[translate] duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5">
+            <div className="rounded-[calc(var(--radius-container)+0.5rem)] bg-masthead-mount p-2 shadow-raised transition-[translate] duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5">
               <Avatar
                 src={profile?.photoUrl}
                 alt={`Portrait of ${fullName}`}
                 fallback={initials || '?'}
                 size="lg"
-                className="!rounded-[14px]"
+                className="!rounded-[calc(var(--radius-container)+0.125rem)]"
               />
             </div>
             <div className="pb-1">

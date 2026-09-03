@@ -61,7 +61,7 @@ export function AdminNav() {
                   // one is full-contrast with an accent underline. Previously every tab was
                   // full-contrast semibold and only the active one changed colour, so the bar
                   // read as seven equally-weighted items.
-                  'inline-flex items-center whitespace-nowrap border-b-2 px-3 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color] duration-500 ease-[var(--ease-out-expo)] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
+                  'inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3.5 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color,background-color] duration-500 ease-[var(--ease-out-expo)] hover:bg-masthead-foreground/[0.06] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
                   active
                     ? 'border-accent-on-band font-medium text-masthead-foreground'
                     : 'border-transparent',

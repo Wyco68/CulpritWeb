@@ -29,9 +29,9 @@ export interface AvatarProps {
 // Concentric radii — the larger the frame, the softer its corner, so a big portrait and a small
 // one look like the same object at two scales instead of two different components.
 const SHAPE_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'rounded-[6px]',
-  md: 'rounded-[10px]',
-  lg: 'rounded-[16px]',
+  sm: 'rounded-xs',
+  md: 'rounded-md',
+  lg: 'rounded-lg',
 };
 
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, string> = {
