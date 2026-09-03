@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { updateProfileSchema } from '../profile.schema';
+import { patchProfileSchema, updateProfileSchema } from '../profile.schema';
 
 describe('updateProfileSchema', () => {
   it('parses a full valid profile', () => {
@@ -68,5 +68,73 @@ describe('updateProfileSchema', () => {
 
     expect(result.success).toBe(true);
     expect(result.success && 'education' in result.data).toBe(false);
+  });
+});
+
+describe('patchProfileSchema', () => {
+  it('accepts a single-field patch and carries only that key', () => {
+    const result = patchProfileSchema.safeParse({ teachingIntro: 'Courses I teach.' });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(Object.keys(result.data)).toEqual(['teachingIntro']);
+    expect(result.data.teachingIntro).toBe('Courses I teach.');
+  });
+
+  it('does not require fullName/title, which the whole-document PUT does', () => {
+    expect(patchProfileSchema.safeParse({ bio: 'Just the bio.' }).success).toBe(true);
+  });
+
+  it('rejects an empty patch rather than accepting a silent no-op', () => {
+    const result = patchProfileSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a body whose only keys are unknown (they are stripped, leaving nothing)', () => {
+    expect(patchProfileSchema.safeParse({ notAField: 'x' }).success).toBe(false);
+  });
+
+  it('keeps a cleared field as a present key so the repository writes NULL', () => {
+    const result = patchProfileSchema.safeParse({ eventsIntro: '' });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect('eventsIntro' in result.data).toBe(true);
+    expect(result.data.eventsIntro).toBeUndefined();
+  });
+
+  it('strips HTML from every intro field', () => {
+    const result = patchProfileSchema.safeParse({
+      publicationsIntro: '<script>alert(1)</script>Selected work',
+      teachingIntro: '<b>Teaching</b>',
+      teamIntro: '<i>Team</i>',
+      eventsIntro: '<em>Events</em>',
+      appointmentIntro: '<p>Book a slot</p>',
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.publicationsIntro).toBe('alert(1)Selected work');
+    expect(result.data.teachingIntro).toBe('Teaching');
+    expect(result.data.teamIntro).toBe('Team');
+    expect(result.data.eventsIntro).toBe('Events');
+    expect(result.data.appointmentIntro).toBe('Book a slot');
+  });
+
+  it('rejects an intro field over 2000 characters', () => {
+    expect(patchProfileSchema.safeParse({ teamIntro: 'x'.repeat(2001) }).success).toBe(false);
+  });
+
+  it('rejects a non-URL calendlyUrl', () => {
+    const result = patchProfileSchema.safeParse({ calendlyUrl: 'not-a-url' });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.flatten().fieldErrors.calendlyUrl).toBeDefined();
+  });
+
+  it('accepts a valid calendlyUrl and clears it on empty string', () => {
+    expect(
+      patchProfileSchema.safeParse({ calendlyUrl: 'https://calendly.com/culprit/30min' }).success,
+    ).toBe(true);
+    const cleared = patchProfileSchema.safeParse({ calendlyUrl: '' });
+    expect(cleared.success).toBe(true);
+    if (cleared.success) expect(cleared.data.calendlyUrl).toBeNull();
   });
 });

@@ -1,20 +1,65 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Profile as PrismaProfile } from '@prisma/client';
 import type { AuditContext, Profile } from './profile.types';
-import type { UpdateProfileInput } from './profile.schema';
+import type { PatchProfileInput, UpdateProfileInput } from './profile.schema';
 
 // The ONLY place Prisma is used for profile data. Singleton: exactly one row is ever read/written.
 // Seed/upsert-on-first-read — a fresh DB has no row until the admin's first save, so `get()`
 // lazily creates a blank placeholder row rather than 404ing the public bio page.
 
 export type UpdateProfileData = UpdateProfileInput;
+export type PatchProfileData = PatchProfileInput;
 
 export interface ProfileRepository {
   /** Returns the singleton row, creating a blank placeholder on first read. */
   get(): Promise<Profile>;
-  /** Upsert the singleton row and write an audit entry in one transaction. */
+  /** Upsert the singleton row (every field) and write an audit entry in one transaction. */
   updateWithAudit(input: { data: UpdateProfileData; audit: AuditContext }): Promise<Profile>;
+  /**
+   * Merge only the supplied keys into the singleton row and write an audit entry in one
+   * transaction. Absent key = column untouched; present key = column written (undefined/empty
+   * clears it to NULL).
+   */
+  patchWithAudit(input: { data: PatchProfileData; audit: AuditContext }): Promise<Profile>;
 }
+
+/**
+ * The writable scalar columns, all optional. Assignable to BOTH `ProfileUpdateInput` and
+ * `ProfileCreateInput` — the update-operations union (e.g. `StringFieldUpdateOperationsInput`) is
+ * only needed for atomic ops like `{ increment: 1 }`, which this module never uses.
+ */
+type ProfileWritableFields = {
+  fullName?: string;
+  title?: string;
+  photoUrl?: string | null;
+  bio?: string | null;
+  positionAffiliation?: string | null;
+  researchStatement?: string | null;
+  linkedinUrl?: string | null;
+  googleScholarUrl?: string | null;
+  calendlyUrl?: string | null;
+  publicationsIntro?: string | null;
+  teachingIntro?: string | null;
+  teamIntro?: string | null;
+  eventsIntro?: string | null;
+  appointmentIntro?: string | null;
+};
+
+/** Nullable columns, in one list so full-write and partial-write stay in step. */
+const NULLABLE_FIELDS = [
+  'photoUrl',
+  'bio',
+  'positionAffiliation',
+  'researchStatement',
+  'linkedinUrl',
+  'googleScholarUrl',
+  'calendlyUrl',
+  'publicationsIntro',
+  'teachingIntro',
+  'teamIntro',
+  'eventsIntro',
+  'appointmentIntro',
+] as const satisfies readonly (keyof ProfileWritableFields)[];
 
 function toDomain(row: PrismaProfile): Profile {
   return {
@@ -27,8 +72,38 @@ function toDomain(row: PrismaProfile): Profile {
     researchStatement: row.researchStatement,
     linkedinUrl: row.linkedinUrl,
     googleScholarUrl: row.googleScholarUrl,
+    calendlyUrl: row.calendlyUrl,
+    publicationsIntro: row.publicationsIntro,
+    teachingIntro: row.teachingIntro,
+    teamIntro: row.teamIntro,
+    eventsIntro: row.eventsIntro,
+    appointmentIntro: row.appointmentIntro,
     updatedAt: row.updatedAt,
   };
+}
+
+/** Whole-document write: every column is set, so an omitted optional field clears its column. */
+function toFullWriteFields(data: UpdateProfileData): ProfileWritableFields {
+  const fields: ProfileWritableFields = { fullName: data.fullName, title: data.title };
+  for (const key of NULLABLE_FIELDS) fields[key] = data[key] ?? null;
+  return fields;
+}
+
+/**
+ * Partial write: only keys actually present in the parsed body are written. `in` (not a truthiness
+ * or `!== undefined` check) is what distinguishes "field omitted, leave it alone" from "field sent
+ * empty, clear it" — the schema's empty-string transform turns the latter into `undefined`.
+ */
+function toPatchFields(data: PatchProfileData): ProfileWritableFields {
+  const fields: ProfileWritableFields = {};
+  // Required scalars have no NULL to write to, so an explicit undefined is ignored rather than
+  // being allowed to blank the row. The schema's `min(1)` means a present value is never empty.
+  if (data.fullName !== undefined) fields.fullName = data.fullName;
+  if (data.title !== undefined) fields.title = data.title;
+  for (const key of NULLABLE_FIELDS) {
+    if (key in data) fields[key] = data[key] ?? null;
+  }
+  return fields;
 }
 
 function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
@@ -59,30 +134,28 @@ export class PrismaProfileRepository implements ProfileRepository {
     data: UpdateProfileData;
     audit: AuditContext;
   }): Promise<Profile> {
-    const updated = await prisma.$transaction(async (tx) => {
+    return this.writeWithAudit(toFullWriteFields(input.data), input.audit);
+  }
+
+  async patchWithAudit(input: { data: PatchProfileData; audit: AuditContext }): Promise<Profile> {
+    return this.writeWithAudit(toPatchFields(input.data), input.audit);
+  }
+
+  /** Single upsert-plus-audit transaction shared by the full and partial writes. */
+  private async writeWithAudit(
+    fields: ProfileWritableFields,
+    audit: AuditContext,
+  ): Promise<Profile> {
+    const written = await prisma.$transaction(async (tx) => {
       const existing = await tx.profile.findFirst();
-      // Every field is a plain scalar now that the Json lists have moved to `cv_entry` —
-      // assignable to BOTH ProfileUpdateInput and ProfileCreateInput (the update-operations
-      // union, e.g. StringFieldUpdateOperationsInput, is only needed for atomic ops like
-      // `{ increment: 1 }`, which this module never uses).
-      const fields = {
-        fullName: input.data.fullName,
-        title: input.data.title,
-        photoUrl: input.data.photoUrl ?? null,
-        bio: input.data.bio ?? null,
-        positionAffiliation: input.data.positionAffiliation ?? null,
-        researchStatement: input.data.researchStatement ?? null,
-        linkedinUrl: input.data.linkedinUrl ?? null,
-        googleScholarUrl: input.data.googleScholarUrl ?? null,
-      };
 
       const row = existing
         ? await tx.profile.update({ where: { id: existing.id }, data: fields })
         : await tx.profile.create({ data: { ...BLANK_PROFILE_DATA, ...fields } });
 
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditCreateInput(audit, row.id) });
       return row;
     });
-    return toDomain(updated);
+    return toDomain(written);
   }
 }

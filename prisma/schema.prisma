@@ -12,6 +12,18 @@ datasource db {
   provider = "postgresql"
 }
 
+// Singleton. Holds the professor's identity, the site-wide prose, and the per-tab standfirst copy.
+//
+// The five `*Intro` columns exist because About and Research were the only public tabs with
+// admin-editable prose (`bio`, `researchStatement`); Publications, Teaching, Team, Events and
+// Make Appointment rendered a heading and then jumped straight into data, with their SEO
+// `description` strings hardcoded in the page files. These columns close that gap. They are
+// nullable and each page's `generateMetadata` falls back to its existing hardcoded string when
+// the column is null, so nothing regresses if the admin never fills them in.
+//
+// These are nullable SCALAR columns. ADR-012 banned Json LIST columns on `profile` (a repeating
+// group in one field); a single text blob per tab is not a repeating group, so it belongs here
+// rather than in a new SiteSetting table that would exist to hold six rows.
 model Profile {
   id                  String   @id @default(cuid())
   fullName            String   @map("full_name")
@@ -22,6 +34,16 @@ model Profile {
   researchStatement   String?  @map("research_statement") @db.Text
   linkedinUrl         String?  @map("linkedin_url")
   googleScholarUrl    String?  @map("google_scholar_url")
+  /// The scheduling link the public Make Appointment tab embeds. Previously readable only from
+  /// NEXT_PUBLIC_CALENDLY_URL, which the admin cannot change without a redeploy. Embed-only —
+  /// nothing server-side ever calls Calendly (ADR-011, CLAUDE.md).
+  calendlyUrl         String?  @map("calendly_url")
+  /// Standfirst prose for the public tabs that had none. See the comment block above.
+  publicationsIntro   String?  @map("publications_intro") @db.Text
+  teachingIntro       String?  @map("teaching_intro") @db.Text
+  teamIntro           String?  @map("team_intro") @db.Text
+  eventsIntro         String?  @map("events_intro") @db.Text
+  appointmentIntro    String?  @map("appointment_intro") @db.Text
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("profile")
