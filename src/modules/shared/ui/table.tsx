@@ -8,7 +8,13 @@ import { cn } from '@/modules/shared/lib/utils';
 
 export function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
-    <div className="w-full overflow-x-auto scrollbar-hidden rounded-lg border border-border">
+    // `data-slot` is the hook a container uses to strip this frame when the table is already
+    // inside one — see `FormSection`, which bleeds the table to the panel edge rather than drawing
+    // a second border inside the first.
+    <div
+      data-slot="table-container"
+      className="w-full overflow-x-auto scrollbar-hidden rounded-lg border border-border-strong"
+    >
       <table
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}

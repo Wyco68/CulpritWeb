@@ -117,7 +117,7 @@ export default async function AdminDashboardPage() {
 
       {/* Headline counts. A number with a label is the right form for a single current value — a
           one-bar chart would say the same thing with more ink. */}
-      <dl className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <Figure href="/admin/publications" label="Publications" value={publicationStats.total} />
         <Figure href="/admin/research" label="Research" value={researchStats.total} />
         <Figure href="/admin/team" label="People" value={memberStats.total} />
@@ -141,7 +141,7 @@ export default async function AdminDashboardPage() {
         </Panel>
       )}
 
-      <div className="grid gap-12 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         {byArea.length > 0 && (
           <Panel title="Research areas">
             <DistributionBars data={byArea} />
@@ -186,7 +186,7 @@ function Figure({
   note?: string;
 }) {
   return (
-    <div>
+    <div className="rounded-lg border border-border-strong bg-surface p-5 shadow-hairline">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="mt-1">
         <Link
@@ -212,12 +212,12 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-border pt-5">
-      <div className="mb-5 flex items-baseline justify-between gap-4">
+    <section className="rounded-lg border border-border-strong bg-surface shadow-hairline">
+      <div className="flex items-baseline justify-between gap-4 border-b border-border px-6 py-4">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {note && <span className="font-mono text-xs text-muted-foreground">{note}</span>}
       </div>
-      {children}
+      <div className="px-6 py-6">{children}</div>
     </section>
   );
 }

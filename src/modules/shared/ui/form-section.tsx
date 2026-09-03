@@ -32,8 +32,14 @@ export function FormSection({
   const headingId = React.useId();
 
   return (
-    <section aria-labelledby={headingId} className={cn('border-t border-border pt-7', className)}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section
+      aria-labelledby={headingId}
+      className={cn(
+        'overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline',
+        className,
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-6 py-5">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3">
             <h2 id={headingId} className="font-serif text-2xl text-foreground">
@@ -50,7 +56,12 @@ export function FormSection({
         {action && <div className="shrink-0">{action}</div>}
       </div>
 
-      <div className="mt-6">{children}</div>
+      {/* A table renders its own bordered, rounded frame. Inside this panel that would be a second
+          border just inside the first, so the frame is stripped and the table bleeds to the panel's
+          edges. Anything that is not a table keeps the normal padded body. */}
+      <div className="px-6 py-6 [&>[data-slot=table-container]]:-mx-6 [&>[data-slot=table-container]]:-my-6 [&>[data-slot=table-container]]:w-auto [&>[data-slot=table-container]]:rounded-none [&>[data-slot=table-container]]:border-x-0 [&>[data-slot=table-container]]:border-b-0">
+        {children}
+      </div>
     </section>
   );
 }
@@ -58,7 +69,7 @@ export function FormSection({
 /** The entry count shown beside a list section's title. */
 export function FormSectionCount({ count }: { count: number }) {
   return (
-    <span className="tabular shrink-0 font-mono text-xs text-muted-foreground">
+    <span className="tabular shrink-0 rounded-pill border border-border bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
       {count} {count === 1 ? 'entry' : 'entries'}
     </span>
   );

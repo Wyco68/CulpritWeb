@@ -66,7 +66,7 @@ export function YearColumns({ data, className }: { data: YearDatum[]; className?
               style={d.count > 0 ? { height: `${(d.count / max) * 100}%` } : undefined}
               className={cn(
                 'mx-auto w-full max-w-6',
-                d.count > 0 ? 'rounded-t-[4px] bg-accent' : 'h-px bg-input-border',
+                d.count > 0 ? 'rounded-t-xs bg-accent' : 'h-px bg-input-border',
               )}
             />
           </div>
@@ -124,10 +124,10 @@ export function DistributionBars({
             <span className="tabular font-mono text-xs text-muted-foreground">{d.count}</span>
             {/* Track in the muted surface, fill in the one series hue. The value sits in text
                 tokens beside the mark, never inside it. */}
-            <div className="col-span-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="col-span-2 h-1.5 w-full overflow-hidden rounded-pill bg-muted">
               <div
                 style={{ width: max > 0 ? `${(d.count / max) * 100}%` : '0%' }}
-                className="h-full rounded-r-[4px] bg-accent"
+                className="h-full rounded-r-xs bg-accent"
               />
             </div>
           </li>
@@ -165,9 +165,9 @@ export function CompletenessMeter({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-label={`Profile sections filled in: ${filled} of ${total}`}
-        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        className="h-1.5 w-full overflow-hidden rounded-pill bg-muted"
       >
-        <div style={{ width: `${pct}%` }} className="h-full rounded-r-[4px] bg-accent" />
+        <div style={{ width: `${pct}%` }} className="h-full rounded-r-xs bg-accent" />
       </div>
     </div>
   );
