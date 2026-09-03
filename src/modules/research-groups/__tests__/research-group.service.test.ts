@@ -126,6 +126,7 @@ describe('research group service', () => {
     const member = (id: string, researchGroupId: string): TeamMember => ({
       id,
       name: id,
+      nickname: null,
       role: 'PhD',
       bio: null,
       photoUrl: null,

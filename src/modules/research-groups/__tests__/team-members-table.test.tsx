@@ -50,7 +50,9 @@ describe('TeamMembersTable', () => {
     renderTable([]);
 
     await user.click(screen.getByRole('button', { name: 'Add team member' }));
-    await user.type(screen.getByLabelText('Name', { exact: false }), 'Dr. Alex Kim');
+    // Anchored: the label renders as "Name *" (required marker), so an exact match misses it,
+    // while a bare substring match also hits the "Nickname" field beside it.
+    await user.type(screen.getByLabelText(/^Name/), 'Dr. Alex Kim');
     await user.type(screen.getByLabelText('Role', { exact: false }), 'Postdoc');
     await user.selectOptions(screen.getByLabelText('Research group', { exact: false }), 'g1');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));

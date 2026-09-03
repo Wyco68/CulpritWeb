@@ -25,10 +25,7 @@ export interface TeamMemberRepository {
   list(filter?: ListTeamMembersFilter): Promise<TeamMember[]>;
   /** Headline counts only — no rows leave the database. */
   stats(): Promise<TeamMemberStats>;
-  createWithAudit(input: {
-    data: CreateTeamMemberData;
-    audit: AuditContext;
-  }): Promise<TeamMember>;
+  createWithAudit(input: { data: CreateTeamMemberData; audit: AuditContext }): Promise<TeamMember>;
   updateWithAudit(input: {
     id: string;
     data: UpdateTeamMemberData;
@@ -41,6 +38,7 @@ export function toDomain(row: PrismaTeamMember): TeamMember {
   return {
     id: row.id,
     name: row.name,
+    nickname: row.nickname,
     role: row.role,
     bio: row.bio,
     photoUrl: row.photoUrl,
@@ -96,6 +94,7 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
       const row = await tx.teamMember.create({
         data: {
           name: input.data.name,
+          nickname: input.data.nickname ?? null,
           role: input.data.role,
           bio: input.data.bio ?? null,
           photoUrl: input.data.photoUrl ?? null,
@@ -119,6 +118,7 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
         where: { id: input.id },
         data: {
           ...(input.data.name !== undefined ? { name: input.data.name } : {}),
+          ...(input.data.nickname !== undefined ? { nickname: input.data.nickname } : {}),
           ...(input.data.role !== undefined ? { role: input.data.role } : {}),
           ...(input.data.bio !== undefined ? { bio: input.data.bio ?? null } : {}),
           ...(input.data.photoUrl !== undefined ? { photoUrl: input.data.photoUrl ?? null } : {}),

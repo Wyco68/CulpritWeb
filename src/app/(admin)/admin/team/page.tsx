@@ -43,6 +43,8 @@ export default async function AdminTeamPage() {
   ]);
 
   const groups = groupsResult.ok ? groupsResult.data : [];
+  // One read of the member table, shared by both tables and by the group dialog's roster editor.
+  const members = membersResult.ok ? membersResult.data : [];
 
   return (
     <AdminScreen
@@ -54,8 +56,8 @@ export default async function AdminTeamPage() {
         profile={profileResult.ok ? profileResult.data : null}
         sections={PROFILE_SECTIONS}
       />
-      <ResearchGroupsTable items={groups} />
-      <TeamMembersTable items={membersResult.ok ? membersResult.data : []} groups={groups} />
+      <ResearchGroupsTable items={groups} members={members} />
+      <TeamMembersTable items={members} groups={groups} />
     </AdminScreen>
   );
 }

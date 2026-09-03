@@ -53,6 +53,9 @@ function MemberCard({ member }: { member: TeamMember }) {
       <div className="min-w-0">
         <p className="break-words font-serif text-lg leading-tight text-foreground">
           {member.name}
+          {member.nickname && (
+            <span className="ml-2 text-base text-muted-foreground">({member.nickname})</span>
+          )}
         </p>
         <p className="mt-1 break-words text-sm text-accent">{member.role}</p>
         {bio && (

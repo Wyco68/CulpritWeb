@@ -91,6 +91,10 @@ model ResearchGroup {
 model TeamMember {
   id                  String             @id @default(cuid())
   name                String
+  /// What this person actually goes by — "Wyco" for Win Moe Aung. Its own column rather than a
+  /// "Short name: X." sentence at the front of the bio, which is where it used to live: that made
+  /// it unsearchable, unformattable, and impossible to render anywhere the full bio didn't fit.
+  nickname            String?
   role                String // e.g. "PhD Candidate", "Visiting Professor"
   bio                 String?            @db.Text
   photoUrl            String?            @map("photo_url")

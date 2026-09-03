@@ -78,6 +78,7 @@ export function TeamMemberFormDialog({
       name: member?.name ?? '',
       role: member?.role ?? '',
       bio: member?.bio ?? '',
+      nickname: member?.nickname ?? '',
       photoUrl: member?.photoUrl ?? '',
       researchGroupId: member?.researchGroupId ?? '',
       sortOrder: member?.sortOrder ?? 0,
@@ -114,10 +115,25 @@ export function TeamMemberFormDialog({
           <FormField label="Name" htmlFor="member-name" required error={errors.name?.message}>
             {(fieldProps) => <Input {...fieldProps} {...register('name')} />}
           </FormField>
-          <FormField label="Role" htmlFor="member-role" required error={errors.role?.message}>
-            {(fieldProps) => <Input {...fieldProps} {...register('role')} />}
+          <FormField
+            label="Nickname"
+            htmlFor="member-nickname"
+            description="What they go by, e.g. Wyco. Shown in brackets after the full name."
+            error={errors.nickname?.message}
+          >
+            {(fieldProps) => (
+              <Input
+                {...fieldProps}
+                {...register('nickname', {
+                  setValueAs: (value: string) => (value.trim() === '' ? null : value),
+                })}
+              />
+            )}
           </FormField>
         </div>
+        <FormField label="Role" htmlFor="member-role" required error={errors.role?.message}>
+          {(fieldProps) => <Input {...fieldProps} {...register('role')} />}
+        </FormField>
         <FormField
           label="Research group"
           htmlFor="member-group"

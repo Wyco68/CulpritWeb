@@ -64,7 +64,10 @@ function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLo
 
 export class PrismaResearchGroupRepository implements ResearchGroupRepository {
   async findById(id: string): Promise<ResearchGroup | null> {
-    const row = await prisma.researchGroup.findUnique({ where: { id }, include: teamMembersInclude });
+    const row = await prisma.researchGroup.findUnique({
+      where: { id },
+      include: teamMembersInclude,
+    });
     return row ? toDomain(row) : null;
   }
 

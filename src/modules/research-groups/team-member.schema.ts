@@ -16,6 +16,15 @@ const optionalSafeText = (max: number) =>
 /** Admin: create a team member. `researchGroupId` is optional — a member need not belong to a group. */
 export const createTeamMemberSchema = z.object({
   name: safeText(200),
+  // Nullable as well as optional, so clearing the field actually clears the column — an undefined
+  // key vanishes from the JSON body and the update route reads that as "leave it alone".
+  nickname: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((v) => stripHtml(v) || null)
+    .nullable()
+    .optional(),
   role: safeText(200),
   bio: optionalSafeText(3000),
   // Nullable, not just optional: an undefined key vanishes from the JSON body and the update

@@ -3,6 +3,8 @@
 export type TeamMember = {
   id: string;
   name: string;
+  /** What the person goes by, e.g. "Wyco". Optional — most people don't need one. */
+  nickname: string | null;
   role: string;
   bio: string | null;
   photoUrl: string | null;

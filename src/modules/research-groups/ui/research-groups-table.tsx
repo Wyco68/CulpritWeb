@@ -19,6 +19,7 @@ import {
 } from '@/modules/shared/ui/table';
 // Deep import, not the barrel — see research-group-form-dialog.tsx's comment.
 import type { ResearchGroupSummary } from '../research-group.types';
+import type { TeamMember } from '../team-member.types';
 import { ResearchGroupFormDialog } from './research-group-form-dialog';
 
 async function deleteGroup(id: string) {
@@ -29,7 +30,14 @@ async function deleteGroup(id: string) {
 
 // Takes summaries, not full groups: the only thing this table says about a group's people is how
 // many there are, so it never needs the member rows.
-export function ResearchGroupsTable({ items }: { items: ResearchGroupSummary[] }) {
+export function ResearchGroupsTable({
+  items,
+  members = [],
+}: {
+  items: ResearchGroupSummary[];
+  /** Passed straight through to the dialog so it can manage this group's roster in memory. */
+  members?: TeamMember[];
+}) {
   const router = useRouter();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -116,7 +124,12 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroupSummary[] }
         )}
       </FormSection>
 
-      <ResearchGroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editing} />
+      <ResearchGroupFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        group={editing}
+        members={members}
+      />
 
       <ConfirmDialog
         open={Boolean(deleting)}
