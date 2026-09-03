@@ -16,15 +16,24 @@
      but a visitor whose OS is dark gets dark-rendered native widgets sitting on our paper page. */
   color-scheme: light;
 
-  /* A hair off pure white, same hue as the masthead band, so the page ground and the cyan band
-     read as one family instead of a cool band dropped onto a neutral page. Still reads as white —
-     rgb(251 253 253), 2-4 points off 255 — not an off-white/grey. */
-  --background: hsl(190 40% 99%);
-  --foreground: hsl(222 15% 12%); /* 16.54:1 on background */
+  /* The page ground, and the surface that sits on it. These are a pair: content panels are pure
+     white and the ground is tinted just off it, so a card is separated by its own fill rather than
+     by a heavy border or a drop shadow. Same hue family as the masthead band, so the band, the
+     ground and the panels read as one palette.
+
+     The separation is deliberately small — rgb(244 247 248) against 255, roughly 8-11 points — and
+     is carried as much by --border-strong as by the fill. Widening it turns the ground grey, which
+     is the look this palette was chosen to avoid. */
+  --background: hsl(200 24% 96.5%);
+  --surface: hsl(0 0% 100%); /* cards, panels, tables, dialogs, form sections */
+  --foreground: hsl(222 15% 12%); /* 15.69:1 on background, 16.91:1 on surface */
   --muted: hsl(220 14% 96%);
-  --muted-foreground: hsl(220 9% 42%); /* 5.61:1 on background */
-  --border: hsl(220 13% 91%);
-  --accent: hsl(190 90% 30%); /* 4.97:1 on background */
+  --muted-foreground: hsl(220 9% 42%); /* 5.20:1 on background, 5.61:1 on surface */
+  /* Recessive rule between rows inside a panel. --border-strong is the panel's own edge: it has to
+     hold a shape against the ground, which a hairline at 91% lightness could not do. */
+  --border: hsl(214 18% 90%);
+  --border-strong: hsl(214 16% 84%);
+  --accent: hsl(190 90% 30%); /* 4.61:1 on background, 4.97:1 on surface */
   --accent-foreground: hsl(0 0% 100%); /* 4.97:1 on accent */
   /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
      element distinct from the light page background used everywhere else. Same hue as the
@@ -55,17 +64,22 @@
      and 3.02:1 against its own fill. On focus the fill lifts to white and the border takes the
      accent, so the active field is unambiguous. */
   --input: hsl(220 14% 97%);
-  --input-border: hsl(220 13% 58%);
+  /* Darkened four points when the ground moved. A field now has to identify itself against a white
+     panel as well as against the tinted page, and white is the stricter of the two. */
+  --input-border: hsl(215 14% 54%);
 
-  --destructive: hsl(3 72% 42%); /* 6.30:1 on background */
+  --destructive: hsl(3 72% 42%); /* 5.84:1 on background, 6.30:1 on surface */
   --destructive-foreground: hsl(0 0% 100%);
   --ring: hsl(190 90% 30%);
 
   /* --- Radii ---------------------------------------------------------------------------- */
-  /* Deliberately not one uniform value. Containers are softer than the controls inside them. */
-  --radius-xs: 2px;
-  --radius: 4px;
-  --radius-container: 10px;
+  /* Deliberately not one uniform value. Containers are softer than the controls inside them.
+     The whole scale moved up one step so controls read as current rather than as 2019-era 4px
+     chips; the *relationship* between the three is unchanged. */
+  --radius-xs: 4px;
+  --radius: 8px;
+  --radius-container: 12px;
+  --radius-pill: 999px;
 
   /* --- Shadows -------------------------------------------------------------------------- */
   /* Tinted with the palette's own cool hue and heavily diffused, rather than flat black at low
@@ -94,6 +108,8 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface: var(--surface);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-on-band: var(--accent-on-band);
@@ -110,6 +126,7 @@
   --radius-sm: var(--radius);
   --radius-md: var(--radius);
   --radius-lg: var(--radius-container);
+  --radius-pill: var(--radius-pill);
 
   --shadow-hairline: var(--shadow-hairline);
   --shadow-raised: var(--shadow-raised);
@@ -176,6 +193,20 @@ body {
   font-family: var(--font-sans);
   /* Prose is set in the serif; the sans is reserved for interface chrome. */
   text-rendering: optimizeLegibility;
+}
+
+/* Media never overflows its column. `next/image` already emits intrinsic sizing for everything
+   this app renders itself, so this is a backstop for the markup it does not control: the Calendly
+   widget and the YouTube embed, both of which inject their own iframes and images. */
+img,
+video,
+svg,
+iframe {
+  max-width: 100%;
+}
+img,
+video {
+  height: auto;
 }
 
 /* Numerals carry meaning on this site — publication years, dates, list indices. Tabular figures
