@@ -3,15 +3,24 @@
        <link rel="icon" type="image/svg+xml">, which browsers prefer over favicon.ico.
        favicon.ico stays beside it on purpose: browsers request /favicon.ico regardless, and
        without a file there the request falls through to the app (see commit 1383258).
-       viewBox is cropped to the artwork's bounds so the kite fills a 16px tab icon. -->
+       viewBox is cropped to the artwork's bounds so the kite fills a 16px tab icon.
+
+       Colours are the site palette, not free choices: the sail runs --accent (hsl 190 90% 30%)
+       up to a lighter tint of the same hue, and the flying line is --masthead-foreground. The
+       mark previously used an unrelated green/blue that appeared nowhere else in the product, so
+       the browser tab did not read as the same site as the page behind it. The geometry is
+       unchanged.
+
+       These are resolved hex values because an SVG served as a favicon is rendered outside the
+       document and cannot see the CSS custom properties. Re-derive them if the palette moves. -->
   <defs>
     <linearGradient id="sail" x1="0.15" y1="0" x2="0.85" y2="1">
-      <stop offset="0" stop-color="#57C066"/>
-      <stop offset="1" stop-color="#2C8339"/>
+      <stop offset="0" stop-color="#1DACC9"/>
+      <stop offset="1" stop-color="#087A91"/>
     </linearGradient>
     <linearGradient id="line" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2F80C8"/>
-      <stop offset="1" stop-color="#7FC0EA"/>
+      <stop offset="0" stop-color="#10233D"/>
+      <stop offset="1" stop-color="#2C5A7A"/>
     </linearGradient>
   </defs>
 
