@@ -2,7 +2,7 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { ListTeamMembersFilter, TeamMemberRepository } from './team-member.repository';
-import type { AuditContext, TeamMember } from './team-member.types';
+import type { AuditContext, TeamMember, TeamMemberStats } from './team-member.types';
 import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
 
 export type TeamMemberServiceDeps = {
@@ -12,6 +12,8 @@ export type TeamMemberServiceDeps = {
 
 export interface TeamMemberService {
   list(filter?: ListTeamMembersFilter): Promise<Result<TeamMember[]>>;
+  /** Headline counts for the dashboard, aggregated in SQL. */
+  stats(): Promise<Result<TeamMemberStats>>;
   create(input: CreateTeamMemberInput, actor: string): Promise<Result<TeamMember>>;
   update(id: string, input: UpdateTeamMemberInput, actor: string): Promise<Result<TeamMember>>;
   /** Returns the removed record (pre-delete snapshot) for confirmation. */
@@ -26,6 +28,14 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
     async list(filter) {
       try {
         return ok(await repository.list(filter));
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats() {
+      try {
+        return ok(await repository.stats());
       } catch (error) {
         return err(toAppError(error));
       }

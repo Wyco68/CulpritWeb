@@ -9,7 +9,7 @@ export {
   type UpdateResearchGroupInput,
 } from './research-group.schema';
 
-export type { ResearchGroup, AuditContext } from './research-group.types';
+export type { ResearchGroup, ResearchGroupSummary, AuditContext } from './research-group.types';
 
 export {
   createResearchGroupService,
@@ -28,7 +28,7 @@ export {
   type UpdateTeamMemberInput,
 } from './team-member.schema';
 
-export type { TeamMember } from './team-member.types';
+export type { TeamMember, TeamMemberStats } from './team-member.types';
 
 export {
   createTeamMemberService,

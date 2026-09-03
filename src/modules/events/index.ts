@@ -11,7 +11,7 @@ export {
   type UpdateEventInput,
 } from './event.schema';
 
-export type { Event, EventTiming, AuditContext } from './event.types';
+export type { Event, EventTiming, EventStats, AuditContext } from './event.types';
 
 export {
   createEventService,

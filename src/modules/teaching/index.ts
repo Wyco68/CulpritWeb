@@ -24,7 +24,9 @@ export {
   CV_SECTION_LABELS,
   type CvSection,
   type CvEntry,
+  type CvEntryStats,
   type Course,
+  type CourseStats,
   type AuditContext,
 } from './teaching.types';
 

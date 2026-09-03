@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Event as PrismaEvent } from '@prisma/client';
-import type { AuditContext, Event } from './event.types';
+import type { AuditContext, Event, EventStats } from './event.types';
 import type { CreateEventInput, UpdateEventInput } from './event.schema';
 
 // The ONLY place Prisma is used for event data. No business rules here — the service decides
@@ -10,6 +10,12 @@ export interface EventRepository {
   findById(id: string): Promise<Event | null>;
   /** Newest first. Upcoming/past is split by the caller against the current clock. */
   list(): Promise<Event[]>;
+  /**
+   * Counts only, against the `now` the caller supplies. The boundary is a parameter rather than
+   * `now()` in SQL so it stays the caller's clock — the same one `splitByTiming` uses — and so it
+   * is injectable in tests.
+   */
+  stats(now: Date): Promise<EventStats>;
   createWithAudit(input: { data: CreateEventInput; audit: AuditContext }): Promise<Event>;
   updateWithAudit(input: {
     id: string;
@@ -55,6 +61,22 @@ export class PrismaEventRepository implements EventRepository {
     // baked into the prerendered page and go stale. The volume is tens of rows.
     const rows = await prisma.event.findMany({ orderBy: { eventDate: 'desc' } });
     return rows.map(toDomain);
+  }
+
+  async stats(now: Date): Promise<EventStats> {
+    // `gte`, not `gt`: an event starting exactly now is upcoming, matching splitByTiming.
+    const upcomingWhere = { eventDate: { gte: now } };
+    // Batched into one round trip; all three ride the eventDate index.
+    const [total, upcoming, next] = await prisma.$transaction([
+      prisma.event.count(),
+      prisma.event.count({ where: upcomingWhere }),
+      prisma.event.findFirst({
+        where: upcomingWhere,
+        orderBy: { eventDate: 'asc' },
+        select: { eventDate: true },
+      }),
+    ]);
+    return { total, upcoming, nextEventDate: next?.eventDate ?? null };
   }
 
   async createWithAudit(input: { data: CreateEventInput; audit: AuditContext }): Promise<Event> {

@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Research as PrismaResearch } from '@prisma/client';
-import type { AuditContext, Research } from './research.types';
+import type { AuditContext, Research, ResearchStats } from './research.types';
 import type { CreateResearchInput, UpdateResearchInput } from './research.schema';
 
 // The ONLY place Prisma is used for research data. No business rules here — the service decides
@@ -12,6 +12,8 @@ export type UpdateResearchData = UpdateResearchInput;
 export interface ResearchRepository {
   findById(id: string): Promise<Research | null>;
   list(): Promise<Research[]>;
+  /** Counts only — no research rows leave the database. */
+  stats(): Promise<ResearchStats>;
   createWithAudit(input: { data: CreateResearchData; audit: AuditContext }): Promise<Research>;
   updateWithAudit(input: {
     id: string;
@@ -53,6 +55,21 @@ export class PrismaResearchRepository implements ResearchRepository {
   async list(): Promise<Research[]> {
     const rows = await prisma.research.findMany({ orderBy: { sortOrder: 'asc' } });
     return rows.map(toDomain);
+  }
+
+  async stats(): Promise<ResearchStats> {
+    // Batched into one round trip. Areas come back ordered by their lowest `sortOrder`, which is
+    // where each area first appears in `list()` — the admin's arrangement, preserved.
+    const [total, byArea] = await prisma.$transaction([
+      prisma.research.count(),
+      prisma.research.groupBy({
+        by: ['area'],
+        _count: true,
+        _min: { sortOrder: true },
+        orderBy: { _min: { sortOrder: 'asc' } },
+      }),
+    ]);
+    return { total, byArea: byArea.map((row) => ({ area: row.area, count: row._count })) };
   }
 
   async createWithAudit(input: {

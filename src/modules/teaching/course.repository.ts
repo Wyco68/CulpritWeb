@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Course as PrismaCourse } from '@prisma/client';
-import type { AuditContext, Course } from './teaching.types';
+import type { AuditContext, Course, CourseStats } from './teaching.types';
 import type { CreateCourseInput, UpdateCourseInput } from './teaching.schema';
 
 // The ONLY place Prisma is used for course data. No business rules here — the service decides
@@ -9,6 +9,8 @@ import type { CreateCourseInput, UpdateCourseInput } from './teaching.schema';
 export interface CourseRepository {
   findById(id: string): Promise<Course | null>;
   list(): Promise<Course[]>;
+  /** Counts only — no course rows leave the database. */
+  stats(): Promise<CourseStats>;
   createWithAudit(input: { data: CreateCourseInput; audit: AuditContext }): Promise<Course>;
   updateWithAudit(input: {
     id: string;
@@ -54,6 +56,10 @@ export class PrismaCourseRepository implements CourseRepository {
     // don't shuffle between requests. The public tab groups by `level` in render order.
     const rows = await prisma.course.findMany({ orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }] });
     return rows.map(toDomain);
+  }
+
+  async stats(): Promise<CourseStats> {
+    return { total: await prisma.course.count() };
   }
 
   async createWithAudit(input: { data: CreateCourseInput; audit: AuditContext }): Promise<Course> {
