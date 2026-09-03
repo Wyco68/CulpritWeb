@@ -12,6 +12,13 @@ export type TeamMember = {
   updatedAt: Date;
 };
 
+/** Headline counts for the admin dashboard, computed in SQL rather than by listing every row. */
+export type TeamMemberStats = {
+  total: number;
+  /** Members with no research group — the public tab lists them on their own. */
+  ungrouped: number;
+};
+
 /** Append-only audit context supplied by the service, persisted by the repository. */
 export type AuditContext = {
   actor: string;

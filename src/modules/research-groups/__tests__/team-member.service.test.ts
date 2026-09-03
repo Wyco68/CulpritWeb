@@ -23,6 +23,16 @@ class FakeRepository implements TeamMemberRepository {
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
+  // The reduction the admin dashboard used to run in memory: every member row fetched, then
+  // `.length` and a filter on `researchGroupId === null`.
+  async stats() {
+    const rows = [...this.store.values()];
+    return {
+      total: rows.length,
+      ungrouped: rows.filter((member) => member.researchGroupId === null).length,
+    };
+  }
+
   async createWithAudit(input: {
     data: Partial<TeamMember>;
     audit: AuditContext;
@@ -150,5 +160,38 @@ describe('team member service', () => {
     const result = await service.remove('mem_1', 'admin:1');
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.id).toBe('mem_1');
+  });
+
+  it('stats() matches the in-memory count the dashboard used to compute', async () => {
+    const { repository, service } = build();
+    const seed = (id: string, researchGroupId: string | null) =>
+      repository.seed({
+        id,
+        name: id,
+        role: 'PhD',
+        bio: null,
+        photoUrl: null,
+        researchGroupId,
+        sortOrder: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    seed('a', 'g1');
+    seed('b', 'g1');
+    seed('c', null);
+    seed('d', null);
+    seed('e', 'g2');
+
+    const result = await service.stats();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toEqual({ total: 5, ungrouped: 2 });
+
+    // The exact reduction the dashboard used to run over the full member list.
+    const rows = await repository.list();
+    expect(result.data.total).toBe(rows.length);
+    expect(result.data.ungrouped).toBe(
+      rows.filter((member) => member.researchGroupId === null).length,
+    );
   });
 });

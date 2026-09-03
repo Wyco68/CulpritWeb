@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/modules/shared/ui/table';
 // Deep imports, not the barrel — see research-group-form-dialog.tsx's comment.
-import type { ResearchGroup } from '../research-group.types';
+import type { ResearchGroupSummary } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 import { TeamMemberFormDialog } from './team-member-form-dialog';
 
@@ -29,12 +29,14 @@ async function deleteTeamMember(id: string) {
   if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
 }
 
+// `groups` is only ever read for an id-to-name map and the form's select options, so it takes
+// summaries — the member rows nested inside a full `ResearchGroup` were never touched here.
 export function TeamMembersTable({
   items,
   groups,
 }: {
   items: TeamMember[];
-  groups: ResearchGroup[];
+  groups: ResearchGroupSummary[];
 }) {
   const router = useRouter();
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));

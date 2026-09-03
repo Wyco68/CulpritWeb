@@ -40,6 +40,18 @@ class FakeRepository implements EventRepository {
     );
   }
 
+  // Answers the aggregate through splitByTiming itself, so a drift between the dashboard's counts
+  // and the public tab's split would fail here rather than ship.
+  async stats(now: Date) {
+    const rows = await this.list();
+    const { upcoming } = splitByTiming(rows, now);
+    return {
+      total: rows.length,
+      upcoming: upcoming.length,
+      nextEventDate: upcoming[0]?.eventDate ?? null,
+    };
+  }
+
   async createWithAudit(input: { data: Partial<Event>; audit: AuditContext }): Promise<Event> {
     const id = `evt_${++this.seq}`;
     const event = makeEvent({ ...input.data, id });
@@ -121,6 +133,48 @@ describe('event service', () => {
     const result = await service.remove('missing', 'admin:1');
 
     expect(result.ok).toBe(false);
+  });
+
+  it('stats() agrees with splitByTiming on the same clock', async () => {
+    const { repository, service } = makeService();
+    const now = new Date('2026-09-01T12:00:00Z');
+    const seeded = [
+      makeEvent({ id: 'far', eventDate: new Date('2026-12-01T00:00:00Z') }),
+      makeEvent({ id: 'soon', eventDate: new Date('2026-09-10T00:00:00Z') }),
+      makeEvent({ id: 'recent', eventDate: new Date('2026-08-20T00:00:00Z') }),
+    ];
+    for (const event of seeded) repository.seed(event);
+
+    const result = await service.stats(now);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const { upcoming } = splitByTiming(await repository.list(), now);
+    expect(result.data).toEqual({
+      total: 3,
+      upcoming: upcoming.length,
+      nextEventDate: upcoming[0]!.eventDate,
+    });
+    expect(result.data.nextEventDate).toEqual(new Date('2026-09-10T00:00:00Z'));
+  });
+
+  it('stats() counts an event starting exactly now as upcoming, like splitByTiming', async () => {
+    const { repository, service } = makeService();
+    const now = new Date('2026-09-01T12:00:00Z');
+    repository.seed(makeEvent({ id: 'exact', eventDate: now }));
+
+    const result = await service.stats(now);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data).toEqual({ total: 1, upcoming: 1, nextEventDate: now });
+  });
+
+  it('stats() reports no next event when nothing is ahead', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'old', eventDate: new Date('2026-01-05T00:00:00Z') }));
+
+    const result = await service.stats(new Date('2026-09-01T12:00:00Z'));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data).toEqual({ total: 1, upcoming: 0, nextEventDate: null });
   });
 });
 

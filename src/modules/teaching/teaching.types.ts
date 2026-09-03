@@ -76,6 +76,17 @@ export type Course = {
   updatedAt: Date;
 };
 
+/** Aggregate counts for the admin dashboard, computed in SQL rather than by listing every row. */
+export type CvEntryStats = {
+  total: number;
+  /** Every section that has at least one entry. Drives the profile-completeness meter. */
+  sections: CvSection[];
+};
+
+export type CourseStats = {
+  total: number;
+};
+
 /** Append-only audit context supplied by the service, persisted by the repository. */
 export type AuditContext = {
   actor: string;

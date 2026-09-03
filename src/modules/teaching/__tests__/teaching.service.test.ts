@@ -66,6 +66,13 @@ class FakeEntryRepository implements CvEntryRepository {
     return [...this.store.values()].filter((e) => sections.includes(e.section));
   }
 
+  // The reduction the dashboard used to run in memory: every entry fetched, then `.length` and a
+  // `some()` per About section to see which lists had anything in them.
+  async stats() {
+    const rows = [...this.store.values()];
+    return { total: rows.length, sections: [...new Set(rows.map((row) => row.section))] };
+  }
+
   async createWithAudit(input: { data: Partial<CvEntry>; audit: AuditContext }) {
     const id = `cv_${++this.seq}`;
     const entry = makeEntry({ ...input.data, id });
@@ -105,6 +112,10 @@ class FakeCourseRepository implements CourseRepository {
 
   async list() {
     return [...this.store.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async stats() {
+    return { total: this.store.size };
   }
 
   async createWithAudit(input: { data: Partial<Course>; audit: AuditContext }) {
@@ -176,6 +187,29 @@ describe('cv entry service', () => {
 
     expect(result.ok && result.data.map((e) => e.id)).toEqual(['b']);
   });
+
+  it('stats() reports the total and which sections are populated', async () => {
+    const repository = new FakeEntryRepository();
+    repository.seed(makeEntry({ id: 'a', section: 'education' }));
+    repository.seed(makeEntry({ id: 'b', section: 'education' }));
+    repository.seed(makeEntry({ id: 'c', section: 'invited_talk' }));
+    const service = createCvEntryService({ repository, logger: SILENT_LOGGER });
+
+    const result = await service.stats();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.total).toBe(3);
+    expect([...result.data.sections].sort()).toEqual(['education', 'invited_talk']);
+
+    // The completeness meter counts About sections that have at least one entry — the same
+    // answer the dashboard used to get by scanning every row with `.some()`.
+    const entries = await repository.list();
+    const populated = new Set(result.data.sections);
+    expect(ABOUT_SECTIONS.filter((section) => populated.has(section)).length).toBe(
+      ABOUT_SECTIONS.filter((section) => entries.some((entry) => entry.section === section)).length,
+    );
+  });
 });
 
 describe('course service', () => {
@@ -196,6 +230,18 @@ describe('course service', () => {
     });
 
     expect((await service.remove('missing', 'admin:1')).ok).toBe(false);
+  });
+
+  it('stats() counts the courses without listing them', async () => {
+    const repository = new FakeCourseRepository();
+    repository.seed(makeCourse({ id: 'a' }));
+    repository.seed(makeCourse({ id: 'b' }));
+    const service = createCourseService({ repository, logger: SILENT_LOGGER });
+
+    const result = await service.stats();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data).toEqual({ total: 2 });
   });
 });
 

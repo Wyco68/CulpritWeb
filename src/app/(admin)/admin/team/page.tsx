@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getProfileService, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import {
   getResearchGroupService,
   getTeamMemberService,
@@ -32,9 +32,13 @@ const PROFILE_SECTIONS = [
 ] as const;
 
 export default async function AdminTeamPage() {
+  // Two complementary reads, not overlapping ones. This screen lists the people once, in the
+  // members table; the groups table shows each group's size. Asking for groups with their members
+  // attached (what the public tab needs, because it renders them) fetched the entire member table
+  // a second time purely to call `.length` on it — so the groups arrive with a count instead.
   const [profileResult, groupsResult, membersResult] = await Promise.all([
-    getProfileService().getProfile(),
-    getResearchGroupService().list(),
+    getProfileCached(),
+    getResearchGroupService().listWithMemberCounts(),
     getTeamMemberService().list(),
   ]);
 

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createResearchGroupService } from '../research-group.service';
 import type { ResearchGroupRepository } from '../research-group.repository';
-import type { AuditContext, ResearchGroup } from '../research-group.types';
+import type { AuditContext, ResearchGroup, ResearchGroupSummary } from '../research-group.types';
+import type { TeamMember } from '../team-member.types';
 
 class FakeRepository implements ResearchGroupRepository {
   store = new Map<string, ResearchGroup>();
@@ -19,6 +20,19 @@ class FakeRepository implements ResearchGroupRepository {
 
   async list(): Promise<ResearchGroup[]> {
     return [...this.store.values()];
+  }
+
+  // The reduction the admin Team screen and the dashboard used to run in memory: fetch every
+  // group with its member rows attached, then call `.length` on them.
+  async listWithMemberCounts(): Promise<ResearchGroupSummary[]> {
+    return (await this.list()).map((group) => ({
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      memberCount: group.teamMembers.length,
+      createdAt: group.createdAt,
+      updatedAt: group.updatedAt,
+    }));
   }
 
   async createWithAudit(input: {
@@ -105,5 +119,53 @@ describe('research group service', () => {
     const result = await service.remove('grp_1', 'admin:1');
     expect(result.ok).toBe(true);
     expect(repository.audits.at(-1)?.action).toBe('research_group.delete');
+  });
+
+  it('listWithMemberCounts() reports the same size the nested member list used to', async () => {
+    const { repository, service } = build();
+    const member = (id: string, researchGroupId: string): TeamMember => ({
+      id,
+      name: id,
+      role: 'PhD',
+      bio: null,
+      photoUrl: null,
+      researchGroupId,
+      sortOrder: 0,
+      createdAt: new Date('2026-08-05T00:00:00Z'),
+      updatedAt: new Date('2026-08-05T00:00:00Z'),
+    });
+    repository.seed({
+      id: 'grp_1',
+      name: 'Systems Security Lab',
+      description: 'Desc',
+      teamMembers: [member('m1', 'grp_1'), member('m2', 'grp_1')],
+      createdAt: new Date('2026-08-05T00:00:00Z'),
+      updatedAt: new Date('2026-08-05T00:00:00Z'),
+    });
+    repository.seed({
+      id: 'grp_2',
+      name: 'Privacy Lab',
+      description: 'Desc',
+      teamMembers: [],
+      createdAt: new Date('2026-08-06T00:00:00Z'),
+      updatedAt: new Date('2026-08-06T00:00:00Z'),
+    });
+
+    const result = await service.listWithMemberCounts();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.map((group) => [group.name, group.memberCount])).toEqual([
+      ['Systems Security Lab', 2],
+      ['Privacy Lab', 0],
+    ]);
+
+    // The exact number the admin table and the dashboard used to read off the nested rows.
+    const nested = await repository.list();
+    expect(result.data.map((group) => group.memberCount)).toEqual(
+      nested.map((group) => group.teamMembers.length),
+    );
+    // ...and the member rows themselves never cross the service boundary.
+    expect(result.data.every((group) => !('teamMembers' in group))).toBe(true);
   });
 });

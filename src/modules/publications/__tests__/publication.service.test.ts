@@ -23,6 +23,18 @@ class FakeRepository implements PublicationRepository {
     );
   }
 
+  // The reduction the admin dashboard used to run in memory over `list()`, kept as the reference
+  // the SQL aggregate has to match. Years ascending, populated years only.
+  async stats() {
+    const rows = await this.list();
+    const counts = new Map<number, number>();
+    for (const row of rows) counts.set(row.year, (counts.get(row.year) ?? 0) + 1);
+    const byYear = [...counts]
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => a.year - b.year);
+    return { total: rows.length, byYear, latestYear: byYear.at(-1)?.year ?? null };
+  }
+
   async createWithAudit(input: {
     data: Partial<Publication>;
     audit: AuditContext;
@@ -137,5 +149,44 @@ describe('publication service', () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.id).toBe('pub_1');
     expect(repository.audits.at(-1)?.action).toBe('publication.delete');
+  });
+
+  it('stats() returns the populated years ascending, with the latest year', async () => {
+    const { repository, service } = build();
+    const seed = (id: string, year: number) =>
+      repository.seed({
+        id,
+        title: id,
+        authors: 'A',
+        venue: 'V',
+        year,
+        link: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    seed('p1', 2024);
+    seed('p2', 2020);
+    seed('p3', 2024);
+
+    const result = await service.stats();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // Only years that have publications are rows — 2021-2023 are the page's job to fill in.
+    expect(result.data).toEqual({
+      total: 3,
+      byYear: [
+        { year: 2020, count: 1 },
+        { year: 2024, count: 2 },
+      ],
+      latestYear: 2024,
+    });
+  });
+
+  it('stats() reports no latest year when there are no publications', async () => {
+    const { service } = build();
+    const result = await service.stats();
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data).toEqual({ total: 0, byYear: [], latestYear: null });
   });
 });
