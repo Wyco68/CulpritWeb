@@ -64,7 +64,11 @@ export function Dialog({
       }}
       className={cn(
         'w-full max-w-xl rounded-lg border border-border bg-background p-0 text-foreground shadow-raised backdrop:bg-foreground/40 backdrop:backdrop-blur-[1px]',
-        'm-auto max-h-[85vh] overflow-y-auto',
+        // `overscroll-contain`: the dialog is capped at 85vh and scrolls internally, so without
+        // it a flick past the end of a long form keeps going and scrolls the page underneath —
+        // the modal stays put while its backdrop content slides, which reads as a broken overlay
+        // and loses the place the user had on the page behind it.
+        'm-auto max-h-[85vh] overflow-y-auto overscroll-contain',
         className,
       )}
     >

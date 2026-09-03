@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Newsreader, Plus_Jakarta_Sans, IBM_Plex_Mono } from 'next/font/google';
 import { SITE_URL } from '@/modules/shared/lib/site-url';
 import { Providers } from './providers';
@@ -58,6 +58,16 @@ export const metadata: Metadata = {
     title: 'The Culprit',
     description: SITE_DESCRIPTION,
   },
+};
+
+// Paints the browser's own chrome — Chrome/Edge on Android, and Safari's toolbars on iOS 15+ — in
+// the masthead's cyan, so the band at the top of every page runs straight into the URL bar instead
+// of stopping at a strip of the browser's default grey. The literal is the resolved value of
+// `--masthead` (hsl(190 90% 92%)) in globals.css: this is emitted into <head> at build time, where
+// a CSS custom property has not been resolved yet and cannot be read. Keep the two in step.
+// Single unconditional value, no `media` variants — the site has one fixed light look.
+export const viewport: Viewport = {
+  themeColor: '#d8f7fd',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
