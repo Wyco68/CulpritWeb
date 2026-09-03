@@ -83,7 +83,10 @@ function buildCsp(): string {
       ...(isDev ? [`'unsafe-eval'`] : []),
     ],
     'style-src': [`'self'`, `'unsafe-inline'`],
-    'img-src': [`'self'`, 'data:', ...(r2Origin ? [r2Origin] : [])],
+    // `blob:` covers the photo-crop preview: the admin picks a file and it is shown via a local
+    // `URL.createObjectURL` blob before upload. Same-origin and created in the page — no network
+    // fetch, so it widens img-src no further than the app's own memory.
+    'img-src': [`'self'`, 'data:', 'blob:', ...(r2Origin ? [r2Origin] : [])],
     'font-src': [`'self'`, 'data:'],
     'connect-src': [`'self'`, 'https://calendly.com', 'https://*.calendly.com', 'https://challenges.cloudflare.com'],
     'frame-src': [
