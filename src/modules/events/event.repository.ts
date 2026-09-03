@@ -190,41 +190,34 @@ export class PrismaEventRepository implements EventRepository {
     participants: NewParticipant[];
     audit: AuditContext;
   }): Promise<EventParticipant[]> {
+    // Three queries regardless of how many people are being added — adding a 40-person group costs
+    // the same round trips as adding one. It previously ran an INSERT per participant inside the
+    // transaction (N + 3 queries), which is what made adding a group slow.
+    //
+    // Duplicates are left to the unique index on (event_id, team_member_id) via `skipDuplicates`
+    // rather than being filtered by a preceding SELECT. That removes a query AND closes the race
+    // the SELECT left open: two concurrent adds could both read "not present" and then both try to
+    // insert. Postgres treats NULLs as distinct, so guest rows are never considered duplicates.
     return prisma.$transaction(async (tx) => {
-      // Existing links, read inside the transaction so a concurrent add cannot slip between the
-      // check and the insert. The unique index on (event_id, team_member_id) is the real guarantee;
-      // this is what lets the service report how many were skipped rather than failing the batch.
-      const existing = await tx.eventParticipant.findMany({
-        where: { eventId: input.eventId, teamMemberId: { not: null } },
-        select: { teamMemberId: true },
-      });
-      const taken = new Set(existing.map((row) => row.teamMemberId));
-
-      const last = await tx.eventParticipant.findFirst({
+      const highest = await tx.eventParticipant.aggregate({
         where: { eventId: input.eventId },
-        orderBy: { sortOrder: 'desc' },
-        select: { sortOrder: true },
+        _max: { sortOrder: true },
       });
-      let nextOrder = (last?.sortOrder ?? -1) + 1;
+      const base = (highest._max.sortOrder ?? -1) + 1;
 
-      const written: PrismaEventParticipant[] = [];
-      for (const participant of input.participants) {
-        // A guest (null link) is never a duplicate — two people can share a name.
-        if (participant.teamMemberId !== null && taken.has(participant.teamMemberId)) continue;
-        if (participant.teamMemberId !== null) taken.add(participant.teamMemberId);
-        written.push(
-          await tx.eventParticipant.create({
-            data: {
-              eventId: input.eventId,
-              teamMemberId: participant.teamMemberId,
-              name: participant.name,
-              role: participant.role,
-              photoUrl: participant.photoUrl,
-              sortOrder: nextOrder++,
-            },
-          }),
-        );
-      }
+      // `createManyAndReturn` gives back the rows that were actually written, which is what lets
+      // the service report "added 2, skipped 1" — plain `createMany` returns only a count.
+      const written = await tx.eventParticipant.createManyAndReturn({
+        data: input.participants.map((participant, index) => ({
+          eventId: input.eventId,
+          teamMemberId: participant.teamMemberId,
+          name: participant.name,
+          role: participant.role,
+          photoUrl: participant.photoUrl,
+          sortOrder: base + index,
+        })),
+        skipDuplicates: true,
+      });
 
       if (written.length > 0) {
         await tx.auditLog.create({

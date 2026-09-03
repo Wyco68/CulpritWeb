@@ -18,9 +18,11 @@ import { createEventService, type EventService, type TeamMemberDirectory } from 
  */
 const teamMemberDirectory: TeamMemberDirectory = {
   async byId(id) {
-    const result = await getTeamMemberService().list();
+    // A primary-key lookup. This used to list every team member and `.find()` in memory, which
+    // read the whole table to answer a question about one row.
+    const result = await getTeamMemberService().findById(id);
     if (!result.ok) throw result.error;
-    const member = result.data.find((row) => row.id === id);
+    const member = result.data;
     return member
       ? { id: member.id, name: member.name, role: member.role, photoUrl: member.photoUrl }
       : null;

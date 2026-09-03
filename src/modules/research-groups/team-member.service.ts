@@ -11,6 +11,8 @@ export type TeamMemberServiceDeps = {
 };
 
 export interface TeamMemberService {
+  /** One member by id. Exists so callers that need a single person don't list the whole table. */
+  findById(id: string): Promise<Result<TeamMember | null>>;
   list(filter?: ListTeamMembersFilter): Promise<Result<TeamMember[]>>;
   /** Headline counts for the dashboard, aggregated in SQL. */
   stats(): Promise<Result<TeamMemberStats>>;
@@ -25,6 +27,14 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
   const log = deps.logger ?? defaultLogger;
 
   return {
+    async findById(id) {
+      try {
+        return ok(await repository.findById(id));
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
     async list(filter) {
       try {
         return ok(await repository.list(filter));
