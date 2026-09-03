@@ -12,8 +12,7 @@ import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
 
-const FALLBACK_DESCRIPTION =
-  'Position, education, fellowships, scholarships, and invited talks.';
+const FALLBACK_DESCRIPTION = 'Position, education, fellowships, scholarships, and invited talks.';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -31,10 +30,7 @@ export default async function AboutPage() {
     getCvEntryService().listBySections(ABOUT_SECTIONS),
   ]);
 
-  const entryGroups = groupBySection(
-    entriesResult.ok ? entriesResult.data : [],
-    ABOUT_SECTIONS,
-  );
+  const entryGroups = groupBySection(entriesResult.ok ? entriesResult.data : [], ABOUT_SECTIONS);
 
   const profile = result.ok ? result.data : null;
 
@@ -54,10 +50,7 @@ export default async function AboutPage() {
       <PageHeading title="About" />
 
       {!profile ? (
-        <EmptyState
-          title="Profile not available"
-          className="mt-10"
-        />
+        <EmptyState title="Profile not available" className="mt-10" />
       ) : (
         <div className="mt-12 space-y-10">
           <SectionNav items={sections} />
@@ -79,14 +72,13 @@ export default async function AboutPage() {
             </section>
           )}
 
-          {/* Two-column flow at sm+: `columns-2` lets each section's own height decide the
-              balance instead of a rigid grid. `break-inside-avoid` on every CvEntryList section
-              (see cv-entry-list.tsx) keeps a section's heading and its entries together, so a
-              column break never lands mid-list — the boundary between sections stays as
-              unambiguous as it is in the single-column Teaching tab. */}
-          <div className="sm:columns-2 sm:gap-x-10">
-            <CvEntryList groups={entryGroups} />
-          </div>
+          {/* Single column, matching the Teaching tab. A two-column flow used to run here, but
+              multi-column breaks the section nav's scroll-spy: it picks the last section whose top
+              has passed the active line, and in two columns the right-hand sections start back at
+              the container's top, so every one of them crosses that line at once and the strip
+              jumps straight to the final entry. One column keeps section tops monotonic down the
+              page, which is the ordering both the reader and the spy assume. */}
+          <CvEntryList groups={entryGroups} />
         </div>
       )}
     </div>

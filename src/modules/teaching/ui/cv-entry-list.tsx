@@ -11,7 +11,13 @@ import { CV_SECTION_LABELS, type CvEntry, type CvSection } from '../teaching.typ
 // began. Each section opens with a full-width rule, so the boundaries are unambiguous at any width.
 //
 // Section headings are set in the serif at reading size, not as uppercase letter-spaced labels —
-// all-caps removes the word-shape cue that fluent reading depends on.
+// all-caps removes the word-shape cue that fluent reading depends on. They carry the accent and a
+// heavier weight so the boundary between one list and the next is legible at a glance, which is
+// the job the column rules used to do before this ran as a single column.
+//
+// Contrast: --accent measures 4.61:1 on the page ground, clearing the 4.5:1 AA threshold for
+// normal-size text — so this holds up even though the heading is also large-text by WCAG's
+// definition, where the bar is only 3:1.
 
 /**
  * The `id` a CV section is reachable at from the in-page section nav — `/teaching#teaching-role`.
@@ -32,7 +38,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
       aria-labelledby={headingId}
       className="break-inside-avoid border-t border-border pt-8"
     >
-      <h3 id={headingId} className="font-serif text-xl text-foreground">
+      <h3 id={headingId} className="font-serif text-xl font-semibold text-accent">
         {CV_SECTION_LABELS[section]}
       </h3>
 
@@ -71,11 +77,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
   );
 }
 
-export function CvEntryList({
-  groups,
-}: {
-  groups: { section: CvSection; entries: CvEntry[] }[];
-}) {
+export function CvEntryList({ groups }: { groups: { section: CvSection; entries: CvEntry[] }[] }) {
   if (groups.length === 0) return null;
 
   return (
