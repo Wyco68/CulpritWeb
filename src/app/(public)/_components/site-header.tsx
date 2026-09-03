@@ -30,9 +30,10 @@ export async function SiteHeader({ profile }: { profile: Profile | null }) {
             href="/"
             className="group inline-flex flex-col gap-6 rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-on-band sm:flex-row sm:items-end sm:gap-8"
           >
-            {/* Mounted-print portrait: the photo sits on a small white card (padding + a raised
-                shadow) rather than bare on the band, like a print mounted on stock. */}
-            <div className="rounded-[20px] bg-background p-2 shadow-raised transition-[translate] duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5">
+            {/* Mounted-print portrait: the photo sits on a small card (padding + a raised
+                shadow) rather than bare on the band, like a print mounted on stock. The mount is
+                a shade of the band itself, not white — see --masthead-mount. */}
+            <div className="rounded-[20px] bg-masthead-mount p-2 shadow-raised transition-[translate] duration-700 ease-[var(--ease-out-expo)] group-hover:-translate-y-0.5">
               <Avatar
                 src={profile?.photoUrl}
                 alt={`Portrait of ${fullName}`}

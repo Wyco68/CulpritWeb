@@ -40,6 +40,12 @@
      ON the band uses this; everything on the white page keeps --accent. */
   --accent-on-band: hsl(190 90% 26%);
 
+  /* The portrait mount on the masthead. The band is a light cyan, so the old `--background`
+     mount (a near-white card) read as a hard white ring cut out of the band rather than as a
+     mounted print. Four points darker than the band and the same hue: the mount still lifts the
+     photo off the surface, but it belongs to it. */
+  --masthead-mount: hsl(190 90% 88%);
+
   /* --- Form controls --------------------------------------------------------------------- */
   /* Inputs used to be white-on-white with a 91%-light border, measuring 1.24:1 against the page.
      WCAG 2.1 AA §1.4.11 asks for 3:1 on the visual information that identifies a control, so a
@@ -93,6 +99,7 @@
   --color-accent-on-band: var(--accent-on-band);
   --color-masthead: var(--masthead);
   --color-masthead-foreground: var(--masthead-foreground);
+  --color-masthead-mount: var(--masthead-mount);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
