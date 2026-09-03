@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { CalendarDays, ImageIcon, Pencil, Plus, Trash2, Video } from 'lucide-react';
+import { CalendarDays, ImageIcon, Pencil, Plus, Trash2, Users, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
@@ -21,6 +21,11 @@ import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 // Deep imports, not the barrel — see event-form-dialog.tsx's comment.
 import type { Event } from '../event.types';
 import { EventFormDialog } from './event-form-dialog';
+import {
+  EventParticipantsDialog,
+  type ParticipantGroup,
+  type ParticipantPerson,
+} from './event-participants-dialog';
 
 // Admin: Manage Events. Replaced Manage Appointments on 2026-09-01, and is a plainer screen than
 // the one it replaced — an event has no status, no cancel/reschedule actions and no public/private
@@ -45,12 +50,29 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en', {
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
-export function EventsTable({ items }: { items: Event[] }) {
+export function EventsTable({
+  items,
+  members = [],
+  groups = [],
+}: {
+  items: Event[];
+  /** Pickers for the participants dialog. Default empty so the table still renders without them. */
+  members?: ParticipantPerson[];
+  groups?: ParticipantGroup[];
+}) {
   const router = useRouter();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Event | undefined>(undefined);
   const [deleting, setDeleting] = useState<Event | undefined>(undefined);
+  const [participantsFor, setParticipantsFor] = useState<Event | undefined>(undefined);
+
+  // Re-read from `items` on every render rather than holding the opened event in state: the dialog
+  // mutates participants and calls router.refresh(), so the copy captured when it opened would go
+  // stale the moment somebody was added.
+  const participantsEvent = participantsFor
+    ? (items.find((item) => item.id === participantsFor.id) ?? participantsFor)
+    : undefined;
 
   const deleteMutation = useMutation({
     mutationFn: deleteEvent,
@@ -98,6 +120,7 @@ export function EventsTable({ items }: { items: Event[] }) {
                 <TableHead>Title</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Media</TableHead>
+                <TableHead>People</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -133,8 +156,19 @@ export function EventsTable({ items }: { items: Event[] }) {
                         </span>
                       </span>
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="tabular text-xs">{item.participants.length}</span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Participants: ${item.title}`}
+                          onClick={() => setParticipantsFor(item)}
+                        >
+                          <Users className="size-4" aria-hidden="true" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -166,6 +200,14 @@ export function EventsTable({ items }: { items: Event[] }) {
       </FormSection>
 
       <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} />
+
+      <EventParticipantsDialog
+        open={Boolean(participantsFor)}
+        onOpenChange={(open) => !open && setParticipantsFor(undefined)}
+        event={participantsEvent}
+        members={members}
+        groups={groups}
+      />
 
       <ConfirmDialog
         open={Boolean(deleting)}

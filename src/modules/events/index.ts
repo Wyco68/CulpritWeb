@@ -7,17 +7,25 @@ export {
   createEventSchema,
   updateEventSchema,
   eventIdSchema,
+  addParticipantSchema,
+  addGroupParticipantsSchema,
+  participantIdSchema,
   type CreateEventInput,
   type UpdateEventInput,
+  type AddParticipantInput,
+  type AddGroupParticipantsInput,
 } from './event.schema';
 
-export type { Event, EventTiming, EventStats, AuditContext } from './event.types';
+export type { Event, EventParticipant, EventTiming, EventStats, AuditContext } from './event.types';
 
 export {
   createEventService,
   splitByTiming,
   type EventService,
   type EventServiceDeps,
+  type TeamMemberDirectory,
+  type TeamMemberSnapshot,
+  type AddParticipantsResult,
 } from './event.service';
 
 export type { EventRepository } from './event.repository';
@@ -25,5 +33,6 @@ export type { EventRepository } from './event.repository';
 export { getEventService } from './container';
 
 export { EventList } from './ui/event-list';
+export { EventParticipants } from './ui/event-participants';
 export { PastEventList } from './ui/past-event-list';
 export { EventsTable } from './ui/events-table';

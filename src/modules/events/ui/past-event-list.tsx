@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { cn } from '@/modules/shared/lib/utils';
 import { panelClassName } from '@/modules/shared/ui/card';
 import { dateFormatter, EventMedia, timeFormatter } from './event-media';
+import { EventParticipants } from './event-participants';
 import type { Event } from '../event.types';
 
 /**
@@ -61,6 +62,8 @@ export function PastEventList({ events }: { events: Event[] }) {
           <p className="mt-3 max-w-[62ch] whitespace-pre-line text-pretty leading-[1.7] text-muted-foreground">
             {selected.description}
           </p>
+          <EventParticipants participants={selected.participants} />
+
           <EventMedia event={selected} />
         </div>
       )}

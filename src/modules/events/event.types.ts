@@ -1,5 +1,24 @@
 // Domain model — the shape services/routes work with. Mapped from the Prisma row inside the
 // repository so Prisma's generated types never leak across the service boundary.
+/**
+ * One person who took part in an event — a team member or an outside guest, in one list.
+ *
+ * `name`/`role`/`photoUrl` are a snapshot taken when the participant was added, NOT a live read
+ * through `teamMemberId`. An event is a historical record: renaming a member or changing their
+ * title must not rewrite what a past event says, and deleting a member must not blank the row.
+ * `teamMemberId` survives only as a soft link, used to stop the same person being added twice.
+ */
+export type EventParticipant = {
+  id: string;
+  eventId: string;
+  /** Null for a guest, and nulled if the linked team member is later deleted. */
+  teamMemberId: string | null;
+  name: string;
+  role: string | null;
+  photoUrl: string | null;
+  sortOrder: number;
+};
+
 export type Event = {
   id: string;
   title: string;
@@ -9,6 +28,8 @@ export type Event = {
   photoUrls: string[];
   /** YouTube watch/share URLs or bare video IDs — embed-only, never a stored video file. */
   videoUrls: string[];
+  /** In `sortOrder`, then insertion order. Empty for an event nobody has been added to. */
+  participants: EventParticipant[];
   createdAt: Date;
   updatedAt: Date;
 };

@@ -53,12 +53,7 @@ describe('createEventSchema', () => {
       ],
     });
 
-    expect(parsed.videoUrls).toEqual([
-      'dQw4w9WgXcQ',
-      'aQw4w9WgXcQ',
-      'bQw4w9WgXcQ',
-      'cQw4w9WgXcQ',
-    ]);
+    expect(parsed.videoUrls).toEqual(['dQw4w9WgXcQ', 'aQw4w9WgXcQ', 'bQw4w9WgXcQ', 'cQw4w9WgXcQ']);
   });
 
   it('rejects a video URL that is not YouTube', () => {
@@ -71,9 +66,7 @@ describe('createEventSchema', () => {
   });
 
   it('rejects a photo entry that is not a URL', () => {
-    expect(
-      createEventSchema.safeParse({ ...VALID, photoUrls: ['not-a-url'] }).success,
-    ).toBe(false);
+    expect(createEventSchema.safeParse({ ...VALID, photoUrls: ['not-a-url'] }).success).toBe(false);
   });
 
   it('caps the media arrays', () => {

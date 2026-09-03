@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { createEventService, splitByTiming } from '../event.service';
-import type { EventRepository } from '../event.repository';
-import type { AuditContext, Event } from '../event.types';
+import {
+  createEventService,
+  splitByTiming,
+  type TeamMemberDirectory,
+  type TeamMemberSnapshot,
+} from '../event.service';
+import type { EventRepository, NewParticipant } from '../event.repository';
+import type { AuditContext, Event, EventParticipant } from '../event.types';
 
 const SILENT_LOGGER = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
@@ -14,11 +19,29 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     eventDate: new Date('2026-10-14T04:00:00Z'),
     photoUrls: [],
     videoUrls: [],
+    participants: [],
     createdAt: now,
     updatedAt: now,
     ...overrides,
   };
 }
+
+/** Two members in one group, plus a third outside it, so group expansion has something to exclude. */
+const MEMBERS: TeamMemberSnapshot[] = [
+  { id: 'tm_1', name: 'Ada Lovelace', role: 'PhD Candidate', photoUrl: null },
+  { id: 'tm_2', name: 'Alan Turing', role: 'Research Fellow', photoUrl: null },
+  { id: 'tm_3', name: 'Grace Hopper', role: 'Visiting Professor', photoUrl: null },
+];
+const GROUPS: Record<string, string[]> = { grp_1: ['tm_1', 'tm_2'], grp_empty: [] };
+
+const directory: TeamMemberDirectory = {
+  async byId(id) {
+    return MEMBERS.find((member) => member.id === id) ?? null;
+  },
+  async byGroup(groupId) {
+    return MEMBERS.filter((member) => (GROUPS[groupId] ?? []).includes(member.id));
+  },
+};
 
 class FakeRepository implements EventRepository {
   store = new Map<string, Event>();
@@ -35,9 +58,7 @@ class FakeRepository implements EventRepository {
   }
 
   async list(): Promise<Event[]> {
-    return [...this.store.values()].sort(
-      (a, b) => b.eventDate.getTime() - a.eventDate.getTime(),
-    );
+    return [...this.store.values()].sort((a, b) => b.eventDate.getTime() - a.eventDate.getTime());
   }
 
   // Answers the aggregate through splitByTiming itself, so a drift between the dashboard's counts
@@ -77,11 +98,64 @@ class FakeRepository implements EventRepository {
     this.store.delete(input.id);
     this.audits.push({ ...input.audit, entityId: input.id });
   }
+
+  // Mirrors the real repository's skip-on-duplicate behaviour, which is what lets the service
+  // report "added 2, 1 already there" instead of failing the whole batch.
+  async addParticipantsWithAudit(input: {
+    eventId: string;
+    participants: NewParticipant[];
+    audit: AuditContext;
+  }): Promise<EventParticipant[]> {
+    const event = this.store.get(input.eventId);
+    if (!event) throw new Error('not found');
+    const taken = new Set(event.participants.map((p) => p.teamMemberId).filter(Boolean));
+
+    const written: EventParticipant[] = [];
+    for (const participant of input.participants) {
+      if (participant.teamMemberId !== null && taken.has(participant.teamMemberId)) continue;
+      if (participant.teamMemberId !== null) taken.add(participant.teamMemberId);
+      written.push({
+        id: `p_${++this.seq}`,
+        eventId: input.eventId,
+        teamMemberId: participant.teamMemberId,
+        name: participant.name,
+        role: participant.role,
+        photoUrl: participant.photoUrl,
+        sortOrder: event.participants.length + written.length,
+      });
+    }
+    this.store.set(input.eventId, {
+      ...event,
+      participants: [...event.participants, ...written],
+    });
+    if (written.length > 0) this.audits.push({ ...input.audit, entityId: input.eventId });
+    return written;
+  }
+
+  async removeParticipantWithAudit(input: {
+    eventId: string;
+    participantId: string;
+    audit: AuditContext;
+  }): Promise<EventParticipant> {
+    const event = this.store.get(input.eventId);
+    const found = event?.participants.find((p) => p.id === input.participantId);
+    if (!event || !found) throw new Error('not found');
+    this.store.set(input.eventId, {
+      ...event,
+      participants: event.participants.filter((p) => p.id !== input.participantId),
+    });
+    this.audits.push({ ...input.audit, entityId: input.eventId });
+    return found;
+  }
 }
 
 function makeService() {
   const repository = new FakeRepository();
-  const service = createEventService({ repository, logger: SILENT_LOGGER });
+  const service = createEventService({
+    repository,
+    teamMembers: directory,
+    logger: SILENT_LOGGER,
+  });
   return { repository, service };
 }
 
@@ -175,6 +249,124 @@ describe('event service', () => {
     const result = await service.stats(new Date('2026-09-01T12:00:00Z'));
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data).toEqual({ total: 1, upcoming: 0, nextEventDate: null });
+  });
+});
+
+describe('event participants', () => {
+  it('snapshots a team member onto the event rather than storing only a link', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+
+    const result = await service.addParticipant(
+      'evt_9',
+      { kind: 'member', teamMemberId: 'tm_1' },
+      'admin:1',
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // The name and role come from the directory, not from the request — a client sending only an
+    // id cannot claim somebody attended under a title they never held.
+    expect(result.data.added[0]).toMatchObject({
+      teamMemberId: 'tm_1',
+      name: 'Ada Lovelace',
+      role: 'PhD Candidate',
+    });
+    expect(repository.audits.at(-1)).toMatchObject({ action: 'event.participant.add' });
+  });
+
+  it('adds a guest with no team-member link', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+
+    const result = await service.addParticipant(
+      'evt_9',
+      { kind: 'guest', name: 'Visiting Speaker', role: 'Keynote' },
+      'admin:1',
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.added[0]).toMatchObject({
+      teamMemberId: null,
+      name: 'Visiting Speaker',
+      role: 'Keynote',
+    });
+  });
+
+  it('expands a research group into one row per member', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+
+    const result = await service.addGroupParticipants('evt_9', { researchGroupId: 'grp_1' }, 'a');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.added.map((p) => p.name)).toEqual(['Ada Lovelace', 'Alan Turing']);
+    // Grace is in no group and must not be swept in.
+    expect(result.data.added.map((p) => p.teamMemberId)).not.toContain('tm_3');
+  });
+
+  it('skips members already on the event instead of failing the batch', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+    await service.addParticipant('evt_9', { kind: 'member', teamMemberId: 'tm_1' }, 'admin:1');
+
+    const result = await service.addGroupParticipants('evt_9', { researchGroupId: 'grp_1' }, 'a');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.added.map((p) => p.name)).toEqual(['Alan Turing']);
+    expect(result.data.skipped).toBe(1);
+  });
+
+  it('rejects a group with no members rather than silently doing nothing', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+
+    const result = await service.addGroupParticipants(
+      'evt_9',
+      { researchGroupId: 'grp_empty' },
+      'a',
+    );
+
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects an unknown team member and an unknown event', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+
+    const badMember = await service.addParticipant(
+      'evt_9',
+      { kind: 'member', teamMemberId: 'nope' },
+      'a',
+    );
+    const badEvent = await service.addParticipant(
+      'missing',
+      { kind: 'member', teamMemberId: 'tm_1' },
+      'a',
+    );
+
+    expect(badMember.ok).toBe(false);
+    expect(badEvent.ok).toBe(false);
+  });
+
+  it('removes a participant and audits it', async () => {
+    const { repository, service } = makeService();
+    repository.seed(makeEvent({ id: 'evt_9' }));
+    const added = await service.addParticipant(
+      'evt_9',
+      { kind: 'member', teamMemberId: 'tm_1' },
+      'a',
+    );
+    if (!added.ok) throw new Error('setup failed');
+
+    const result = await service.removeParticipant('evt_9', added.data.added[0]!.id, 'admin:1');
+
+    expect(result.ok).toBe(true);
+    expect(repository.store.get('evt_9')!.participants).toEqual([]);
+    expect(repository.audits.at(-1)).toMatchObject({ action: 'event.participant.remove' });
   });
 });
 

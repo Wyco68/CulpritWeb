@@ -89,16 +89,19 @@ model ResearchGroup {
 }
 
 model TeamMember {
-  id              String         @id @default(cuid())
-  name            String
-  role            String // e.g. "PhD Candidate", "Visiting Professor"
-  bio             String?        @db.Text
-  photoUrl        String?        @map("photo_url")
-  researchGroupId String?        @map("research_group_id")
-  researchGroup   ResearchGroup? @relation(fields: [researchGroupId], references: [id], onDelete: SetNull)
-  sortOrder       Int            @default(0) @map("sort_order")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  id                  String             @id @default(cuid())
+  name                String
+  role                String // e.g. "PhD Candidate", "Visiting Professor"
+  bio                 String?            @db.Text
+  photoUrl            String?            @map("photo_url")
+  researchGroupId     String?            @map("research_group_id")
+  researchGroup       ResearchGroup?     @relation(fields: [researchGroupId], references: [id], onDelete: SetNull)
+  sortOrder           Int                @default(0) @map("sort_order")
+  /// Soft links from events this member was added to. The event rows snapshot their own copy of
+  /// the name/role, so deleting this member nulls the link without erasing event history.
+  eventParticipations EventParticipant[]
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
 
   @@index([researchGroupId])
   @@map("team_member")
@@ -178,20 +181,56 @@ model Course {
 // structure, and an array column keeps them queryable and typed instead of opaque.
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  eventDate   DateTime @map("event_date")
+  id           String             @id @default(cuid())
+  title        String
+  description  String             @db.Text
+  eventDate    DateTime           @map("event_date")
   /// Public R2 URLs, uploaded through POST /api/admin/events/photo.
-  photoUrls   String[] @map("photo_urls")
+  photoUrls    String[]           @map("photo_urls")
   /// YouTube watch/share URLs (or bare 11-character video IDs). Embed-only — no video file is
   /// ever stored or proxied by this app; see modules/integrations/youtube.
-  videoUrls   String[] @map("video_urls")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  videoUrls    String[]           @map("video_urls")
+  participants EventParticipant[]
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
 
   @@index([eventDate])
   @@map("event")
+}
+
+/// Who took part in an event — the site's own team members and outside guests in one list.
+///
+/// Every row carries its own `name`/`role`/`photoUrl`, copied from the team member at the moment
+/// it was added rather than read through the relation. An event is a historical record: editing a
+/// research group, changing someone's job title, or deleting a member must not silently rewrite
+/// what last year's event says. `teamMemberId` is kept as a soft link (nulled if that member is
+/// deleted) purely so the same person cannot be added twice.
+///
+/// "Add a whole team" is expanded here, not stored as a group reference: it inserts one row per
+/// member at that moment, so later changes to the group's membership leave past events alone.
+model EventParticipant {
+  id      String @id @default(cuid())
+  eventId String @map("event_id")
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  /// Null for an outside guest, and nulled if the linked member is later deleted.
+  teamMemberId String?     @map("team_member_id")
+  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
+
+  /// Snapshot taken when the participant was added. This is what renders.
+  name     String
+  role     String?
+  photoUrl String? @map("photo_url")
+
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// One row per member per event. Postgres treats NULLs as distinct, so this constrains linked
+  /// members without limiting how many guests an event can have.
+  @@unique([eventId, teamMemberId])
+  @@index([eventId])
+  @@map("event_participant")
 }
 
 // --- Better Auth (single admin) ---------------------------------------------------------------

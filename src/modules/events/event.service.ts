@@ -2,17 +2,51 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { EventRepository } from './event.repository';
-import type { AuditContext, Event, EventStats } from './event.types';
-import type { CreateEventInput, UpdateEventInput } from './event.schema';
+import type { AuditContext, Event, EventParticipant, EventStats } from './event.types';
+import type {
+  AddGroupParticipantsInput,
+  AddParticipantInput,
+  CreateEventInput,
+  UpdateEventInput,
+} from './event.schema';
 
 // Business layer for Events. An event is plain published content: no status, no lifecycle, no
 // approval step, no per-row visibility flag — so unlike the Appointment service it replaced, there
 // are no illegal transitions to reject and nothing here returns 409. Every event is public the
 // moment it is created.
 
+/**
+ * The subset of a team member this module needs in order to snapshot them onto an event.
+ * Deliberately not the research-groups `TeamMember` type: events depend on a shape, not on that
+ * module's model, so the two can evolve independently.
+ */
+export type TeamMemberSnapshot = {
+  id: string;
+  name: string;
+  role: string;
+  photoUrl: string | null;
+};
+
+/**
+ * Port onto the team-member data this module needs. Injected rather than imported so the events
+ * service never reaches into another module's repository, and so the expansion logic below is
+ * testable without a database. Wired to the research-groups service in `container.ts`.
+ */
+export interface TeamMemberDirectory {
+  byId(id: string): Promise<TeamMemberSnapshot | null>;
+  byGroup(researchGroupId: string): Promise<TeamMemberSnapshot[]>;
+}
+
 export type EventServiceDeps = {
   repository: EventRepository;
+  teamMembers: TeamMemberDirectory;
   logger?: Logger;
+};
+
+/** What an add produced — `skipped` counts people already on the event. */
+export type AddParticipantsResult = {
+  added: EventParticipant[];
+  skipped: number;
 };
 
 export interface EventService {
@@ -27,10 +61,34 @@ export interface EventService {
   update(id: string, input: UpdateEventInput, actor: string): Promise<Result<Event>>;
   /** Returns the removed record (pre-delete snapshot) for confirmation. */
   remove(id: string, actor: string): Promise<Result<Event>>;
+
+  /** Add one person — a team member (snapshotted server-side) or a free-text guest. */
+  addParticipant(
+    eventId: string,
+    input: AddParticipantInput,
+    actor: string,
+  ): Promise<Result<AddParticipantsResult>>;
+
+  /**
+   * Add every member of a research group, expanded to one row per member at this moment. Members
+   * already on the event are skipped rather than erroring, so re-running it after the group grows
+   * adds only the newcomers.
+   */
+  addGroupParticipants(
+    eventId: string,
+    input: AddGroupParticipantsInput,
+    actor: string,
+  ): Promise<Result<AddParticipantsResult>>;
+
+  removeParticipant(
+    eventId: string,
+    participantId: string,
+    actor: string,
+  ): Promise<Result<EventParticipant>>;
 }
 
 export function createEventService(deps: EventServiceDeps): EventService {
-  const { repository } = deps;
+  const { repository, teamMembers } = deps;
   const log = deps.logger ?? defaultLogger;
 
   return {
@@ -97,6 +155,95 @@ export function createEventService(deps: EventServiceDeps): EventService {
         await repository.deleteWithAudit({ id, audit });
         log.info('event_deleted', { id, actor });
         return ok(existing);
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async addParticipant(eventId, input, actor) {
+      try {
+        const event = await repository.findById(eventId);
+        if (!event) return err(new NotFoundError('Event not found.'));
+
+        // A member's details are read here and frozen onto the row. The client sends only an id,
+        // so it cannot claim someone attended under a name or title they never held.
+        const participant =
+          input.kind === 'member'
+            ? await (async () => {
+                const member = await teamMembers.byId(input.teamMemberId);
+                return member
+                  ? {
+                      teamMemberId: member.id,
+                      name: member.name,
+                      role: member.role,
+                      photoUrl: member.photoUrl,
+                    }
+                  : null;
+              })()
+            : {
+                teamMemberId: null,
+                name: input.name,
+                role: input.role ?? null,
+                photoUrl: null,
+              };
+
+        if (!participant) return err(new NotFoundError('Team member not found.'));
+
+        const added = await repository.addParticipantsWithAudit({
+          eventId,
+          participants: [participant],
+          audit: { actor, action: 'event.participant.add' },
+        });
+        log.info('event_participant_added', { eventId, actor, added: added.length });
+        return ok({ added, skipped: 1 - added.length });
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async addGroupParticipants(eventId, input, actor) {
+      try {
+        const event = await repository.findById(eventId);
+        if (!event) return err(new NotFoundError('Event not found.'));
+
+        const members = await teamMembers.byGroup(input.researchGroupId);
+        if (members.length === 0) {
+          return err(new NotFoundError('That research group has no members to add.'));
+        }
+
+        // Expanded to individual rows here, deliberately: the event records the people who were
+        // added at this moment, never a live pointer at the group. Editing the group afterwards
+        // leaves this event alone.
+        const added = await repository.addParticipantsWithAudit({
+          eventId,
+          participants: members.map((member) => ({
+            teamMemberId: member.id,
+            name: member.name,
+            role: member.role,
+            photoUrl: member.photoUrl,
+          })),
+          audit: {
+            actor,
+            action: 'event.participant.add_group',
+            metadata: { researchGroupId: input.researchGroupId },
+          },
+        });
+        log.info('event_group_added', { eventId, actor, added: added.length });
+        return ok({ added, skipped: members.length - added.length });
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async removeParticipant(eventId, participantId, actor) {
+      try {
+        const removed = await repository.removeParticipantWithAudit({
+          eventId,
+          participantId,
+          audit: { actor, action: 'event.participant.remove' },
+        });
+        log.info('event_participant_removed', { eventId, participantId, actor });
+        return ok(removed);
       } catch (error) {
         return err(toAppError(error));
       }

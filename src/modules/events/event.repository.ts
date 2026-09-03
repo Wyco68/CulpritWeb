@@ -1,6 +1,10 @@
 import { prisma } from '@/modules/shared/lib/prisma';
-import type { Prisma, Event as PrismaEvent } from '@prisma/client';
-import type { AuditContext, Event, EventStats } from './event.types';
+import type {
+  Prisma,
+  Event as PrismaEvent,
+  EventParticipant as PrismaEventParticipant,
+} from '@prisma/client';
+import type { AuditContext, Event, EventParticipant, EventStats } from './event.types';
 import type { CreateEventInput, UpdateEventInput } from './event.schema';
 
 // The ONLY place Prisma is used for event data. No business rules here — the service decides
@@ -23,9 +27,51 @@ export interface EventRepository {
     audit: AuditContext;
   }): Promise<Event>;
   deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void>;
+
+  /**
+   * Insert participant rows for one event, skipping anyone whose team member is already on it.
+   * Returns the rows actually written, so the service can report "added 3 of 5".
+   *
+   * Takes an array rather than a single row because adding a whole research group is the same
+   * operation with more rows — one transaction, one audit entry, all-or-nothing.
+   */
+  addParticipantsWithAudit(input: {
+    eventId: string;
+    participants: NewParticipant[];
+    audit: AuditContext;
+  }): Promise<EventParticipant[]>;
+
+  removeParticipantWithAudit(input: {
+    eventId: string;
+    participantId: string;
+    audit: AuditContext;
+  }): Promise<EventParticipant>;
 }
 
-function toDomain(row: PrismaEvent): Event {
+/** A participant row before it exists — the snapshot the service resolved. */
+export type NewParticipant = {
+  teamMemberId: string | null;
+  name: string;
+  role: string | null;
+  photoUrl: string | null;
+};
+
+/** Prisma's ordering for a participant list, shared by every read so the order is never a surprise. */
+const PARTICIPANT_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
+
+function toParticipant(row: PrismaEventParticipant): EventParticipant {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    teamMemberId: row.teamMemberId,
+    name: row.name,
+    role: row.role,
+    photoUrl: row.photoUrl,
+    sortOrder: row.sortOrder,
+  };
+}
+
+function toDomain(row: PrismaEvent & { participants?: PrismaEventParticipant[] }): Event {
   return {
     id: row.id,
     title: row.title,
@@ -33,6 +79,7 @@ function toDomain(row: PrismaEvent): Event {
     eventDate: row.eventDate,
     photoUrls: row.photoUrls,
     videoUrls: row.videoUrls,
+    participants: (row.participants ?? []).map(toParticipant),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -50,7 +97,10 @@ function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLo
 
 export class PrismaEventRepository implements EventRepository {
   async findById(id: string): Promise<Event | null> {
-    const row = await prisma.event.findUnique({ where: { id } });
+    const row = await prisma.event.findUnique({
+      where: { id },
+      include: { participants: { orderBy: PARTICIPANT_ORDER } },
+    });
     return row ? toDomain(row) : null;
   }
 
@@ -59,7 +109,10 @@ export class PrismaEventRepository implements EventRepository {
     // (upcoming ascending, past descending) and the admin table needs all of them, so splitting
     // this into two date-filtered queries would put the "now" boundary in SQL — where it would be
     // baked into the prerendered page and go stale. The volume is tens of rows.
-    const rows = await prisma.event.findMany({ orderBy: { eventDate: 'desc' } });
+    const rows = await prisma.event.findMany({
+      orderBy: { eventDate: 'desc' },
+      include: { participants: { orderBy: PARTICIPANT_ORDER } },
+    });
     return rows.map(toDomain);
   }
 
@@ -117,6 +170,7 @@ export class PrismaEventRepository implements EventRepository {
             ? { videoUrls: { set: input.data.videoUrls } }
             : {}),
         },
+        include: { participants: { orderBy: PARTICIPANT_ORDER } },
       });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
       return row;
@@ -128,6 +182,82 @@ export class PrismaEventRepository implements EventRepository {
     await prisma.$transaction(async (tx) => {
       await tx.event.delete({ where: { id: input.id } });
       await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+    });
+  }
+
+  async addParticipantsWithAudit(input: {
+    eventId: string;
+    participants: NewParticipant[];
+    audit: AuditContext;
+  }): Promise<EventParticipant[]> {
+    return prisma.$transaction(async (tx) => {
+      // Existing links, read inside the transaction so a concurrent add cannot slip between the
+      // check and the insert. The unique index on (event_id, team_member_id) is the real guarantee;
+      // this is what lets the service report how many were skipped rather than failing the batch.
+      const existing = await tx.eventParticipant.findMany({
+        where: { eventId: input.eventId, teamMemberId: { not: null } },
+        select: { teamMemberId: true },
+      });
+      const taken = new Set(existing.map((row) => row.teamMemberId));
+
+      const last = await tx.eventParticipant.findFirst({
+        where: { eventId: input.eventId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
+      });
+      let nextOrder = (last?.sortOrder ?? -1) + 1;
+
+      const written: PrismaEventParticipant[] = [];
+      for (const participant of input.participants) {
+        // A guest (null link) is never a duplicate — two people can share a name.
+        if (participant.teamMemberId !== null && taken.has(participant.teamMemberId)) continue;
+        if (participant.teamMemberId !== null) taken.add(participant.teamMemberId);
+        written.push(
+          await tx.eventParticipant.create({
+            data: {
+              eventId: input.eventId,
+              teamMemberId: participant.teamMemberId,
+              name: participant.name,
+              role: participant.role,
+              photoUrl: participant.photoUrl,
+              sortOrder: nextOrder++,
+            },
+          }),
+        );
+      }
+
+      if (written.length > 0) {
+        await tx.auditLog.create({
+          data: auditCreateInput(
+            { ...input.audit, metadata: { ...input.audit.metadata, added: written.length } },
+            input.eventId,
+          ),
+        });
+      }
+      return written.map(toParticipant);
+    });
+  }
+
+  async removeParticipantWithAudit(input: {
+    eventId: string;
+    participantId: string;
+    audit: AuditContext;
+  }): Promise<EventParticipant> {
+    return prisma.$transaction(async (tx) => {
+      // Scoped by eventId as well as id, so a participant id from one event can never be used to
+      // delete a row belonging to another.
+      const row = await tx.eventParticipant.delete({
+        where: { id: input.participantId, eventId: input.eventId },
+      });
+      // The full before-state goes into the audit entry, in the same transaction as the delete —
+      // the project's standing rule for a destructive admin action.
+      await tx.auditLog.create({
+        data: auditCreateInput(
+          { ...input.audit, metadata: { ...input.audit.metadata, removed: toParticipant(row) } },
+          input.eventId,
+        ),
+      });
+      return toParticipant(row);
     });
   }
 }

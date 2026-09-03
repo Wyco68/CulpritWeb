@@ -1,5 +1,6 @@
 import { panelClassName } from '@/modules/shared/ui/card';
 import { dateFormatter, EventMedia, timeFormatter } from './event-media';
+import { EventParticipants } from './event-participants';
 import type { Event } from '../event.types';
 
 // Upcoming events: one full card per event. A Server Component — nothing here is interactive, so
@@ -35,6 +36,8 @@ export function EventList({ events }: { events: Event[] }) {
             <p className="mt-3 max-w-[62ch] whitespace-pre-line text-pretty leading-[1.7] text-muted-foreground">
               {event.description}
             </p>
+
+            <EventParticipants participants={event.participants} />
 
             <EventMedia event={event} />
           </div>

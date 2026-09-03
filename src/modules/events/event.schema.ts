@@ -60,3 +60,43 @@ export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 
 /** Admin: identify an event by id (PUT/DELETE path param, re-validated at the boundary). */
 export const eventIdSchema = z.string().trim().min(1).max(200);
+
+/** Admin: identify one participant row (DELETE path param). */
+export const participantIdSchema = z.string().trim().min(1).max(200);
+
+/**
+ * Admin: add one participant to an event.
+ *
+ * A discriminated union rather than one loose object with everything optional, so the two ways of
+ * adding somebody cannot be mixed into a nonsensical request (a guest carrying a teamMemberId, or
+ * a member with a hand-typed name that would disagree with the row it links to). The `member`
+ * branch deliberately carries no name: the server reads it from the team member and snapshots it,
+ * so the client cannot spoof who was there.
+ */
+export const addParticipantSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('member'),
+    teamMemberId: z.string().trim().min(1).max(200),
+  }),
+  z.object({
+    kind: z.literal('guest'),
+    name: safeText(200),
+    role: z
+      .string()
+      .trim()
+      .max(200)
+      .transform((v) => stripHtml(v) || undefined)
+      .optional(),
+  }),
+]);
+export type AddParticipantInput = z.infer<typeof addParticipantSchema>;
+
+/**
+ * Admin: add every member of a research group at once. The group is expanded server-side into one
+ * row per member — the event stores people, never a live reference to the group, so editing the
+ * group later cannot retroactively change who attended.
+ */
+export const addGroupParticipantsSchema = z.object({
+  researchGroupId: z.string().trim().min(1).max(200),
+});
+export type AddGroupParticipantsInput = z.infer<typeof addGroupParticipantsSchema>;
