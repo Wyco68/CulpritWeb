@@ -28,7 +28,7 @@ export async function SiteHeader({ profile }: { profile: Profile | null }) {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-8">
           <Link
             href="/"
-            className="group inline-flex flex-col gap-6 rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-on-band sm:flex-row sm:items-end sm:gap-8"
+            className="group inline-flex flex-col gap-6 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-on-band sm:flex-row sm:items-end sm:gap-8"
           >
             {/* Mounted-print portrait: the photo sits on a small card (padding + a raised
                 shadow) rather than bare on the band, like a print mounted on stock. The mount is

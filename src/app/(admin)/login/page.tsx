@@ -3,7 +3,13 @@ import { ShieldCheck } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/modules/auth';
 import { LoginForm } from '@/modules/auth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/modules/shared/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/modules/shared/ui/card';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Admin Login' };
@@ -19,7 +25,7 @@ export default async function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-masthead px-6 py-12">
-      <Card className="w-full max-w-sm border-border bg-background shadow-raised">
+      <Card className="w-full max-w-sm shadow-raised">
         <CardHeader className="items-center text-center">
           <div className="mb-1 inline-flex size-11 items-center justify-center rounded-full bg-accent/10 text-accent">
             <ShieldCheck className="size-5" aria-hidden="true" />
