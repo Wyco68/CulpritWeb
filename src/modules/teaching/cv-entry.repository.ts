@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, CvEntry as PrismaCvEntry } from '@prisma/client';
-import type { AuditContext, CvEntry, CvSection } from './teaching.types';
+import type { AuditContext, CvEntry, CvEntryStats, CvSection } from './teaching.types';
 import type { CreateCvEntryInput, UpdateCvEntryInput } from './teaching.schema';
 
 // The ONLY place Prisma is used for CV entries. No business rules here — the service decides WHAT
@@ -12,6 +12,8 @@ export interface CvEntryRepository {
   list(): Promise<CvEntry[]>;
   /** Only the given sections — what each public tab actually needs. */
   listBySections(sections: readonly CvSection[]): Promise<CvEntry[]>;
+  /** Counts only — how many entries there are and which sections are populated. */
+  stats(): Promise<CvEntryStats>;
   createWithAudit(input: { data: CreateCvEntryInput; audit: AuditContext }): Promise<CvEntry>;
   updateWithAudit(input: {
     id: string;
@@ -72,6 +74,16 @@ export class PrismaCvEntryRepository implements CvEntryRepository {
       orderBy: LIST_ORDER,
     });
     return rows.map(toDomain);
+  }
+
+  async stats(): Promise<CvEntryStats> {
+    // Batched into one round trip. The groupBy is a DISTINCT over the (section, sortOrder) index;
+    // it answers "which sections have anything in them" without reading a single entry.
+    const [total, sections] = await prisma.$transaction([
+      prisma.cvEntry.count(),
+      prisma.cvEntry.groupBy({ by: ['section'] }),
+    ]);
+    return { total, sections: sections.map((row) => row.section) };
   }
 
   async createWithAudit(input: {

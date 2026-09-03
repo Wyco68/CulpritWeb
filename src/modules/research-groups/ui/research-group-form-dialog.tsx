@@ -27,6 +27,13 @@ async function submitGroup(id: string | undefined, input: CreateResearchGroupInp
   return body.data as ResearchGroup;
 }
 
+/**
+ * The form edits three fields, so it asks for three fields. Narrower than `ResearchGroup` on
+ * purpose: the admin table hands it a `ResearchGroupSummary` (no member rows), and the public
+ * shape would not fit.
+ */
+type EditableGroup = Pick<ResearchGroup, 'id' | 'name' | 'description'>;
+
 export function ResearchGroupFormDialog({
   open,
   onOpenChange,
@@ -34,7 +41,7 @@ export function ResearchGroupFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  group?: ResearchGroup;
+  group?: EditableGroup;
 }) {
   const router = useRouter();
   const isEdit = Boolean(group);

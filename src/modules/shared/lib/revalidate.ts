@@ -56,6 +56,14 @@ const AREA_PATHS = {
 export type PublicArea = keyof typeof AREA_PATHS;
 
 /**
+ * Every public PAGE url (no `/api/*`), derived from the areas above so a new tab can't be
+ * forgotten here. Used by the `'profile'` purge, which affects all of them.
+ */
+const PUBLIC_PAGE_PATHS: string[] = [
+  ...new Set(Object.values(AREA_PATHS).flatMap((paths) => paths.filter((p) => !p.startsWith('/api/')))),
+];
+
+/**
  * Invalidate the public pages (and mirrored public API routes) affected by a change.
  *
  * Use `'profile'` for profile edits: the professor's name, title and photo render in the site
@@ -66,9 +74,15 @@ export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
   const purgePaths: string[] = [];
   for (const area of areas) {
     if (area === 'profile') {
+      // Next's own invalidation: `('/', 'layout')` drops the root layout and every page nested
+      // under it, so all seven public tabs are covered at the origin by this one call.
       revalidatePath('/', 'layout');
       revalidatePath('/api/profile');
-      purgePaths.push('/', '/api/profile');
+      // Cloudflare purges by explicit file URL, so the subtree semantics above do NOT carry over —
+      // listing only `/` would leave the other tabs served from the edge until their own TTL. The
+      // profile row feeds every tab (the header name/photo on all of them, and since 2026-09-02
+      // the per-tab intro copy on five of them), so every public page URL is named here.
+      purgePaths.push('/api/profile', ...PUBLIC_PAGE_PATHS);
     } else {
       for (const path of AREA_PATHS[area]) revalidatePath(path);
       purgePaths.push(...AREA_PATHS[area]);

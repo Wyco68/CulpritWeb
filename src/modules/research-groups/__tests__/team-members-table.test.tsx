@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TeamMembersTable } from '../ui/team-members-table';
-import type { ResearchGroup } from '../research-group.types';
+import type { ResearchGroupSummary } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 
 const refreshMock = vi.fn();
@@ -12,16 +12,18 @@ const fetchMock = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-const group: ResearchGroup = {
+// A summary, not a full group: this table only reads a group's id and name, so the admin screen
+// hands it the counted form and never fetches the member rows nested inside a group.
+const group: ResearchGroupSummary = {
   id: 'g1',
   name: 'Systems Security Lab',
   description: 'desc',
-  teamMembers: [],
+  memberCount: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
-function renderTable(items: TeamMember[], groups: ResearchGroup[] = [group]) {
+function renderTable(items: TeamMember[], groups: ResearchGroupSummary[] = [group]) {
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
@@ -47,7 +49,7 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: 'Add team member' }));
     await user.type(screen.getByLabelText('Name', { exact: false }), 'Dr. Alex Kim');
     await user.type(screen.getByLabelText('Role', { exact: false }), 'Postdoc');
     await user.selectOptions(screen.getByLabelText('Research group', { exact: false }), 'g1');

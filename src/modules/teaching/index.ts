@@ -19,11 +19,14 @@ export {
 export {
   CV_SECTIONS,
   ABOUT_SECTIONS,
+  RESEARCH_SECTIONS,
   TEACHING_SECTIONS,
   CV_SECTION_LABELS,
   type CvSection,
   type CvEntry,
+  type CvEntryStats,
   type Course,
+  type CourseStats,
   type AuditContext,
 } from './teaching.types';
 
@@ -43,4 +46,5 @@ export { getCvEntryService, getCourseService } from './container';
 
 export { CvEntryList } from './ui/cv-entry-list';
 export { CourseList } from './ui/course-list';
-export { TeachingAdmin } from './ui/teaching-admin';
+export { CoursesAdmin } from './ui/courses-admin';
+export { CvEntriesAdmin, type CvEntriesAdminProps } from './ui/cv-entries-admin';

@@ -21,6 +21,9 @@ import { createTeamMemberSchema, type CreateTeamMemberInput } from '../team-memb
 
 type TeamMemberFormInput = z.input<typeof createTeamMemberSchema>;
 
+/** The select needs an id and a label, nothing else — so a summary or a full group both fit. */
+type GroupOption = Pick<ResearchGroup, 'id' | 'name'>;
+
 async function submitTeamMember(id: string | undefined, input: CreateTeamMemberInput) {
   const response = await fetch(
     id ? `/api/admin/team-members/${id}` : '/api/admin/team-members',
@@ -44,7 +47,7 @@ export function TeamMemberFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   member?: TeamMember;
-  groups: ResearchGroup[];
+  groups: GroupOption[];
 }) {
   const router = useRouter();
   const isEdit = Boolean(member);

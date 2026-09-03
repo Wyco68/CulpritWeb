@@ -6,7 +6,7 @@ import { Pencil, Plus, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/modules/shared/ui/table';
 // Deep import, not the barrel — see research-group-form-dialog.tsx's comment.
-import type { ResearchGroup } from '../research-group.types';
+import type { ResearchGroupSummary } from '../research-group.types';
 import { ResearchGroupFormDialog } from './research-group-form-dialog';
 
 async function deleteGroup(id: string) {
@@ -27,12 +27,14 @@ async function deleteGroup(id: string) {
   if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
 }
 
-export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
+// Takes summaries, not full groups: the only thing this table says about a group's people is how
+// many there are, so it never needs the member rows.
+export function ResearchGroupsTable({ items }: { items: ResearchGroupSummary[] }) {
   const router = useRouter();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<ResearchGroup | undefined>(undefined);
-  const [deleting, setDeleting] = useState<ResearchGroup | undefined>(undefined);
+  const [editing, setEditing] = useState<ResearchGroupSummary | undefined>(undefined);
+  const [deleting, setDeleting] = useState<ResearchGroupSummary | undefined>(undefined);
 
   const deleteMutation = useMutation({
     mutationFn: deleteGroup,
@@ -45,12 +47,14 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
-        title="Research Groups"
+    <div id="groups" className="scroll-mt-24">
+      <FormSection
+        title="Research groups"
+        description="Each group and its description, as shown on the public Team Members tab."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add research group"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -60,7 +64,7 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -81,7 +85,7 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
             {items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                <TableCell className="text-muted-foreground">{item.teamMembers.length}</TableCell>
+                <TableCell className="text-muted-foreground">{item.memberCount}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1.5">
                     <Button
@@ -111,6 +115,7 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <ResearchGroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editing} />
 

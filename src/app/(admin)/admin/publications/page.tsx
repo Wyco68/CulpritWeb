@@ -1,13 +1,34 @@
 import type { Metadata } from 'next';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import { getPublicationService, PublicationsTable } from '@/modules/publications';
+import { AdminScreen } from '../_components/admin-screen';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Admin — Publications' };
 }
 
-export default async function AdminPublicationsPage() {
-  const result = await getPublicationService().list();
-  const items = result.ok ? result.data : [];
+const PROFILE_SECTIONS = [
+  {
+    id: 'intro',
+    title: 'Introduction',
+    description: 'Optional prose above the publication list on the public tab.',
+    fields: ['publicationsIntro'],
+  },
+] as const;
 
-  return <PublicationsTable items={items} />;
+export default async function AdminPublicationsPage() {
+  const [profileResult, result] = await Promise.all([
+    getProfileCached(),
+    getPublicationService().list(),
+  ]);
+
+  return (
+    <AdminScreen title="Publications" intro="Everything on the public Publications tab.">
+      <ProfileFieldsForm
+        profile={profileResult.ok ? profileResult.data : null}
+        sections={PROFILE_SECTIONS}
+      />
+      <PublicationsTable items={result.ok ? result.data : []} />
+    </AdminScreen>
+  );
 }

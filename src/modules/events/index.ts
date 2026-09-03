@@ -11,7 +11,7 @@ export {
   type UpdateEventInput,
 } from './event.schema';
 
-export type { Event, EventTiming, AuditContext } from './event.types';
+export type { Event, EventTiming, EventStats, AuditContext } from './event.types';
 
 export {
   createEventService,
@@ -25,4 +25,5 @@ export type { EventRepository } from './event.repository';
 export { getEventService } from './container';
 
 export { EventList } from './ui/event-list';
+export { PastEventList } from './ui/past-event-list';
 export { EventsTable } from './ui/events-table';

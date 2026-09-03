@@ -11,6 +11,18 @@ export type Publication = {
   updatedAt: Date;
 };
 
+/**
+ * Aggregate counts for the admin dashboard, computed in SQL. Deliberately not derived from
+ * `list()`: the dashboard needs three numbers, not every column of every publication.
+ */
+export type PublicationStats = {
+  total: number;
+  /** One entry per year that actually has publications, ascending. Empty years are not rows. */
+  byYear: { year: number; count: number }[];
+  /** The most recent year with at least one publication, or null when there are none. */
+  latestYear: number | null;
+};
+
 /** Append-only audit context supplied by the service, persisted by the repository. */
 export type AuditContext = {
   actor: string;

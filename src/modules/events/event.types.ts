@@ -19,6 +19,18 @@ export type Event = {
  */
 export type EventTiming = 'upcoming' | 'past';
 
+/**
+ * Aggregate counts for the admin dashboard, computed in SQL against an explicit `now` boundary.
+ * The boundary is the same one `splitByTiming` applies in memory (an event starting exactly now
+ * counts as upcoming), so the dashboard and the public tab can never disagree.
+ */
+export type EventStats = {
+  total: number;
+  upcoming: number;
+  /** When the next upcoming event starts, or null when nothing is ahead. */
+  nextEventDate: Date | null;
+};
+
 /** Append-only audit context supplied by the service, persisted by the repository. */
 export type AuditContext = {
   actor: string;

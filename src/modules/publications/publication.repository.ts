@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, Publication as PrismaPublication } from '@prisma/client';
-import type { AuditContext, Publication } from './publication.types';
+import type { AuditContext, Publication, PublicationStats } from './publication.types';
 import type { CreatePublicationInput, UpdatePublicationInput } from './publication.schema';
 
 // The ONLY place Prisma is used for publication data. No business rules here — the service
@@ -13,6 +13,8 @@ export interface PublicationRepository {
   findById(id: string): Promise<Publication | null>;
   /** Ordered by year desc, then createdAt desc (most recent first). */
   list(): Promise<Publication[]>;
+  /** Counts only — no publication rows leave the database. */
+  stats(): Promise<PublicationStats>;
   createWithAudit(input: {
     data: CreatePublicationData;
     audit: AuditContext;
@@ -59,6 +61,24 @@ export class PrismaPublicationRepository implements PublicationRepository {
       orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
     });
     return rows.map(toDomain);
+  }
+
+  async stats(): Promise<PublicationStats> {
+    // Batched into one round trip: a total, and a count per year ascending. The dashboard fills
+    // the empty years in between itself — SQL has no rows for a year nothing was published in.
+    const [total, byYear] = await prisma.$transaction([
+      prisma.publication.count(),
+      prisma.publication.groupBy({
+        by: ['year'],
+        _count: true,
+        orderBy: { year: 'asc' },
+      }),
+    ]);
+    return {
+      total,
+      byYear: byYear.map((row) => ({ year: row.year, count: row._count })),
+      latestYear: byYear.at(-1)?.year ?? null,
+    };
   }
 
   async createWithAudit(input: {

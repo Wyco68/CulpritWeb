@@ -8,7 +8,7 @@ export {
   type UpdateResearchInput,
 } from './research.schema';
 
-export type { Research, AuditContext } from './research.types';
+export type { Research, ResearchStats, AuditContext } from './research.types';
 
 export {
   createResearchService,

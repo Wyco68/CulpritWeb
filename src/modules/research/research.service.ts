@@ -2,7 +2,7 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { ResearchRepository } from './research.repository';
-import type { AuditContext, Research } from './research.types';
+import type { AuditContext, Research, ResearchStats } from './research.types';
 import type { CreateResearchInput, UpdateResearchInput } from './research.schema';
 
 export type ResearchServiceDeps = {
@@ -12,6 +12,8 @@ export type ResearchServiceDeps = {
 
 export interface ResearchService {
   list(): Promise<Result<Research[]>>;
+  /** Headline counts for the dashboard, aggregated in SQL. */
+  stats(): Promise<Result<ResearchStats>>;
   create(input: CreateResearchInput, actor: string): Promise<Result<Research>>;
   update(id: string, input: UpdateResearchInput, actor: string): Promise<Result<Research>>;
   /** Returns the removed record (pre-delete snapshot) for confirmation. */
@@ -26,6 +28,14 @@ export function createResearchService(deps: ResearchServiceDeps): ResearchServic
     async list() {
       try {
         return ok(await repository.list());
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats() {
+      try {
+        return ok(await repository.stats());
       } catch (error) {
         return err(toAppError(error));
       }

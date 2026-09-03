@@ -6,7 +6,7 @@ import { CalendarDays, ImageIcon, Pencil, Plus, Trash2, Video } from 'lucide-rea
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -34,11 +34,14 @@ async function deleteEvent(id: string) {
 
 // Pinned to the institution's zone for the same reason the public list is — the admin table and
 // the public page must not disagree about what day an event is on.
+// `timeStyle` can't be combined with explicit date component options (day/month/year) — Intl
+// throws "Invalid option : option" if you try. Spell the time out as hour/minute instead.
 const dateTimeFormatter = new Intl.DateTimeFormat('en', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
-  timeStyle: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
@@ -64,12 +67,14 @@ export function EventsTable({ items }: { items: Event[] }) {
   const now = Date.now();
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
+    <div id="events" className="scroll-mt-24">
+      <FormSection
         title="Events"
+        description="Talks, workshops and visits. Upcoming and past are split by date on the public tab."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add event"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -79,7 +84,7 @@ export function EventsTable({ items }: { items: Event[] }) {
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -159,6 +164,7 @@ export function EventsTable({ items }: { items: Event[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} />
 

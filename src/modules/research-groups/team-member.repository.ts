@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
 import type { Prisma, TeamMember as PrismaTeamMember } from '@prisma/client';
-import type { AuditContext, TeamMember } from './team-member.types';
+import type { AuditContext, TeamMember, TeamMemberStats } from './team-member.types';
 import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
 
 // The ONLY place Prisma is used for team-member data. No business rules here — the service
@@ -23,6 +23,8 @@ export interface TeamMemberRepository {
   findById(id: string): Promise<TeamMember | null>;
   /** Ordered by sortOrder asc; optionally filtered to one research group. */
   list(filter?: ListTeamMembersFilter): Promise<TeamMember[]>;
+  /** Headline counts only — no rows leave the database. */
+  stats(): Promise<TeamMemberStats>;
   createWithAudit(input: {
     data: CreateTeamMemberData;
     audit: AuditContext;
@@ -75,6 +77,15 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
 
     const rows = await prisma.teamMember.findMany({ where, orderBy: { sortOrder: 'asc' } });
     return rows.map(toDomain);
+  }
+
+  async stats(): Promise<TeamMemberStats> {
+    // Batched into one round trip. Both are index-only counts; neither materializes a row.
+    const [total, ungrouped] = await prisma.$transaction([
+      prisma.teamMember.count(),
+      prisma.teamMember.count({ where: { researchGroupId: null } }),
+    ]);
+    return { total, ungrouped };
   }
 
   async createWithAudit(input: {

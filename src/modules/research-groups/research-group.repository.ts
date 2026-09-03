@@ -4,7 +4,7 @@ import type {
   ResearchGroup as PrismaResearchGroup,
   TeamMember as PrismaTeamMember,
 } from '@prisma/client';
-import type { AuditContext, ResearchGroup } from './research-group.types';
+import type { AuditContext, ResearchGroup, ResearchGroupSummary } from './research-group.types';
 import type { CreateResearchGroupInput, UpdateResearchGroupInput } from './research-group.schema';
 import { toDomain as toTeamMemberDomain } from './team-member.repository';
 
@@ -22,6 +22,11 @@ export interface ResearchGroupRepository {
   findById(id: string): Promise<ResearchGroup | null>;
   /** Ordered by createdAt asc; each group includes its team members ordered by sortOrder. */
   list(): Promise<ResearchGroup[]>;
+  /**
+   * Same order as `list()`, but each group carries only how many members it has. For callers that
+   * render a group's size rather than its people — the member rows never cross the wire.
+   */
+  listWithMemberCounts(): Promise<ResearchGroupSummary[]>;
   createWithAudit(input: {
     data: CreateResearchGroupData;
     audit: AuditContext;
@@ -69,6 +74,29 @@ export class PrismaResearchGroupRepository implements ResearchGroupRepository {
       include: teamMembersInclude,
     });
     return rows.map(toDomain);
+  }
+
+  async listWithMemberCounts(): Promise<ResearchGroupSummary[]> {
+    // `_count` is a correlated COUNT in the same statement — one row per group, no member rows.
+    const rows = await prisma.researchGroup.findMany({
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { teamMembers: true } },
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      memberCount: row._count.teamMembers,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
   }
 
   async createWithAudit(input: {

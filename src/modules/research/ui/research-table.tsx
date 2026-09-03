@@ -6,9 +6,9 @@ import { Pencil, Plus, Trash2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import {
   Table,
   TableBody,
@@ -45,12 +45,14 @@ export function ResearchTable({ items }: { items: Research[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
-        title="Research"
+    <div id="works" className="scroll-mt-24">
+      <FormSection
+        title="Research works"
+        description="The list on the public Research tab, ordered by the sort order below."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add research work"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -60,9 +62,8 @@ export function ResearchTable({ items }: { items: Research[] }) {
             Add
           </Button>
         }
-      />
-
-      {items.length === 0 ? (
+      >
+        {items.length === 0 ? (
         <EmptyState
           icon={FlaskConical}
           title="No research works yet."
@@ -81,9 +82,17 @@ export function ResearchTable({ items }: { items: Research[] }) {
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium text-foreground">{item.title}</TableCell>
-                <TableCell className="text-muted-foreground">{item.area}</TableCell>
-                <TableCell className="text-muted-foreground">{item.sortOrder}</TableCell>
+                <TableCell className="min-w-0 font-medium text-foreground">
+                  {/* User-entered text: bounded and wrapped, or one long unbroken title stretches
+                      the table past its container. */}
+                  <span className="line-clamp-2 block max-w-[46ch] break-words">{item.title}</span>
+                </TableCell>
+                <TableCell className="min-w-0 text-muted-foreground">
+                  <span className="block max-w-[22ch] truncate" title={item.area}>
+                    {item.area}
+                  </span>
+                </TableCell>
+                <TableCell className="tabular text-muted-foreground">{item.sortOrder}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1.5">
                     <Button
@@ -113,6 +122,8 @@ export function ResearchTable({ items }: { items: Research[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
+
 
       <ResearchFormDialog open={formOpen} onOpenChange={setFormOpen} research={editing} />
 

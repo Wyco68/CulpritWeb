@@ -7,7 +7,12 @@ import { toast } from 'sonner';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
 import { Label } from '@/modules/shared/ui/label';
-import type { UpdateProfileInput } from '../profile.schema';
+/**
+ * Only the two keys this control reads. Deliberately narrower than any one form's value type:
+ * the field is mounted by `ProfileFieldsForm`, whose shape depends on which slice of the profile
+ * the surrounding admin screen owns.
+ */
+type PhotoFormValues = { photoUrl?: string | null; fullName?: string };
 
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 
@@ -21,13 +26,13 @@ async function uploadPhoto(file: File): Promise<string> {
 }
 
 /**
- * Replaces pasting a photo URL: the admin picks a file, it uploads immediately to Supabase
- * Storage, and the resulting URL is written into the form's `photoUrl` field — the admin never
- * sees or types a URL. Upload happens out-of-band from the surrounding profile form's own submit;
+ * Replaces pasting a photo URL: the admin picks a file, it uploads immediately to object storage,
+ * and the resulting URL is written into the form's `photoUrl` field — the admin never sees or
+ * types a URL. Upload happens out-of-band from the surrounding profile form's own submit;
  * `photoUrl` just becomes part of the next regular save.
  */
 export function PhotoUploadField() {
-  const { watch, setValue } = useFormContext<UpdateProfileInput>();
+  const { watch, setValue } = useFormContext<PhotoFormValues>();
   const photoUrl = watch('photoUrl');
   const fullName = watch('fullName') || '';
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +94,12 @@ export function PhotoUploadField() {
                 variant="outline"
                 size="sm"
                 disabled={uploading}
-                onClick={() => setValue('photoUrl', undefined, { shouldDirty: true, shouldValidate: true })}
+                onClick={() =>
+                  // `null`, not `undefined`: the PATCH body is JSON, and an undefined key would
+                  // simply vanish from it — which the API reads as "leave the column alone", so
+                  // removing a photo would silently do nothing.
+                  setValue('photoUrl', null, { shouldDirty: true, shouldValidate: true })
+                }
               >
                 <X className="size-4" aria-hidden="true" />
                 Remove

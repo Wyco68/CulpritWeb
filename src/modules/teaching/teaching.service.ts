@@ -3,7 +3,14 @@ import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { CvEntryRepository } from './cv-entry.repository';
 import type { CourseRepository } from './course.repository';
-import type { AuditContext, Course, CvEntry, CvSection } from './teaching.types';
+import type {
+  AuditContext,
+  Course,
+  CourseStats,
+  CvEntry,
+  CvEntryStats,
+  CvSection,
+} from './teaching.types';
 import type {
   CreateCourseInput,
   CreateCvEntryInput,
@@ -22,6 +29,8 @@ export type CvEntryServiceDeps = {
 
 export interface CvEntryService {
   list(): Promise<Result<CvEntry[]>>;
+  /** Headline counts for the dashboard, aggregated in SQL. */
+  stats(): Promise<Result<CvEntryStats>>;
   listBySections(sections: readonly CvSection[]): Promise<Result<CvEntry[]>>;
   create(input: CreateCvEntryInput, actor: string): Promise<Result<CvEntry>>;
   update(id: string, input: UpdateCvEntryInput, actor: string): Promise<Result<CvEntry>>;
@@ -45,6 +54,14 @@ export function createCvEntryService(deps: CvEntryServiceDeps): CvEntryService {
     async listBySections(sections) {
       try {
         return ok(await repository.listBySections(sections));
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats() {
+      try {
+        return ok(await repository.stats());
       } catch (error) {
         return err(toAppError(error));
       }
@@ -110,6 +127,8 @@ export type CourseServiceDeps = {
 
 export interface CourseService {
   list(): Promise<Result<Course[]>>;
+  /** Headline counts for the dashboard, aggregated in SQL. */
+  stats(): Promise<Result<CourseStats>>;
   create(input: CreateCourseInput, actor: string): Promise<Result<Course>>;
   update(id: string, input: UpdateCourseInput, actor: string): Promise<Result<Course>>;
   remove(id: string, actor: string): Promise<Result<Course>>;
@@ -123,6 +142,14 @@ export function createCourseService(deps: CourseServiceDeps): CourseService {
     async list() {
       try {
         return ok(await repository.list());
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats() {
+      try {
+        return ok(await repository.stats());
       } catch (error) {
         return err(toAppError(error));
       }

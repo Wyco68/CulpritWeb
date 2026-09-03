@@ -2,7 +2,7 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { PublicationRepository } from './publication.repository';
-import type { AuditContext, Publication } from './publication.types';
+import type { AuditContext, Publication, PublicationStats } from './publication.types';
 import type { CreatePublicationInput, UpdatePublicationInput } from './publication.schema';
 
 export type PublicationServiceDeps = {
@@ -12,6 +12,8 @@ export type PublicationServiceDeps = {
 
 export interface PublicationService {
   list(): Promise<Result<Publication[]>>;
+  /** Headline counts for the dashboard, aggregated in SQL. */
+  stats(): Promise<Result<PublicationStats>>;
   create(input: CreatePublicationInput, actor: string): Promise<Result<Publication>>;
   update(id: string, input: UpdatePublicationInput, actor: string): Promise<Result<Publication>>;
   /** Returns the removed record (pre-delete snapshot) for confirmation. */
@@ -26,6 +28,14 @@ export function createPublicationService(deps: PublicationServiceDeps): Publicat
     async list() {
       try {
         return ok(await repository.list());
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats() {
+      try {
+        return ok(await repository.stats());
       } catch (error) {
         return err(toAppError(error));
       }

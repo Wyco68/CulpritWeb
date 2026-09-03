@@ -1,7 +1,13 @@
 // profile module — singleton professor profile with structured biography fields.
-// getProfile() (public) / updateProfile() (admin, audited).
+// getProfile() (public) / updateProfile() (admin, whole document) / patchProfile() (admin,
+// per-screen partial write). Both writes are audited.
 
-export { updateProfileSchema, type UpdateProfileInput } from './profile.schema';
+export {
+  updateProfileSchema,
+  type UpdateProfileInput,
+  patchProfileSchema,
+  type PatchProfileInput,
+} from './profile.schema';
 
 export type { Profile, AuditContext } from './profile.types';
 
@@ -16,4 +22,9 @@ export type { ProfileRepository } from './profile.repository';
 export { getProfileService, getProfileCached } from './container';
 
 export { ProfileLinks } from './ui/profile-links';
-export { ProfileForm } from './ui/profile-form';
+export {
+  ProfileFieldsForm,
+  PROFILE_FIELD_KEYS,
+  type ProfileFieldKey,
+  type ProfileFormSection,
+} from './ui/profile-fields-form';

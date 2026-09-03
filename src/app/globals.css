@@ -9,23 +9,42 @@
    the chosen hue. Retuning any pair here means re-checking it against WCAG 2.1 AA. */
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(222 15% 12%); /* 16.91:1 on background */
+  /* One fixed light look — there is no dark theme and no theme switching (see the header comment).
+     Declaring it means the UA renders its own surfaces to match: scrollbar track and thumb, the
+     spinner/calendar/file-picker internals of native form controls, and the default canvas before
+     our own `body` background paints. Without it the browser assumes light anyway on most setups,
+     but a visitor whose OS is dark gets dark-rendered native widgets sitting on our paper page. */
+  color-scheme: light;
+
+  /* A hair off pure white, same hue as the masthead band, so the page ground and the cyan band
+     read as one family instead of a cool band dropped onto a neutral page. Still reads as white —
+     rgb(251 253 253), 2-4 points off 255 — not an off-white/grey. */
+  --background: hsl(190 40% 99%);
+  --foreground: hsl(222 15% 12%); /* 16.54:1 on background */
   --muted: hsl(220 14% 96%);
   --muted-foreground: hsl(220 9% 42%); /* 5.61:1 on background */
   --border: hsl(220 13% 91%);
   --accent: hsl(190 90% 30%); /* 4.97:1 on background */
   --accent-foreground: hsl(0 0% 100%); /* 4.97:1 on accent */
   /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
-     element distinct from the light page background used everywhere else. */
-  --masthead: hsl(190 85% 88%);
-  --masthead-foreground: hsl(215 59% 15%); /* 13.20:1 on the band */
+     element distinct from the light page background used everywhere else. Same hue as the
+     original 190/85/88, lifted a touch brighter/lighter on request — contrast against both
+     --masthead-foreground and --accent-on-band only improves at this lightness, so no other token
+     needed to move with it. */
+  --masthead: hsl(190 90% 92%);
+  --masthead-foreground: hsl(215 59% 15%); /* 14.08:1 on the band */
 
   /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.13:1
      against the cyan band — below the 4.5:1 AA threshold for normal-size text, which the
-     professor's title line on the masthead is. This sibling measures 5.18:1 there. Text sitting
+     professor's title line on the masthead is. This sibling measures 5.52:1 there. Text sitting
      ON the band uses this; everything on the white page keeps --accent. */
   --accent-on-band: hsl(190 90% 26%);
+
+  /* The portrait mount on the masthead. The band is a light cyan, so the old `--background`
+     mount (a near-white card) read as a hard white ring cut out of the band rather than as a
+     mounted print. Four points darker than the band and the same hue: the mount still lifts the
+     photo off the surface, but it belongs to it. */
+  --masthead-mount: hsl(190 90% 88%);
 
   /* --- Form controls --------------------------------------------------------------------- */
   /* Inputs used to be white-on-white with a 91%-light border, measuring 1.24:1 against the page.
@@ -60,6 +79,13 @@
   /* No linear, no ease-in-out. Weighted curves that decelerate like something with mass. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* --- Anchor offset -------------------------------------------------------------------- */
+  /* How far below the top of the viewport an anchor target comes to rest. The in-page section
+     nav (modules/shared/ui/section-nav.tsx) is `sticky top-0`, so without this a heading jumped
+     to via `/research#works` lands underneath the bar that just took you there. Sized as the
+     bar's own height (~2.75rem) plus a line of breathing room. */
+  --anchor-offset: 4.5rem;
 }
 
 @theme inline {
@@ -73,6 +99,7 @@
   --color-accent-on-band: var(--accent-on-band);
   --color-masthead: var(--masthead);
   --color-masthead-foreground: var(--masthead-foreground);
+  --color-masthead-mount: var(--masthead-mount);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
@@ -110,6 +137,37 @@ html {
      that on each navigation. That is the shake: not an animation, just the layout being measured
      against two different widths. */
   scrollbar-gutter: stable;
+
+  /* Applies to every scroll the browser performs on this scroller, not just hash navigation:
+     following an anchor, restoring position on back/forward, and — the one that is easy to miss —
+     scrolling a newly focused element into view when tabbing. The sticky section nav would
+     otherwise sit on top of the control that just took focus, which is a WCAG 2.1 AA §2.4.11
+     (Focus Not Obscured) failure, not just an aesthetic one. `scroll-margin-top` on the targets
+     themselves is below; both are needed, since a target can opt into a different offset. */
+  scroll-padding-top: var(--anchor-offset);
+
+  /* Touch feedback, chosen rather than inherited. The UA default is a translucent black wash over
+     the whole tapped box, which on a light page reads as the element briefly turning grey. A tint
+     of the accent at low alpha says "this responded" in the palette's own voice. Not `transparent`:
+     removing it entirely leaves a touch user with no press feedback at all, since hover and
+     focus-visible styling never fires for them. */
+  -webkit-tap-highlight-color: hsl(190 90% 30% / 0.14);
+}
+
+/* Anchor targets clear the sticky section nav. Scoped to `[id]` rather than a bespoke class so a
+   target added later cannot forget it — the property is inert until something actually scrolls to
+   the element, so applying it broadly costs nothing. */
+[id] {
+  scroll-margin-top: var(--anchor-offset);
+}
+
+/* Kills the ~300ms wait a mobile browser spends after a tap deciding whether a second tap is
+   coming (double-tap-to-zoom). `manipulation` keeps panning and pinch-zoom — the accessibility-
+   relevant gestures — and drops only the double-tap gesture, so nothing a low-vision user relies
+   on is taken away. Applied to controls only, never to the page, so text can still be
+   double-tap-zoomed. */
+:where(a[href], button, [role='button'], label, select, summary, [type='checkbox'], [type='radio']) {
+  touch-action: manipulation;
 }
 
 body {

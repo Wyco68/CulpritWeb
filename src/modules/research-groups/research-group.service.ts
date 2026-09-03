@@ -2,7 +2,7 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { ResearchGroupRepository } from './research-group.repository';
-import type { AuditContext, ResearchGroup } from './research-group.types';
+import type { AuditContext, ResearchGroup, ResearchGroupSummary } from './research-group.types';
 import type { CreateResearchGroupInput, UpdateResearchGroupInput } from './research-group.schema';
 
 export type ResearchGroupServiceDeps = {
@@ -12,6 +12,8 @@ export type ResearchGroupServiceDeps = {
 
 export interface ResearchGroupService {
   list(): Promise<Result<ResearchGroup[]>>;
+  /** Groups with a member count instead of the member rows — for screens that render group size. */
+  listWithMemberCounts(): Promise<Result<ResearchGroupSummary[]>>;
   create(input: CreateResearchGroupInput, actor: string): Promise<Result<ResearchGroup>>;
   update(
     id: string,
@@ -30,6 +32,14 @@ export function createResearchGroupService(deps: ResearchGroupServiceDeps): Rese
     async list() {
       try {
         return ok(await repository.list());
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async listWithMemberCounts() {
+      try {
+        return ok(await repository.listWithMemberCounts());
       } catch (error) {
         return err(toAppError(error));
       }

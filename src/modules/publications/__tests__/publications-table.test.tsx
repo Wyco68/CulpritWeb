@@ -37,7 +37,7 @@ describe('PublicationsTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: 'Add publication' }));
     await user.type(screen.getByLabelText('Title', { exact: false }), 'A paper');
     await user.type(screen.getByLabelText('Authors', { exact: false }), 'A. Author');
     await user.type(screen.getByLabelText('Venue', { exact: false }), 'USENIX');

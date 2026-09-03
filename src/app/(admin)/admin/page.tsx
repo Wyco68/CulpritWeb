@@ -4,7 +4,7 @@ import { getProfileCached } from '@/modules/profile';
 import { getResearchService } from '@/modules/research';
 import { getPublicationService } from '@/modules/publications';
 import { getResearchGroupService, getTeamMemberService } from '@/modules/research-groups';
-import { getEventService, splitByTiming } from '@/modules/events';
+import { getEventService } from '@/modules/events';
 import { ABOUT_SECTIONS, getCourseService, getCvEntryService } from '@/modules/teaching';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
@@ -25,9 +25,14 @@ export async function generateMetadata(): Promise<Metadata> {
 // is a meter, and a lone number is just a number. Each is a single series in one hue, so length
 // carries the magnitude and colour carries nothing.
 //
-// Reads go through each module's service (a Server Component read, no client round trip). The
-// aggregation is done here in memory rather than as new repository queries: these are tens of
-// rows, not thousands, and it keeps Prisma where it belongs.
+// Reads go through each module's service (a Server Component read, no client round trip). Every
+// number here is an aggregate computed in SQL — a `stats()` call per module, plus research groups
+// listed with a member count instead of their member rows. This page used to `list()` eight tables
+// in full and reduce them with `.length`, pulling every column of every row across the wire to
+// render nine numbers and three charts.
+//
+// What stays in this file is the shaping that is a property of the chart rather than of the data:
+// filling the empty years between the populated ones, and relabelling grouped counts.
 
 /**
  * What a complete public About tab needs. Since ADR-012 this is two separate things: the profile's
@@ -37,13 +42,17 @@ export async function generateMetadata(): Promise<Metadata> {
 const PROFILE_FIELDS = ['photoUrl', 'bio', 'researchStatement', 'positionAffiliation'] as const;
 const ABOUT_TOTAL = PROFILE_FIELDS.length + ABOUT_SECTIONS.length;
 
-/** Counts per year, keeping the empty years in between — a gap in output is itself information. */
-function toYearSeries(years: number[]): YearDatum[] {
-  if (years.length === 0) return [];
-  const counts = new Map<number, number>();
-  for (const year of years) counts.set(year, (counts.get(year) ?? 0) + 1);
-  const min = Math.min(...years);
-  const max = Math.max(...years);
+/**
+ * Restores the empty years between the populated ones — a gap in output is itself information, and
+ * `GROUP BY year` has no row for a year nothing was published in. This stays in the page because
+ * it describes the chart, not the data.
+ */
+function toYearSeries(byYear: readonly { year: number; count: number }[]): YearDatum[] {
+  if (byYear.length === 0) return [];
+  const counts = new Map(byYear.map(({ year, count }) => [year, count]));
+  // The repository returns years ascending, so the extremes are the ends of the array.
+  const min = byYear[0].year;
+  const max = byYear[byYear.length - 1].year;
   // Bound the span: one mistyped year would otherwise generate thousands of empty slots.
   const from = Math.max(min, max - 19);
   return Array.from({ length: max - from + 1 }, (_, index) => ({
@@ -52,64 +61,55 @@ function toYearSeries(years: number[]): YearDatum[] {
   }));
 }
 
-function tally(values: string[]): { label: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
-  return [...counts].map(([label, count]) => ({ label, count }));
-}
-
 export default async function AdminDashboardPage() {
   const [profileResult, research, publications, groups, teamMembers, events, courses, cvEntries] =
     await Promise.all([
       getProfileCached(),
-      getResearchService().list(),
-      getPublicationService().list(),
-      getResearchGroupService().list(),
-      getTeamMemberService().list(),
-      getEventService().list(),
-      getCourseService().list(),
-      getCvEntryService().list(),
+      getResearchService().stats(),
+      getPublicationService().stats(),
+      getResearchGroupService().listWithMemberCounts(),
+      getTeamMemberService().stats(),
+      // No `now` argument: the upcoming boundary is evaluated at render time against the same
+      // clock the public Events tab hands splitByTiming, so the two can never disagree.
+      getEventService().stats(),
+      getCourseService().stats(),
+      getCvEntryService().stats(),
     ]);
 
+  // A failed read degrades to zeroes, which hides the panel — exactly what the empty list did.
   const profile = profileResult.ok ? profileResult.data : null;
-  const researchItems = research.ok ? research.data : [];
-  const publicationItems = publications.ok ? publications.data : [];
+  const researchStats = research.ok ? research.data : { total: 0, byArea: [] };
+  const publicationStats = publications.ok
+    ? publications.data
+    : { total: 0, byYear: [], latestYear: null };
   const groupItems = groups.ok ? groups.data : [];
-  const memberItems = teamMembers.ok ? teamMembers.data : [];
-  const eventItems = events.ok ? events.data : [];
+  const memberStats = teamMembers.ok ? teamMembers.data : { total: 0, ungrouped: 0 };
+  const eventStats = events.ok ? events.data : { total: 0, upcoming: 0, nextEventDate: null };
+  const courseStats = courses.ok ? courses.data : { total: 0 };
+  const cvEntryStats = cvEntries.ok ? cvEntries.data : { total: 0, sections: [] };
 
-  const years = toYearSeries(publicationItems.map((item) => item.year));
-  const byArea = tally(researchItems.map((item) => item.area));
+  const years = toYearSeries(publicationStats.byYear);
+  const byArea = researchStats.byArea.map(({ area, count }) => ({ label: area, count }));
 
-  const byGroup = groupItems.map((group) => ({
-    label: group.name,
-    count: group.teamMembers.length,
-  }));
-  const ungrouped = memberItems.filter((member) => member.researchGroupId === null).length;
-  if (ungrouped > 0) byGroup.push({ label: 'No group', count: ungrouped });
-
-  // Same split the public tab uses, so the two never disagree about what counts as upcoming.
-  const { upcoming } = splitByTiming(eventItems);
-
-  const courseItems = courses.ok ? courses.data : [];
-  const cvEntryItems = cvEntries.ok ? cvEntries.data : [];
+  const byGroup = groupItems.map((group) => ({ label: group.name, count: group.memberCount }));
+  if (memberStats.ungrouped > 0) byGroup.push({ label: 'No group', count: memberStats.ungrouped });
 
   const filledFields = profile
     ? PROFILE_FIELDS.filter((field) => Boolean(profile[field])).length
     : 0;
+  const populatedSections = new Set<string>(cvEntryStats.sections);
   const filledSections =
-    filledFields + ABOUT_SECTIONS.filter((s) => cvEntryItems.some((e) => e.section === s)).length;
+    filledFields + ABOUT_SECTIONS.filter((section) => populatedSections.has(section)).length;
 
-  const nextDate = upcoming[0]
+  const nextDate = eventStats.nextEventDate
     ? new Intl.DateTimeFormat('en', {
         day: '2-digit',
         month: 'short',
         timeZone: INSTITUTION_TIME_ZONE,
-      }).format(upcoming[0].eventDate)
+      }).format(eventStats.nextEventDate)
     : null;
 
-  const latestYear =
-    publicationItems.length > 0 ? Math.max(...publicationItems.map((item) => item.year)) : null;
+  const latestYear = publicationStats.latestYear;
 
   return (
     <div className="flex flex-col gap-12">
@@ -118,19 +118,19 @@ export default async function AdminDashboardPage() {
       {/* Headline counts. A number with a label is the right form for a single current value — a
           one-bar chart would say the same thing with more ink. */}
       <dl className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-        <Figure href="/admin/publications" label="Publications" value={publicationItems.length} />
-        <Figure href="/admin/research" label="Research" value={researchItems.length} />
-        <Figure href="/admin/team-members" label="People" value={memberItems.length} />
+        <Figure href="/admin/publications" label="Publications" value={publicationStats.total} />
+        <Figure href="/admin/research" label="Research" value={researchStats.total} />
+        <Figure href="/admin/team" label="People" value={memberStats.total} />
         <Figure
           href="/admin/teaching"
           label="Courses"
-          value={courseItems.length}
-          note={cvEntryItems.length > 0 ? `${cvEntryItems.length} CV entries` : undefined}
+          value={courseStats.total}
+          note={cvEntryStats.total > 0 ? `${cvEntryStats.total} CV entries` : undefined}
         />
         <Figure
           href="/admin/events"
           label="Upcoming"
-          value={upcoming.length}
+          value={eventStats.upcoming}
           note={nextDate ? `next ${nextDate}` : undefined}
         />
       </dl>
@@ -163,9 +163,9 @@ export default async function AdminDashboardPage() {
 
         {/* Every event is public now — there is no visibility flag to report on — so the useful
             ratio here is how much of the events list is still ahead rather than already archive. */}
-        {eventItems.length > 0 && (
-          <Panel title="Events still to come" note={`of ${eventItems.length} total`}>
-            <CompletenessMeter filled={upcoming.length} total={eventItems.length} />
+        {eventStats.total > 0 && (
+          <Panel title="Events still to come" note={`of ${eventStats.total} total`}>
+            <CompletenessMeter filled={eventStats.upcoming} total={eventStats.total} />
           </Panel>
         )}
       </div>
@@ -191,7 +191,8 @@ function Figure({
       <dd className="mt-1">
         <Link
           href={href}
-          className="tabular rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          aria-label={`${label}: ${value}`}
+          className="tabular inline-block rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
           {value}
         </Link>

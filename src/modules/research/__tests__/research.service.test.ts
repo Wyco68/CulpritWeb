@@ -21,6 +21,16 @@ class FakeRepository implements ResearchRepository {
     return [...this.store.values()].sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
+  // Deliberately the exact reduction the admin dashboard used to run in memory over `list()`:
+  // a Map keyed by area, in first-appearance order. The Prisma implementation has to produce the
+  // same numbers in the same order from `GROUP BY area ORDER BY MIN(sort_order)`.
+  async stats() {
+    const rows = await this.list();
+    const counts = new Map<string, number>();
+    for (const row of rows) counts.set(row.area, (counts.get(row.area) ?? 0) + 1);
+    return { total: rows.length, byArea: [...counts].map(([area, count]) => ({ area, count })) };
+  }
+
   async createWithAudit(input: {
     data: Partial<Research>;
     audit: AuditContext;
@@ -142,5 +152,54 @@ describe('research service', () => {
     const result = await service.remove('missing', 'admin:1');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe('not_found');
+  });
+
+  it('stats() counts by area in the admin arrangement, matching the old in-memory tally', async () => {
+    const { repository, service } = build();
+    const seed = (id: string, area: string, sortOrder: number) =>
+      repository.seed({
+        id,
+        title: id,
+        summary: 's',
+        area,
+        link: null,
+        sortOrder,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    seed('c', 'formal methods', 3);
+    seed('a', 'malware', 1);
+    seed('d', 'malware', 4);
+    seed('b', 'privacy', 2);
+
+    const result = await service.stats();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // Areas ordered by where they first appear in list() (sortOrder asc), not alphabetically.
+    expect(result.data).toEqual({
+      total: 4,
+      byArea: [
+        { area: 'malware', count: 2 },
+        { area: 'privacy', count: 1 },
+        { area: 'formal methods', count: 1 },
+      ],
+    });
+
+    // Identical to reducing the full list in memory, which is what the dashboard used to do.
+    const rows = await repository.list();
+    const tally = new Map<string, number>();
+    for (const row of rows) tally.set(row.area, (tally.get(row.area) ?? 0) + 1);
+    expect(result.data.byArea).toEqual([...tally].map(([area, count]) => ({ area, count })));
+    expect(result.data.total).toBe(rows.length);
+  });
+
+  it('stats() maps a repository failure onto the error channel', async () => {
+    const { repository, service } = build();
+    repository.stats = async () => {
+      throw new Error('connection lost');
+    };
+    const result = await service.stats();
+    expect(result.ok).toBe(false);
   });
 });

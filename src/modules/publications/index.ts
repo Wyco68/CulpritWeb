@@ -8,7 +8,7 @@ export {
   type UpdatePublicationInput,
 } from './publication.schema';
 
-export type { Publication, AuditContext } from './publication.types';
+export type { Publication, PublicationStats, AuditContext } from './publication.types';
 
 export {
   createPublicationService,

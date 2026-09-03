@@ -51,7 +51,7 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: 'Add research work' }));
     await user.type(screen.getByLabelText('Title', { exact: false }), 'New work');
     await user.type(screen.getByLabelText('Area', { exact: false }), 'crypto');
     await user.type(screen.getByLabelText('Summary', { exact: false }), 'A summary');

@@ -2,7 +2,7 @@ import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { EventRepository } from './event.repository';
-import type { AuditContext, Event } from './event.types';
+import type { AuditContext, Event, EventStats } from './event.types';
 import type { CreateEventInput, UpdateEventInput } from './event.schema';
 
 // Business layer for Events. An event is plain published content: no status, no lifecycle, no
@@ -18,6 +18,11 @@ export type EventServiceDeps = {
 export interface EventService {
   /** Every event, newest first. */
   list(): Promise<Result<Event[]>>;
+  /**
+   * Headline counts for the dashboard, aggregated in SQL. `now` is the upcoming/past boundary and
+   * defaults to the current clock, exactly like `splitByTiming` — pass one only to pin it in tests.
+   */
+  stats(now?: Date): Promise<Result<EventStats>>;
   create(input: CreateEventInput, actor: string): Promise<Result<Event>>;
   update(id: string, input: UpdateEventInput, actor: string): Promise<Result<Event>>;
   /** Returns the removed record (pre-delete snapshot) for confirmation. */
@@ -32,6 +37,14 @@ export function createEventService(deps: EventServiceDeps): EventService {
     async list() {
       try {
         return ok(await repository.list());
+      } catch (error) {
+        return err(toAppError(error));
+      }
+    },
+
+    async stats(now = new Date()) {
+      try {
+        return ok(await repository.stats(now));
       } catch (error) {
         return err(toAppError(error));
       }

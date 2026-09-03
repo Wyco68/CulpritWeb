@@ -15,6 +15,15 @@ export type Profile = {
   researchStatement: string | null;
   linkedinUrl: string | null;
   googleScholarUrl: string | null;
+  /** Scheduling link embedded by the public Make Appointment tab (embed-only, never called server-side). */
+  calendlyUrl: string | null;
+  // Standfirst prose for the five public tabs that previously had no editable copy at all.
+  // Null means "the page keeps its hardcoded default" — see prisma/schema.prisma.
+  publicationsIntro: string | null;
+  teachingIntro: string | null;
+  teamIntro: string | null;
+  eventsIntro: string | null;
+  appointmentIntro: string | null;
   updatedAt: Date;
 };
 
