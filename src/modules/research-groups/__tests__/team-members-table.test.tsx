@@ -47,7 +47,7 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: 'Add team member' }));
     await user.type(screen.getByLabelText('Name', { exact: false }), 'Dr. Alex Kim');
     await user.type(screen.getByLabelText('Role', { exact: false }), 'Postdoc');
     await user.selectOptions(screen.getByLabelText('Research group', { exact: false }), 'g1');

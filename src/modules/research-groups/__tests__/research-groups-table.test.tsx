@@ -37,7 +37,7 @@ describe('ResearchGroupsTable', () => {
     const user = userEvent.setup();
     renderTable([]);
 
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: 'Add research group' }));
     await user.type(screen.getByLabelText('Name', { exact: false }), 'Systems Security Lab');
     await user.type(screen.getByLabelText('Description', { exact: false }), 'A group description');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));

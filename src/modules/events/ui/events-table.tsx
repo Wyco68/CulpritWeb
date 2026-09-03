@@ -6,7 +6,7 @@ import { CalendarDays, ImageIcon, Pencil, Plus, Trash2, Video } from 'lucide-rea
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -67,12 +67,14 @@ export function EventsTable({ items }: { items: Event[] }) {
   const now = Date.now();
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
+    <div id="events" className="scroll-mt-24">
+      <FormSection
         title="Events"
+        description="Talks, workshops and visits. Upcoming and past are split by date on the public tab."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add event"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -82,7 +84,7 @@ export function EventsTable({ items }: { items: Event[] }) {
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -162,6 +164,7 @@ export function EventsTable({ items }: { items: Event[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} />
 

@@ -191,7 +191,8 @@ function Figure({
       <dd className="mt-1">
         <Link
           href={href}
-          className="tabular rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          aria-label={`${label}: ${value}`}
+          className="tabular inline-block rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
           {value}
         </Link>

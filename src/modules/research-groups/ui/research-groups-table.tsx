@@ -6,7 +6,7 @@ import { Pencil, Plus, Trash2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -45,12 +45,14 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
-        title="Research Groups"
+    <div id="groups" className="scroll-mt-24">
+      <FormSection
+        title="Research groups"
+        description="Each group and its description, as shown on the public Team Members tab."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add research group"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -60,7 +62,7 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -111,6 +113,7 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroup[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <ResearchGroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editing} />
 

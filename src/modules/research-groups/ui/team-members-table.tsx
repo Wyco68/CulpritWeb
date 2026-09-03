@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -54,12 +54,14 @@ export function TeamMembersTable({
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
-        title="Team Members"
+    <div id="members" className="scroll-mt-24">
+      <FormSection
+        title="Team members"
+        description="Researchers and visiting professors. A member with no group is listed on its own."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add team member"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -69,7 +71,7 @@ export function TeamMembersTable({
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -137,6 +139,7 @@ export function TeamMembersTable({
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <TeamMemberFormDialog
         open={formOpen}

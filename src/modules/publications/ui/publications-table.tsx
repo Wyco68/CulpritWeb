@@ -6,7 +6,7 @@ import { ExternalLink, Pencil, Plus, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import {
@@ -45,12 +45,14 @@ export function PublicationsTable({ items }: { items: Publication[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeading
-        as="h1"
+    <div id="publications" className="scroll-mt-24">
+      <FormSection
         title="Publications"
+        description="Every peer-reviewed entry on the public Publications tab, newest year first."
+        badge={<FormSectionCount count={items.length} />}
         action={
           <Button
+            aria-label="Add publication"
             onClick={() => {
               setEditing(undefined);
               setFormOpen(true);
@@ -60,7 +62,7 @@ export function PublicationsTable({ items }: { items: Publication[] }) {
             Add
           </Button>
         }
-      />
+      >
 
       {items.length === 0 ? (
         <EmptyState
@@ -127,6 +129,7 @@ export function PublicationsTable({ items }: { items: Publication[] }) {
           </TableBody>
         </Table>
       )}
+      </FormSection>
 
       <PublicationFormDialog open={formOpen} onOpenChange={setFormOpen} publication={editing} />
 
