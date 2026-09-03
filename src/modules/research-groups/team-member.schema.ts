@@ -18,7 +18,9 @@ export const createTeamMemberSchema = z.object({
   name: safeText(200),
   role: safeText(200),
   bio: optionalSafeText(3000),
-  photoUrl: z.string().trim().max(2000).url().optional(),
+  // Nullable, not just optional: an undefined key vanishes from the JSON body and the update
+  // route reads that as "leave the column alone", so removing a photo needs an explicit null.
+  photoUrl: z.string().trim().max(2000).url().nullable().optional(),
   researchGroupId: z.string().trim().min(1).max(200).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).max(100_000).optional(),
 });

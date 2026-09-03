@@ -156,8 +156,18 @@ describe('R2StorageAdapter', () => {
       expect(url).toBe(`${PUBLIC_URL}/profile/my%20folder/my%20photo.png`);
     });
 
-    it('confirms all four public categories are covered by PUBLIC_STORAGE_BUCKETS', () => {
-      expect(PUBLIC_STORAGE_BUCKETS).toEqual(['profile', 'research', 'publications', 'events']);
+    it('confirms every public category is covered by PUBLIC_STORAGE_BUCKETS', () => {
+      expect(PUBLIC_STORAGE_BUCKETS).toEqual([
+        'profile',
+        'research',
+        'publications',
+        'events',
+        'team',
+      ]);
+    });
+
+    it('keeps `documents` out of the public list — it is signed-URL only', () => {
+      expect(PUBLIC_STORAGE_BUCKETS).not.toContain('documents');
     });
   });
 

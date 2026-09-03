@@ -18,7 +18,8 @@ import { err, ok, type Result } from '@/modules/shared/lib/result';
 // `getSignedUrl`. Fine for a single-admin, low-traffic site; revisit if that ever changes.
 
 /** Logical categories, mapped to folder prefixes inside the one R2 bucket. */
-export type StorageBucket = 'profile' | 'research' | 'publications' | 'events' | 'documents';
+export type StorageBucket =
+  'profile' | 'research' | 'publications' | 'events' | 'team' | 'documents';
 
 /** Public-read categories — safe to build a plain HTTPS URL for. `documents` is private (signed URLs only). */
 export const PUBLIC_STORAGE_BUCKETS: readonly StorageBucket[] = [
@@ -26,6 +27,7 @@ export const PUBLIC_STORAGE_BUCKETS: readonly StorageBucket[] = [
   'research',
   'publications',
   'events',
+  'team',
 ];
 
 export interface StorageAdapter {
@@ -72,7 +74,12 @@ export class NoopStorageAdapter implements StorageAdapter {
     contentType: string,
   ): Promise<Result<{ path: string }, IntegrationError>> {
     void file;
-    logger.warn('storage_noop', { note: 'R2 storage env unset; skipping upload', bucket, path, contentType });
+    logger.warn('storage_noop', {
+      note: 'R2 storage env unset; skipping upload',
+      bucket,
+      path,
+      contentType,
+    });
     return err(new IntegrationError('Storage is not configured.'));
   }
 
@@ -173,10 +180,7 @@ export class R2StorageAdapter implements StorageAdapter {
   }
 
   getPublicUrl(bucket: StorageBucket, path: string): string {
-    const key = objectKey(bucket, path)
-      .split('/')
-      .map(encodeURIComponent)
-      .join('/');
+    const key = objectKey(bucket, path).split('/').map(encodeURIComponent).join('/');
     return `${this.publicUrl}/${key}`;
   }
 
@@ -207,7 +211,11 @@ let cached: StorageAdapter | undefined;
 export function getStorageAdapter(): StorageAdapter {
   if (cached) return cached;
   cached =
-    env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY && env.R2_BUCKET_NAME && env.R2_PUBLIC_URL
+    env.R2_ACCOUNT_ID &&
+    env.R2_ACCESS_KEY_ID &&
+    env.R2_SECRET_ACCESS_KEY &&
+    env.R2_BUCKET_NAME &&
+    env.R2_PUBLIC_URL
       ? new R2StorageAdapter(
           env.R2_ACCOUNT_ID,
           env.R2_ACCESS_KEY_ID,

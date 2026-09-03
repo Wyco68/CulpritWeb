@@ -12,6 +12,7 @@ import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { Select } from '@/modules/shared/ui/select';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { PhotoUpload } from '@/modules/shared/ui/photo-upload';
 // Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx (the
 // barrel also re-exports Prisma-backed service getters; even a type-only barrel import drags
 // Prisma/`pg` into the client bundle, confirmed empirically).
@@ -58,6 +59,8 @@ export function TeamMemberFormDialog({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<TeamMemberFormInput, unknown, CreateTeamMemberInput>({
@@ -136,17 +139,14 @@ export function TeamMemberFormDialog({
             </Select>
           )}
         </FormField>
-        <FormField label="Photo URL" htmlFor="member-photoUrl" error={errors.photoUrl?.message}>
-          {(fieldProps) => (
-            <Input
-              {...fieldProps}
-              {...register('photoUrl', {
-                setValueAs: (value: string) => (value === '' ? undefined : value),
-              })}
-              placeholder="https://…"
-            />
-          )}
-        </FormField>
+        {/* The admin picks a file; it uploads to object storage on selection and only the
+            resulting URL is held in the form, so this dialog's own save stays a plain JSON PUT. */}
+        <PhotoUpload
+          value={watch('photoUrl')}
+          onChange={(url) => setValue('photoUrl', url, { shouldDirty: true, shouldValidate: true })}
+          endpoint="/api/admin/team-members/photo"
+          personName={watch('name') || ''}
+        />
         <FormField label="Bio" htmlFor="member-bio" error={errors.bio?.message}>
           {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={3} />}
         </FormField>
