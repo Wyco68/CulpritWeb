@@ -1,46 +1,27 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useState } from 'react';
+import { ArrowRight, Users } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
+import { Button } from '@/modules/shared/ui/button';
+import { Dialog } from '@/modules/shared/ui/dialog';
 import { panelClassName } from '@/modules/shared/ui/card';
-import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
-import { cn } from '@/modules/shared/lib/utils';
 // Deep imports, not the barrel — the barrel re-exports Prisma-backed service getters; even a
 // type-only barrel import drags Prisma/`pg` into the client bundle (confirmed empirically).
 import type { ResearchGroup } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 
-// Public surfacing of research groups (spec FR-4) — no separate "Research Groups" tab; grouped
-// team members ARE that tab. `groups[].teamMembers` already carries the grouped members;
-// `ungrouped` (researchGroupId === null, not present in any group) renders last under "Other"
-// with no header when empty.
+// Public surfacing of research groups (spec FR-4) — no separate "Research Groups" tab; the teams
+// ARE that tab.
+//
+// One uniform card per team, and the roster lives behind it rather than on it. Rendering every
+// member inline made the page as tall as the largest team and gave a visitor no overview at all:
+// they had to scroll past twenty people to discover a second team exists. The card now answers
+// "what teams are there, and how big", and a click answers "who is in this one".
 
-// The anchor a group is reachable at — /team#systems-security-lab. Derived from the group's name
-// rather than its id: the id is a cuid, and a hash is a thing people are given, read out and paste
-// into a message. Names are admin-entered free text, so the result is deduplicated by the caller
-// below; a group whose name slugs to nothing (all punctuation) falls back to its index.
-function toSectionId(name: string, index: number): string {
-  const slug = name
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-  return slug ? `group-${slug}` : `group-${index + 1}`;
-}
-
-function MemberCard({ member }: { member: TeamMember }) {
-  const bioId = useId();
-  const [expanded, setExpanded] = useState(false);
-  const bio = member.bio ?? '';
-  const isLong = bio.length > 180;
-  const shown = expanded || !isLong ? bio : `${bio.slice(0, 180).trimEnd()}…`;
-
+function MemberRow({ member }: { member: TeamMember }) {
   return (
-    // Borderless, rule-separated roster entry. Boxing each person in a bordered card produced a
-    // grid of near-identical rectangles — the most template-looking pattern available — and the
-    // borders carried no information the whitespace and rules don't already carry.
-    <li className="flex gap-4 border-t border-border py-6">
+    <li className="flex gap-4 border-t border-border py-4 first:border-t-0 first:pt-0">
       <Avatar
         src={member.photoUrl}
         alt={`Portrait of ${member.name}`}
@@ -58,77 +39,55 @@ function MemberCard({ member }: { member: TeamMember }) {
           )}
         </p>
         <p className="mt-1 break-words text-sm text-accent">{member.role}</p>
-        {bio && (
-          <>
-            <p
-              id={bioId}
-              className="mt-2 text-pretty break-words text-sm leading-relaxed text-muted-foreground"
-            >
-              {shown}
-            </p>
-            {isLong && (
-              <button
-                type="button"
-                aria-expanded={expanded}
-                aria-controls={bioId}
-                onClick={() => setExpanded((value) => !value)}
-                className="mt-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 transition-colors duration-300 ease-[var(--ease-out-expo)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {expanded ? 'Show less' : 'Show more'}
-              </button>
-            )}
-          </>
+        {member.bio && (
+          <p className="mt-2 text-pretty break-words text-sm leading-relaxed text-muted-foreground">
+            {member.bio}
+          </p>
         )}
       </div>
     </li>
   );
 }
 
-function GroupSection({
-  id,
-  heading,
-  description,
-  members,
+/** A team plus the people in it — the shape both the card and the dialog need. */
+type TeamCard = { id: string; name: string; description?: string; members: TeamMember[] };
+
+function TeamDetailDialog({
+  open,
+  onOpenChange,
+  team,
 }: {
-  id?: string;
-  heading?: string;
-  description?: string;
-  members: TeamMember[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  team?: TeamCard;
 }) {
-  const headingId = useId();
+  if (!team) return null;
+
   return (
-    <section
-      id={id}
-      aria-labelledby={heading ? headingId : undefined}
-      className={cn('space-y-5', panelClassName)}
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={team.name}
+      description={team.description || undefined}
+      closeLabel="Close"
+      className="max-w-2xl"
     >
-      {heading && (
-        <div>
-          <h3
-            id={headingId}
-            className="text-balance break-words font-serif text-2xl text-foreground"
-          >
-            {heading}
-          </h3>
-          {description && (
-            <p className="mt-2 max-w-[62ch] text-pretty break-words leading-relaxed text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </div>
+      <h3 className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
+        Members
+        <span className="tabular ml-2">{team.members.length}</span>
+      </h3>
+      {team.members.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">Nobody listed in this team yet.</p>
+      ) : (
+        <ul className="mt-4 flex flex-col">
+          {team.members.map((member) => (
+            <MemberRow key={member.id} member={member} />
+          ))}
+        </ul>
       )}
-      {/* Two columns of rule-separated entries, not two columns of cards. `gap-x` only: the rows
-          are divided by their own top borders, so a vertical gap would break the rule line. */}
-      <ul className={cn('grid gap-x-10 sm:grid-cols-2', !heading && '-mt-6')}>
-        {members.map((member) => (
-          <MemberCard key={member.id} member={member} />
-        ))}
-      </ul>
-    </section>
+    </Dialog>
   );
 }
-
-const UNGROUPED_ID = 'group-other';
 
 export function TeamMembersView({
   groups,
@@ -137,48 +96,87 @@ export function TeamMembersView({
   groups: ResearchGroup[];
   ungrouped: TeamMember[];
 }) {
-  const populated = groups.filter((group) => group.teamMembers.length > 0);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  // Ids are assigned once, here, and used for both the jump list and the sections it points at —
-  // one derivation, so a nav entry can never point at an anchor that does not exist. Two groups
-  // sharing a name would otherwise share an id and make the second unreachable, so a collision
-  // takes a numeric suffix; the first occurrence keeps the clean URL.
-  const seen = new Map<string, number>();
-  const sections = populated.map((group, index) => {
-    const base = toSectionId(group.name, index);
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    return { group, id: count === 0 ? base : `${base}-${count + 1}` };
-  });
-
-  const navItems: SectionNavItem[] = [
-    ...sections.map(({ group, id }) => ({ id, label: group.name })),
-    ...(ungrouped.length > 0 && populated.length > 0 ? [{ id: UNGROUPED_ID, label: 'Other' }] : []),
+  // Teams with nobody in them are dropped: a visitor can do nothing with an empty roster, and it
+  // reads as a broken page rather than as a team yet to be staffed.
+  const teams: TeamCard[] = [
+    ...groups
+      .filter((group) => group.teamMembers.length > 0)
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+        description: group.description,
+        members: group.teamMembers,
+      })),
+    // People in no team are collected under one card so they stay reachable, rather than being
+    // invisible because they happen not to be assigned.
+    ...(ungrouped.length > 0 ? [{ id: '__ungrouped', name: 'Other', members: ungrouped }] : []),
   ];
 
+  const open = teams.find((team) => team.id === openId);
+
   return (
-    <div className="space-y-6">
-      {/* Named "Research groups" rather than the default "On this page": this strip is the group
-          index, and the name is what a screen-reader user hears when they land on the landmark. */}
-      <SectionNav items={navItems} label="Research groups" />
+    <>
+      <ul className="grid gap-5 sm:grid-cols-2">
+        {teams.map((team, index) => (
+          <li
+            key={team.id}
+            style={{ '--i': index } as React.CSSProperties}
+            className={`rise flex h-full flex-col ${panelClassName}`}
+          >
+            <h3 className="text-balance break-words font-serif text-xl leading-snug text-foreground sm:text-2xl">
+              {team.name}
+            </h3>
 
-      {sections.map(({ group, id }) => (
-        <GroupSection
-          key={group.id}
-          id={id}
-          heading={group.name}
-          description={group.description}
-          members={group.teamMembers}
-        />
-      ))}
+            {team.description && (
+              // Clamped so one wordy description cannot make its card taller than the rest.
+              <p className="mt-2 line-clamp-3 text-pretty break-words leading-[1.7] text-muted-foreground">
+                {team.description}
+              </p>
+            )}
 
-      {ungrouped.length > 0 && (
-        <GroupSection
-          id={populated.length > 0 ? UNGROUPED_ID : undefined}
-          heading={populated.length > 0 ? 'Other' : undefined}
-          members={ungrouped}
-        />
-      )}
-    </div>
+            {/* A row of faces says "a team of six people" faster than the number does, and it is
+                the one thing worth previewing on the card itself. */}
+            <ul aria-hidden="true" className="mt-4 flex flex-wrap gap-1.5">
+              {team.members.slice(0, 6).map((member) => (
+                <li key={member.id}>
+                  <Avatar
+                    src={member.photoUrl}
+                    alt=""
+                    fallback={member.name.slice(0, 1).toUpperCase()}
+                    size="sm"
+                  />
+                </li>
+              ))}
+            </ul>
+
+            {/* `mt-auto` pins the footer down, so buttons align across a row of uneven cards. */}
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+              <p className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+                <Users className="size-3.5" aria-hidden="true" />
+                <span className="tabular">{team.members.length}</span>
+                <span>{team.members.length === 1 ? 'member' : 'members'}</span>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={`Show detail: ${team.name}`}
+                onClick={() => setOpenId(team.id)}
+              >
+                Show detail
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <TeamDetailDialog
+        open={Boolean(open)}
+        onOpenChange={(next) => !next && setOpenId(null)}
+        team={open}
+      />
+    </>
   );
 }

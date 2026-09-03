@@ -14,7 +14,7 @@ const FALLBACK_DESCRIPTION = 'Research groups, researchers, and visiting profess
 export async function generateMetadata(): Promise<Metadata> {
   const result = await getProfileCached();
   return {
-    title: 'Team Members',
+    title: 'Team',
     description: toMetaDescription(result.ok ? result.data?.teamIntro : null, FALLBACK_DESCRIPTION),
   };
 }
@@ -37,7 +37,7 @@ export default async function TeamPage() {
 
   return (
     <div>
-      <PageHeading title="Team Members" />
+      <PageHeading title="Team" />
 
       <div className="mt-12 space-y-10">
         {intro && (
