@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getProfileService, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import { AdminScreen } from '../_components/admin-screen';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,7 +23,7 @@ const PROFILE_SECTIONS = [
 ] as const;
 
 export default async function AdminAppointmentPage() {
-  const result = await getProfileService().getProfile();
+  const result = await getProfileCached();
 
   return (
     <AdminScreen title="Appointment" intro="Everything on the public Make Appointment tab.">

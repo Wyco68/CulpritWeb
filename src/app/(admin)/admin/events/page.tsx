@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getProfileService, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import { EventsTable, getEventService } from '@/modules/events';
 import { AdminScreen } from '../_components/admin-screen';
 
@@ -18,7 +18,7 @@ const PROFILE_SECTIONS = [
 
 export default async function AdminEventsPage() {
   const [profileResult, result] = await Promise.all([
-    getProfileService().getProfile(),
+    getProfileCached(),
     getEventService().list(),
   ]);
 

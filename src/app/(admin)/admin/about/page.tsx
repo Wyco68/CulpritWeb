@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getProfileService, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import { ABOUT_SECTIONS, CvEntriesAdmin, getCvEntryService } from '@/modules/teaching';
 import { AdminScreen } from '../_components/admin-screen';
 
@@ -46,7 +46,7 @@ const PROFILE_SECTIONS = [
 
 export default async function AdminAboutPage() {
   const [profileResult, entriesResult] = await Promise.all([
-    getProfileService().getProfile(),
+    getProfileCached(),
     getCvEntryService().listBySections(ABOUT_SECTIONS),
   ]);
 

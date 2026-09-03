@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getProfileService, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import {
   CoursesAdmin,
   CvEntriesAdmin,
@@ -33,7 +33,7 @@ const PROFILE_SECTIONS = [
 
 export default async function AdminTeachingPage() {
   const [profileResult, coursesResult, entriesResult] = await Promise.all([
-    getProfileService().getProfile(),
+    getProfileCached(),
     getCourseService().list(),
     getCvEntryService().listBySections(TEACHING_SECTIONS),
   ]);
