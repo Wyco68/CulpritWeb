@@ -186,13 +186,17 @@ function Figure({
   note?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border-strong bg-surface p-5 shadow-hairline">
+    // `relative` + the link's `after` overlay make the whole tile the hit target, rather than just
+    // the four-character number. The overlay is on the link itself, so there is still exactly one
+    // focusable element with one accessible name — a second wrapping anchor would double it up,
+    // and moving the anchor outside the <dd> would break the dl/dt/dd structure.
+    <div className="group relative rounded-lg border border-border-strong bg-surface p-5 shadow-hairline transition-colors duration-300 ease-[var(--ease-out-expo)] hover:border-accent/40 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-ring">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="mt-1">
         <Link
           href={href}
           aria-label={`${label}: ${value}`}
-          className="tabular inline-block rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          className="tabular inline-block rounded-xs font-serif text-4xl leading-none text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] after:absolute after:inset-0 after:content-[''] group-hover:text-accent focus-visible:outline-none"
         >
           {value}
         </Link>
