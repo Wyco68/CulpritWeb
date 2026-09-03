@@ -36,7 +36,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
     <section
       id={cvSectionAnchorId(section)}
       aria-labelledby={headingId}
-      className="break-inside-avoid border-t border-border pt-8"
+      className="break-inside-avoid border-t border-border pt-8 first:border-t-0 first:pt-0"
     >
       <h3 id={headingId} className="font-serif text-xl font-semibold text-accent">
         {CV_SECTION_LABELS[section]}

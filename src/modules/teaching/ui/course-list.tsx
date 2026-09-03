@@ -11,13 +11,13 @@ import type { Course } from '../teaching.types';
 
 export function CourseList({ groups }: { groups: { level: string; courses: Course[] }[] }) {
   return (
-    <div className="border-t border-border">
+    <div>
       {groups.map((group, groupIndex) => (
         <section
           key={group.level}
           aria-labelledby={`course-level-${groupIndex}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[11rem_1fr] sm:py-10"
+          className="rise grid gap-x-6 border-b border-border py-8 first:pt-0 sm:grid-cols-[11rem_1fr] sm:py-10 sm:first:pt-0"
         >
           <h3
             id={`course-level-${groupIndex}`}

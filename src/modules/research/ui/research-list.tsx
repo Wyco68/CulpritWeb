@@ -24,13 +24,13 @@ export function ResearchList({ items }: { items: Research[] }) {
   const groups = groupByArea(items);
 
   return (
-    <div className="border-t border-border">
+    <div>
       {groups.map((group, groupIndex) => (
         <section
           key={group.area}
           aria-labelledby={`research-${groupIndex}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[11rem_1fr] sm:py-10"
+          className="rise grid gap-x-6 border-b border-border py-8 first:pt-0 sm:grid-cols-[11rem_1fr] sm:py-10 sm:first:pt-0"
         >
           <h3
             id={`research-${groupIndex}`}
