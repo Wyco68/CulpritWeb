@@ -1,5 +1,4 @@
 import { ArrowUpRight } from 'lucide-react';
-import { panelClassName } from '@/modules/shared/ui/card';
 import type { Course } from '../teaching.types';
 
 // Courses grouped by level, using the same shape as the Research index: the grouping key sits in
@@ -12,13 +11,13 @@ import type { Course } from '../teaching.types';
 
 export function CourseList({ groups }: { groups: { level: string; courses: Course[] }[] }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="border-t border-border">
       {groups.map((group, groupIndex) => (
         <section
           key={group.level}
           aria-labelledby={`course-level-${groupIndex}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className={`rise grid gap-x-6 ${panelClassName} sm:grid-cols-[11rem_1fr]`}
+          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[11rem_1fr] sm:py-10"
         >
           <h3
             id={`course-level-${groupIndex}`}

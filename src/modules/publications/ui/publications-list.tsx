@@ -1,5 +1,4 @@
 import { ArrowUpRight } from 'lucide-react';
-import { panelClassName } from '@/modules/shared/ui/card';
 import type { Publication } from '@/modules/publications';
 
 // Grouped by year, newest first — the convention every academic profile uses (Google Scholar, and
@@ -27,13 +26,13 @@ export function PublicationsList({ items }: { items: Publication[] }) {
   const groups = groupByYear(items);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="border-t border-border">
       {groups.map((group, groupIndex) => (
         <section
           key={group.year}
           aria-labelledby={`publications-${group.year}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className={`rise grid gap-x-6 ${panelClassName} sm:grid-cols-[4rem_1fr]`}
+          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[4rem_1fr]"
         >
           {/* The year holds the left rail as a running head. On a narrow screen it sits above its
               group instead, where the grid collapses to one column. */}
@@ -56,7 +55,9 @@ export function PublicationsList({ items }: { items: Publication[] }) {
                 <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
                   {item.authors}
                 </p>
-                <p className="mt-1 font-serif text-sm italic text-muted-foreground">{item.venue}</p>
+                <p className="mt-1 font-serif text-sm italic text-muted-foreground">
+                  {item.venue}
+                </p>
 
                 {item.link && (
                   <a
