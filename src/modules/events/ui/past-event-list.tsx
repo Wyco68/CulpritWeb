@@ -1,22 +1,21 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/modules/shared/lib/utils';
-import { panelClassName } from '@/modules/shared/ui/card';
-import { dateFormatter, EventMedia, timeFormatter } from './event-media';
-import { EventParticipants } from './event-participants';
+import { dateFormatter } from './event-media';
+import { EventDetailDialog } from './event-detail-dialog';
 import type { Event } from '../event.types';
 
 /**
- * Past events: a wrapped row of compact date+title buttons rather than the Upcoming tab's full
+ * Past events: a wrapped row of compact date+title chips rather than the Upcoming tab's full
  * cards — a past event is scannable-first, and a growing archive of full cards would dominate the
- * page. Selecting a button opens one shared detail panel below the row (not per-button inline, so
- * the row itself never reflows). Client island: the only state on the whole Events tab.
+ * page. Selecting a chip opens the same detail dialog the Upcoming cards use, so the archive and
+ * the upcoming list present an event identically; the row itself never reflows, because nothing
+ * expands inside it.
  */
 export function PastEventList({ events }: { events: Event[] }) {
-  const detailId = useId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = events.find((event) => event.id === selectedId) ?? null;
+  const selected = events.find((event) => event.id === selectedId);
 
   return (
     <div>
@@ -27,9 +26,8 @@ export function PastEventList({ events }: { events: Event[] }) {
             <li key={event.id} style={{ '--i': index } as React.CSSProperties} className="rise">
               <button
                 type="button"
-                aria-expanded={active}
-                aria-controls={detailId}
-                onClick={() => setSelectedId(active ? null : event.id)}
+                aria-label={`Show detail: ${event.title}`}
+                onClick={() => setSelectedId(event.id)}
                 className={cn(
                   'inline-flex max-w-full items-center gap-2.5 rounded-pill border px-4 py-2 text-left transition-colors duration-300 ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                   active
@@ -47,26 +45,11 @@ export function PastEventList({ events }: { events: Event[] }) {
         })}
       </ul>
 
-      {selected && (
-        <div id={detailId} className={`mt-5 ${panelClassName}`}>
-          <p className="tabular font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
-            <time dateTime={selected.eventDate.toISOString()}>
-              {dateFormatter.format(selected.eventDate)}
-              <span className="sr-only"> at </span>
-              {timeFormatter.format(selected.eventDate)}
-            </time>
-          </p>
-          <h4 className="mt-2 text-balance font-serif text-xl leading-snug text-foreground sm:text-2xl">
-            {selected.title}
-          </h4>
-          <p className="mt-3 max-w-[62ch] whitespace-pre-line text-pretty leading-[1.7] text-muted-foreground">
-            {selected.description}
-          </p>
-          <EventParticipants participants={selected.participants} />
-
-          <EventMedia event={selected} />
-        </div>
-      )}
+      <EventDetailDialog
+        open={Boolean(selected)}
+        onOpenChange={(next) => !next && setSelectedId(null)}
+        event={selected}
+      />
     </div>
   );
 }
