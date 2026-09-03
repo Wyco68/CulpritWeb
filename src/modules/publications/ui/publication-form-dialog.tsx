@@ -87,12 +87,7 @@ export function PublicationFormDialog({
         <FormField label="Title" htmlFor="pub-title" required error={errors.title?.message}>
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
-        <FormField
-          label="Authors"
-          htmlFor="pub-authors"
-          required
-          error={errors.authors?.message}
-        >
+        <FormField label="Authors" htmlFor="pub-authors" required error={errors.authors?.message}>
           {(fieldProps) => <Textarea {...fieldProps} {...register('authors')} rows={2} />}
         </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -111,7 +106,9 @@ export function PublicationFormDialog({
           description="Optional. Leave blank when the paper has no stable public URL."
           error={errors.link?.message}
         >
-          {(fieldProps) => <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />}
+          {(fieldProps) => (
+            <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />
+          )}
         </FormField>
 
         <DialogFooter>

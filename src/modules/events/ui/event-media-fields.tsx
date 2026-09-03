@@ -254,7 +254,12 @@ export function VideoLinkList({
       </div>
 
       {error && (
-        <p id={errorId} role="alert" aria-live="polite" className="text-xs font-medium text-destructive">
+        <p
+          id={errorId}
+          role="alert"
+          aria-live="polite"
+          className="text-xs font-medium text-destructive"
+        >
           {error}
         </p>
       )}

@@ -25,14 +25,11 @@ type TeamMemberFormInput = z.input<typeof createTeamMemberSchema>;
 type GroupOption = Pick<ResearchGroup, 'id' | 'name'>;
 
 async function submitTeamMember(id: string | undefined, input: CreateTeamMemberInput) {
-  const response = await fetch(
-    id ? `/api/admin/team-members/${id}` : '/api/admin/team-members',
-    {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    },
-  );
+  const response = await fetch(id ? `/api/admin/team-members/${id}` : '/api/admin/team-members', {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
   const body = await response.json();
   if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
   return body.data as TeamMember;

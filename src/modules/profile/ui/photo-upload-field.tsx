@@ -82,7 +82,10 @@ export function PhotoUploadField() {
               onClick={() => inputRef.current?.click()}
             >
               {uploading ? (
-                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
               ) : (
                 <Upload className="size-4" aria-hidden="true" />
               )}

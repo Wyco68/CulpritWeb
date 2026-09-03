@@ -63,72 +63,71 @@ export function PublicationsTable({ items }: { items: Publication[] }) {
           </Button>
         }
       >
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="No publications yet."
-          description="Add the first publication to show it on the public site."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Venue</TableHead>
-              <TableHead>Year</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium text-foreground">
-                  {item.link ? (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 hover:text-accent hover:underline"
-                    >
-                      {item.title}
-                      <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    item.title
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground">{item.venue}</TableCell>
-                <TableCell className="text-muted-foreground">{item.year}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit: ${item.title}`}
-                      onClick={() => {
-                        setEditing(item);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete: ${item.title}`}
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleting(item)}
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
+        {items.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No publications yet."
+            description="Add the first publication to show it on the public site."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Venue</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium text-foreground">
+                    {item.link ? (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 hover:text-accent hover:underline"
+                      >
+                        {item.title}
+                        <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+                      </a>
+                    ) : (
+                      item.title
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{item.venue}</TableCell>
+                  <TableCell className="text-muted-foreground">{item.year}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit: ${item.title}`}
+                        onClick={() => {
+                          setEditing(item);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete: ${item.title}`}
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleting(item)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </FormSection>
 
       <PublicationFormDialog open={formOpen} onOpenChange={setFormOpen} publication={editing} />

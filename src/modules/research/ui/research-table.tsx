@@ -64,66 +64,67 @@ export function ResearchTable({ items }: { items: Research[] }) {
         }
       >
         {items.length === 0 ? (
-        <EmptyState
-          icon={FlaskConical}
-          title="No research works yet."
-          description="Add the first research work to show it on the public site."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Area</TableHead>
-              <TableHead>Order</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="min-w-0 font-medium text-foreground">
-                  {/* User-entered text: bounded and wrapped, or one long unbroken title stretches
-                      the table past its container. */}
-                  <span className="line-clamp-2 block max-w-[46ch] break-words">{item.title}</span>
-                </TableCell>
-                <TableCell className="min-w-0 text-muted-foreground">
-                  <span className="block max-w-[22ch] truncate" title={item.area}>
-                    {item.area}
-                  </span>
-                </TableCell>
-                <TableCell className="tabular text-muted-foreground">{item.sortOrder}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit: ${item.title}`}
-                      onClick={() => {
-                        setEditing(item);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete: ${item.title}`}
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleting(item)}
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
+          <EmptyState
+            icon={FlaskConical}
+            title="No research works yet."
+            description="Add the first research work to show it on the public site."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Area</TableHead>
+                <TableHead>Order</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="min-w-0 font-medium text-foreground">
+                    {/* User-entered text: bounded and wrapped, or one long unbroken title stretches
+                      the table past its container. */}
+                    <span className="line-clamp-2 block max-w-[46ch] break-words">
+                      {item.title}
+                    </span>
+                  </TableCell>
+                  <TableCell className="min-w-0 text-muted-foreground">
+                    <span className="block max-w-[22ch] truncate" title={item.area}>
+                      {item.area}
+                    </span>
+                  </TableCell>
+                  <TableCell className="tabular text-muted-foreground">{item.sortOrder}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit: ${item.title}`}
+                        onClick={() => {
+                          setEditing(item);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete: ${item.title}`}
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleting(item)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </FormSection>
-
 
       <ResearchFormDialog open={formOpen} onOpenChange={setFormOpen} research={editing} />
 

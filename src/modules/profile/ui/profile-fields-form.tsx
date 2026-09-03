@@ -283,11 +283,7 @@ export function ProfileFieldsForm({ profile, sections }: ProfileFieldsFormProps)
           <p aria-live="polite" className="mr-auto text-xs text-muted-foreground">
             {isDirty ? 'Unsaved changes.' : 'All changes saved.'}
           </p>
-          <Button
-            type="submit"
-            disabled={!isDirty}
-            loading={isSubmitting || mutation.isPending}
-          >
+          <Button type="submit" disabled={!isDirty} loading={isSubmitting || mutation.isPending}>
             Save changes
           </Button>
         </div>

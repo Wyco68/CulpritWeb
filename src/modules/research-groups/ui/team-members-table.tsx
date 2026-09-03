@@ -74,73 +74,72 @@ export function TeamMembersTable({
           </Button>
         }
       >
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={Users2}
-          title="No team members yet."
-          description="Add the first team member."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Research group</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium text-foreground">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar
-                      src={item.photoUrl}
-                      alt=""
-                      fallback={item.name.slice(0, 1).toUpperCase()}
-                      size="sm"
-                      className="size-8 ring-0"
-                    />
-                    {item.name}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{item.role}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {item.researchGroupId
-                    ? (groupNameById.get(item.researchGroupId) ?? 'None')
-                    : 'None'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit: ${item.name}`}
-                      onClick={() => {
-                        setEditing(item);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete: ${item.name}`}
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleting(item)}
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
+        {items.length === 0 ? (
+          <EmptyState
+            icon={Users2}
+            title="No team members yet."
+            description="Add the first team member."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Research group</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium text-foreground">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar
+                        src={item.photoUrl}
+                        alt=""
+                        fallback={item.name.slice(0, 1).toUpperCase()}
+                        size="sm"
+                        className="size-8 ring-0"
+                      />
+                      {item.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{item.role}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.researchGroupId
+                      ? (groupNameById.get(item.researchGroupId) ?? 'None')
+                      : 'None'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit: ${item.name}`}
+                        onClick={() => {
+                          setEditing(item);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete: ${item.name}`}
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleting(item)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </FormSection>
 
       <TeamMemberFormDialog

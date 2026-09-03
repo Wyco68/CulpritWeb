@@ -146,7 +146,9 @@ export function EventFormDialog({
         <PhotoUploadList
           urls={photoUrls}
           disabled={busy}
-          onChange={(next) => setValue('photoUrls', next, { shouldDirty: true, shouldValidate: true })}
+          onChange={(next) =>
+            setValue('photoUrls', next, { shouldDirty: true, shouldValidate: true })
+          }
         />
         {errors.photoUrls && (
           <p role="alert" className="text-xs font-medium text-destructive">
@@ -157,7 +159,9 @@ export function EventFormDialog({
         <VideoLinkList
           ids={videoUrls}
           disabled={busy}
-          onChange={(next) => setValue('videoUrls', next, { shouldDirty: true, shouldValidate: true })}
+          onChange={(next) =>
+            setValue('videoUrls', next, { shouldDirty: true, shouldValidate: true })
+          }
         />
         {errors.videoUrls && (
           <p role="alert" className="text-xs font-medium text-destructive">

@@ -32,10 +32,7 @@ export function FormSection({
   const headingId = React.useId();
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className={cn('border-t border-border pt-7', className)}
-    >
+    <section aria-labelledby={headingId} className={cn('border-t border-border pt-7', className)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3">

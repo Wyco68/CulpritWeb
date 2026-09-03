@@ -132,7 +132,9 @@ export function CvEntryFormDialog({
             description="Optional. A year, a range, or “present”."
             error={errors.year?.message}
           >
-            {(fieldProps) => <Input {...fieldProps} {...register('year')} placeholder="2019–2023" />}
+            {(fieldProps) => (
+              <Input {...fieldProps} {...register('year')} placeholder="2019–2023" />
+            )}
           </FormField>
         </div>
 

@@ -85,85 +85,84 @@ export function EventsTable({ items }: { items: Event[] }) {
           </Button>
         }
       >
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={CalendarDays}
-          title="No events yet."
-          description="Add the first event to show it on the public Events tab."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Media</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => {
-              const upcoming = item.eventDate.getTime() >= now;
-              return (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium text-foreground">{item.title}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <span className="tabular">{dateTimeFormatter.format(item.eventDate)}</span>
-                    {/* Upcoming/past is derived from the date in the same cell, not given its own
+        {items.length === 0 ? (
+          <EmptyState
+            icon={CalendarDays}
+            title="No events yet."
+            description="Add the first event to show it on the public Events tab."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Media</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => {
+                const upcoming = item.eventDate.getTime() >= now;
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium text-foreground">{item.title}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="tabular">{dateTimeFormatter.format(item.eventDate)}</span>
+                      {/* Upcoming/past is derived from the date in the same cell, not given its own
                         column: it is a reading of that date, not a separate fact about the row. */}
-                    <span className="mt-0.5 block font-mono text-xs uppercase tracking-[0.12em]">
-                      {upcoming ? 'Upcoming' : 'Past'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <span className="flex items-center gap-3 text-xs">
-                      <span className="flex items-center gap-1">
-                        <ImageIcon className="size-3.5" aria-hidden="true" />
-                        <span className="tabular">{item.photoUrls.length}</span>
-                        <span className="sr-only">
-                          {item.photoUrls.length === 1 ? 'photo' : 'photos'}
+                      <span className="mt-0.5 block font-mono text-xs uppercase tracking-[0.12em]">
+                        {upcoming ? 'Upcoming' : 'Past'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="flex items-center gap-3 text-xs">
+                        <span className="flex items-center gap-1">
+                          <ImageIcon className="size-3.5" aria-hidden="true" />
+                          <span className="tabular">{item.photoUrls.length}</span>
+                          <span className="sr-only">
+                            {item.photoUrls.length === 1 ? 'photo' : 'photos'}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Video className="size-3.5" aria-hidden="true" />
+                          <span className="tabular">{item.videoUrls.length}</span>
+                          <span className="sr-only">
+                            {item.videoUrls.length === 1 ? 'video' : 'videos'}
+                          </span>
                         </span>
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Video className="size-3.5" aria-hidden="true" />
-                        <span className="tabular">{item.videoUrls.length}</span>
-                        <span className="sr-only">
-                          {item.videoUrls.length === 1 ? 'video' : 'videos'}
-                        </span>
-                      </span>
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit: ${item.title}`}
-                        onClick={() => {
-                          setEditing(item);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete: ${item.title}`}
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleting(item)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Edit: ${item.title}`}
+                          onClick={() => {
+                            setEditing(item);
+                            setFormOpen(true);
+                          }}
+                        >
+                          <Pencil className="size-4" aria-hidden="true" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete: ${item.title}`}
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleting(item)}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </FormSection>
 
       <EventFormDialog open={formOpen} onOpenChange={setFormOpen} event={editing} />

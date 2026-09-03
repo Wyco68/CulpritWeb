@@ -65,56 +65,55 @@ export function ResearchGroupsTable({ items }: { items: ResearchGroupSummary[] }
           </Button>
         }
       >
-
-      {items.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title="No research groups yet."
-          description="Add the first research group to organize team members under it."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                <TableCell className="text-muted-foreground">{item.memberCount}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit: ${item.name}`}
-                      onClick={() => {
-                        setEditing(item);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete: ${item.name}`}
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleting(item)}
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
+        {items.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="No research groups yet."
+            description="Add the first research group to organize team members under it."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Members</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium text-foreground">{item.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{item.memberCount}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit: ${item.name}`}
+                        onClick={() => {
+                          setEditing(item);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete: ${item.name}`}
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleting(item)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </FormSection>
 
       <ResearchGroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editing} />
