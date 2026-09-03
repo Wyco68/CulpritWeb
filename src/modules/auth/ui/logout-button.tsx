@@ -15,7 +15,10 @@ export function LogoutButton() {
     setLoading(true);
     try {
       await signOut();
-      router.push('/login');
+      // The public site, not /login. Signing out is "I'm done here", not "let me back in" — and
+      // bouncing to the sign-in form makes it look as though the sign-out failed and it is asking
+      // for credentials again.
+      router.push('/');
       router.refresh();
     } catch {
       toast.error('Could not log out. Please try again.');
