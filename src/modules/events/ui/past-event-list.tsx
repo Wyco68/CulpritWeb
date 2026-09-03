@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { cn } from '@/modules/shared/lib/utils';
+import { panelClassName } from '@/modules/shared/ui/card';
 import { dateFormatter, EventMedia, timeFormatter } from './event-media';
 import type { Event } from '../event.types';
 
@@ -29,7 +30,7 @@ export function PastEventList({ events }: { events: Event[] }) {
                 aria-controls={detailId}
                 onClick={() => setSelectedId(active ? null : event.id)}
                 className={cn(
-                  'inline-flex max-w-full items-center gap-2.5 rounded-full border px-4 py-2 text-left transition-colors duration-300 ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  'inline-flex max-w-full items-center gap-2.5 rounded-pill border px-4 py-2 text-left transition-colors duration-300 ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                   active
                     ? 'border-accent bg-muted text-accent'
                     : 'border-border text-foreground hover:border-accent/40',
@@ -46,10 +47,7 @@ export function PastEventList({ events }: { events: Event[] }) {
       </ul>
 
       {selected && (
-        <div
-          id={detailId}
-          className="mt-5 rounded-[10px] border border-border bg-background p-6 shadow-hairline sm:p-8"
-        >
+        <div id={detailId} className={`mt-5 ${panelClassName}`}>
           <p className="tabular font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
             <time dateTime={selected.eventDate.toISOString()}>
               {dateFormatter.format(selected.eventDate)}

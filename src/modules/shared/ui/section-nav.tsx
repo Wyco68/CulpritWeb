@@ -120,7 +120,7 @@ export function SectionNav({ items, label = 'On this page', className }: Section
       className={cn(
         // Full width of the content column's padding box, so the rule underneath reads as a
         // divider across the page rather than a floating pill.
-        'sticky top-0 z-20 -mx-6 border-b border-border bg-background/85 px-6 backdrop-blur-sm',
+        'sticky top-0 z-20 -mx-6 border-b border-border bg-background/90 px-6 backdrop-blur-sm',
         className,
       )}
     >

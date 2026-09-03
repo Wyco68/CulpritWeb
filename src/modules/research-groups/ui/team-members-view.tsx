@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { Avatar } from '@/modules/shared/ui/avatar';
+import { panelClassName } from '@/modules/shared/ui/card';
 import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
 import { cn } from '@/modules/shared/lib/utils';
 // Deep imports, not the barrel — the barrel re-exports Prisma-backed service getters; even a
@@ -93,10 +94,17 @@ function GroupSection({
 }) {
   const headingId = useId();
   return (
-    <section id={id} aria-labelledby={heading ? headingId : undefined} className="space-y-5">
+    <section
+      id={id}
+      aria-labelledby={heading ? headingId : undefined}
+      className={cn('space-y-5', panelClassName)}
+    >
       {heading && (
         <div>
-          <h3 id={headingId} className="text-balance break-words font-serif text-2xl text-foreground">
+          <h3
+            id={headingId}
+            className="text-balance break-words font-serif text-2xl text-foreground"
+          >
             {heading}
           </h3>
           {description && (
@@ -108,7 +116,7 @@ function GroupSection({
       )}
       {/* Two columns of rule-separated entries, not two columns of cards. `gap-x` only: the rows
           are divided by their own top borders, so a vertical gap would break the rule line. */}
-      <ul className={cn('grid gap-x-10 sm:grid-cols-2')}>
+      <ul className={cn('grid gap-x-10 sm:grid-cols-2', !heading && '-mt-6')}>
         {members.map((member) => (
           <MemberCard key={member.id} member={member} />
         ))}
@@ -142,13 +150,11 @@ export function TeamMembersView({
 
   const navItems: SectionNavItem[] = [
     ...sections.map(({ group, id }) => ({ id, label: group.name })),
-    ...(ungrouped.length > 0 && populated.length > 0
-      ? [{ id: UNGROUPED_ID, label: 'Other' }]
-      : []),
+    ...(ungrouped.length > 0 && populated.length > 0 ? [{ id: UNGROUPED_ID, label: 'Other' }] : []),
   ];
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-6">
       {/* Named "Research groups" rather than the default "On this page": this strip is the group
           index, and the name is what a screen-reader user hears when they land on the landmark. */}
       <SectionNav items={navItems} label="Research groups" />

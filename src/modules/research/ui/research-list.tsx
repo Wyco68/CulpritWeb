@@ -1,4 +1,5 @@
 import { ArrowUpRight } from 'lucide-react';
+import { panelClassName } from '@/modules/shared/ui/card';
 import type { Research } from '@/modules/research';
 
 // Grouped by area. Every well-structured faculty and lab site organises research thematically
@@ -24,13 +25,13 @@ export function ResearchList({ items }: { items: Research[] }) {
   const groups = groupByArea(items);
 
   return (
-    <div className="border-t border-border">
+    <div className="flex flex-col gap-5">
       {groups.map((group, groupIndex) => (
         <section
           key={group.area}
           aria-labelledby={`research-${groupIndex}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className="rise grid gap-x-6 border-b border-border py-8 sm:grid-cols-[11rem_1fr] sm:py-10"
+          className={`rise grid gap-x-6 ${panelClassName} sm:grid-cols-[11rem_1fr]`}
         >
           <h3
             id={`research-${groupIndex}`}

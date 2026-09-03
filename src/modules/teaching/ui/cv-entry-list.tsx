@@ -1,3 +1,4 @@
+import { panelClassName } from '@/modules/shared/ui/card';
 import { CV_SECTION_LABELS, type CvEntry, type CvSection } from '../teaching.types';
 
 // Renders grouped CV entries under their section headings. Used by both public tabs — About for
@@ -30,7 +31,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
     <section
       id={cvSectionAnchorId(section)}
       aria-labelledby={headingId}
-      className="break-inside-avoid border-t border-border pt-8"
+      className={`mb-6 break-inside-avoid ${panelClassName}`}
     >
       <h3 id={headingId} className="font-serif text-xl text-foreground">
         {CV_SECTION_LABELS[section]}
@@ -71,15 +72,11 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
   );
 }
 
-export function CvEntryList({
-  groups,
-}: {
-  groups: { section: CvSection; entries: CvEntry[] }[];
-}) {
+export function CvEntryList({ groups }: { groups: { section: CvSection; entries: CvEntry[] }[] }) {
   if (groups.length === 0) return null;
 
   return (
-    <div className="space-y-10">
+    <div>
       {groups.map((group) => (
         <Section key={group.section} section={group.section} entries={group.entries} />
       ))}

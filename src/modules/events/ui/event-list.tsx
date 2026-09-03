@@ -1,3 +1,4 @@
+import { panelClassName } from '@/modules/shared/ui/card';
 import { dateFormatter, EventMedia, timeFormatter } from './event-media';
 import type { Event } from '../event.types';
 
@@ -12,7 +13,7 @@ export function EventList({ events }: { events: Event[] }) {
         <li
           key={event.id}
           style={{ '--i': index } as React.CSSProperties}
-          className="rise grid gap-x-8 gap-y-3 rounded-[10px] border border-border bg-background p-6 shadow-hairline sm:grid-cols-[9rem_1fr] sm:p-8"
+          className={`rise grid gap-x-8 gap-y-3 ${panelClassName} sm:grid-cols-[9rem_1fr]`}
         >
           <p className="tabular font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground sm:pt-1.5">
             <time dateTime={event.eventDate.toISOString()}>
