@@ -7,6 +7,7 @@ import {
   apiValidationError,
   respond,
 } from '@/modules/shared/lib/api-response';
+import { entityId } from '@/modules/shared/lib/schema-fields';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
@@ -16,11 +17,14 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
     if (!admin.ok) return apiError(admin.error);
 
     const { id } = await ctx.params;
+    const parsedId = entityId.safeParse(id);
+    if (!parsedId.success) return apiValidationError(parsedId.error);
+
     const parsed = updatePublicationSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const result = await getPublicationService().update(
-      id,
+      parsedId.data,
       parsed.data,
       `admin:${admin.data.userId}`,
     );
@@ -36,7 +40,13 @@ export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id:
     if (!admin.ok) return apiError(admin.error);
 
     const { id } = await ctx.params;
-    const result = await getPublicationService().remove(id, `admin:${admin.data.userId}`);
+    const parsedId = entityId.safeParse(id);
+    if (!parsedId.success) return apiValidationError(parsedId.error);
+
+    const result = await getPublicationService().remove(
+      parsedId.data,
+      `admin:${admin.data.userId}`,
+    );
     return respond(revalidateOn(result, 'publications'));
   } catch (error) {
     return apiUnexpected(error);
