@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { BookOpen, Pencil, Plus, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { BookOpen, Plus } from 'lucide-react';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import {
   Table,
@@ -25,28 +24,11 @@ import { CourseFormDialog } from './course-form-dialog';
 // screen it sits on mirrors one public tab, and that tab also carries the teaching intro and the
 // two teaching CV lists.
 
-async function deleteCourse(id: string) {
-  const response = await fetch(`/api/admin/teaching/courses/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
-
 export function CoursesAdmin({ courses }: { courses: Course[] }) {
-  const router = useRouter();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Course | undefined>(undefined);
-  const [deleting, setDeleting] = useState<Course | undefined>(undefined);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteCourse,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<Course>((id) => `/api/admin/teaching/courses/${id}`);
 
   return (
     <div id="courses" className="scroll-mt-24">
@@ -111,28 +93,15 @@ export function CoursesAdmin({ courses }: { courses: Course[] }) {
                     {course.sortOrder}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit course: ${course.title}`}
-                        onClick={() => {
-                          setEditing(course);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete course: ${course.title}`}
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleting(course)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      editLabel={`Edit course: ${course.title}`}
+                      deleteLabel={`Delete course: ${course.title}`}
+                      onEdit={() => {
+                        setEditing(course);
+                        setFormOpen(true);
+                      }}
+                      onDelete={() => remove.request(course)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -144,14 +113,9 @@ export function CoursesAdmin({ courses }: { courses: Course[] }) {
       <CourseFormDialog open={formOpen} onOpenChange={setFormOpen} course={editing} />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this course?"
         description="It is removed from the public Teaching tab. This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );

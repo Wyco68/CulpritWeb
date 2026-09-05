@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { GraduationCap, Plus } from 'lucide-react';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import {
   Table,
@@ -36,7 +35,7 @@ import { CvEntryFormDialog } from './cv-entry-form-dialog';
 
 /**
  * The singular noun for one row of each list, used in the "Add" button's accessible name and in
- * the confirmation copy. `CV_SECTION_LABELS` are plural list headings and read wrong there
+ * the empty state. `CV_SECTION_LABELS` are plural list headings and read wrong there
  * ("Add Scholarships & travel awards").
  */
 const CV_SECTION_ITEM_LABELS: Record<CvSection, string> = {
@@ -60,12 +59,6 @@ const CV_SECTION_DESCRIPTIONS: Record<CvSection, string> = {
   teaching_award: 'Teaching prizes and commendations, shown on the public Teaching tab.',
 };
 
-async function deleteEntry(id: string) {
-  const response = await fetch(`/api/admin/teaching/entries/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
-
 export interface CvEntriesAdminProps {
   /** The lists this screen owns, in the order the matching public tab renders them. */
   sections: readonly CvSection[];
@@ -74,22 +67,11 @@ export interface CvEntriesAdminProps {
 }
 
 export function CvEntriesAdmin({ sections, entries }: CvEntriesAdminProps) {
-  const router = useRouter();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CvEntry | undefined>(undefined);
   const [defaultSection, setDefaultSection] = useState<CvSection | undefined>(undefined);
-  const [deleting, setDeleting] = useState<CvEntry | undefined>(undefined);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteEntry,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<CvEntry>((id) => `/api/admin/teaching/entries/${id}`);
 
   function openCreate(section: CvSection) {
     setEditing(undefined);
@@ -162,25 +144,12 @@ export function CvEntriesAdmin({ sections, entries }: CvEntriesAdminProps) {
                           {entry.sortOrder}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Edit entry: ${entry.title}`}
-                              onClick={() => openEdit(entry)}
-                            >
-                              <Pencil className="size-4" aria-hidden="true" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Delete entry: ${entry.title}`}
-                              className="text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleting(entry)}
-                            >
-                              <Trash2 className="size-4" aria-hidden="true" />
-                            </Button>
-                          </div>
+                          <RowActions
+                            editLabel={`Edit entry: ${entry.title}`}
+                            deleteLabel={`Delete entry: ${entry.title}`}
+                            onEdit={() => openEdit(entry)}
+                            onDelete={() => remove.request(entry)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -200,14 +169,9 @@ export function CvEntriesAdmin({ sections, entries }: CvEntriesAdminProps) {
       />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this entry?"
         description="It is removed from the public site. This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </>
   );

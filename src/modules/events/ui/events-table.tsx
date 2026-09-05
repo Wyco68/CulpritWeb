@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { CalendarDays, ImageIcon, Pencil, Plus, Trash2, Users, Video } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { CalendarDays, ImageIcon, Plus, Users, Video } from 'lucide-react';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import {
   Table,
   TableBody,
@@ -30,12 +29,6 @@ import {
 // Admin: Manage Events. Replaced Manage Appointments on 2026-09-01, and is a plainer screen than
 // the one it replaced — an event has no status, no cancel/reschedule actions and no public/private
 // toggle, so the row actions are just edit and delete.
-
-async function deleteEvent(id: string) {
-  const response = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
 
 // Pinned to the institution's zone for the same reason the public list is — the admin table and
 // the public page must not disagree about what day an event is on.
@@ -60,11 +53,8 @@ export function EventsTable({
   members?: ParticipantPerson[];
   groups?: ParticipantGroup[];
 }) {
-  const router = useRouter();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Event | undefined>(undefined);
-  const [deleting, setDeleting] = useState<Event | undefined>(undefined);
   const [participantsFor, setParticipantsFor] = useState<Event | undefined>(undefined);
 
   // Re-read from `items` on every render rather than holding the opened event in state: the dialog
@@ -74,15 +64,7 @@ export function EventsTable({
     ? (items.find((item) => item.id === participantsFor.id) ?? participantsFor)
     : undefined;
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteEvent,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<Event>((id) => `/api/admin/events/${id}`);
 
   // Evaluated once per render, client-side: this is only a label, and the authoritative split is
   // done server-side on the public tab.
@@ -160,7 +142,15 @@ export function EventsTable({
                       <span className="tabular text-xs">{item.participants.length}</span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
+                      <RowActions
+                        editLabel={`Edit: ${item.title}`}
+                        deleteLabel={`Delete: ${item.title}`}
+                        onEdit={() => {
+                          setEditing(item);
+                          setFormOpen(true);
+                        }}
+                        onDelete={() => remove.request(item)}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
@@ -169,27 +159,7 @@ export function EventsTable({
                         >
                           <Users className="size-4" aria-hidden="true" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Edit: ${item.title}`}
-                          onClick={() => {
-                            setEditing(item);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <Pencil className="size-4" aria-hidden="true" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Delete: ${item.title}`}
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleting(item)}
-                        >
-                          <Trash2 className="size-4" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      </RowActions>
                     </TableCell>
                   </TableRow>
                 );
@@ -210,16 +180,11 @@ export function EventsTable({
       />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this event?"
         // Says what actually survives: the uploaded photos stay in object storage (nothing here
         // reaches into R2), and the audit entry keeps the event's before-state.
         description="The event is removed from the public tab. This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );
