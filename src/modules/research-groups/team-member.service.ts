@@ -1,8 +1,8 @@
-import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
-import { err, ok, type Result } from '@/modules/shared/lib/result';
+import { NotFoundError } from '@/modules/shared/lib/errors';
+import { attempt, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { ListTeamMembersFilter, TeamMemberRepository } from './team-member.repository';
-import type { AuditContext, TeamMember, TeamMemberStats } from './team-member.types';
+import type { TeamMember, TeamMemberStats } from './team-member.types';
 import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
 
 export type TeamMemberServiceDeps = {
@@ -26,68 +26,47 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
   const { repository } = deps;
   const log = deps.logger ?? defaultLogger;
 
+  async function requireExisting(id: string): Promise<TeamMember> {
+    const existing = await repository.findById(id);
+    if (!existing) throw new NotFoundError('Team member not found.');
+    return existing;
+  }
+
   return {
-    async findById(id) {
-      try {
-        return ok(await repository.findById(id));
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    findById: (id) => attempt(() => repository.findById(id)),
 
-    async list(filter) {
-      try {
-        return ok(await repository.list(filter));
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    list: (filter) => attempt(() => repository.list(filter)),
 
-    async stats() {
-      try {
-        return ok(await repository.stats());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    stats: () => attempt(() => repository.stats()),
 
-    async create(input, actor) {
-      try {
-        const audit: AuditContext = { actor, action: 'team_member.create' };
-        const created = await repository.createWithAudit({ data: input, audit });
+    create: (input, actor) =>
+      attempt(async () => {
+        const created = await repository.createWithAudit({
+          data: input,
+          audit: { actor, action: 'team_member.create' },
+        });
         log.info('team_member_created', { id: created.id, actor });
-        return ok(created);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return created;
+      }),
 
-    async update(id, input, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Team member not found.'));
-
-        const audit: AuditContext = { actor, action: 'team_member.update' };
-        const updated = await repository.updateWithAudit({ id, data: input, audit });
+    update: (id, input, actor) =>
+      attempt(async () => {
+        await requireExisting(id);
+        const updated = await repository.updateWithAudit({
+          id,
+          data: input,
+          audit: { actor, action: 'team_member.update' },
+        });
         log.info('team_member_updated', { id, actor });
-        return ok(updated);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return updated;
+      }),
 
-    async remove(id, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Team member not found.'));
-
-        const audit: AuditContext = { actor, action: 'team_member.delete' };
-        await repository.deleteWithAudit({ id, audit });
+    remove: (id, actor) =>
+      attempt(async () => {
+        const existing = await requireExisting(id);
+        await repository.deleteWithAudit({ id, audit: { actor, action: 'team_member.delete' } });
         log.info('team_member_deleted', { id, actor });
-        return ok(existing);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return existing;
+      }),
   };
 }

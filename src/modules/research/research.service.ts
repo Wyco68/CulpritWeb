@@ -1,8 +1,8 @@
-import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
-import { err, ok, type Result } from '@/modules/shared/lib/result';
+import { NotFoundError } from '@/modules/shared/lib/errors';
+import { attempt, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { ResearchRepository } from './research.repository';
-import type { AuditContext, Research, ResearchStats } from './research.types';
+import type { Research, ResearchStats } from './research.types';
 import type { CreateResearchInput, UpdateResearchInput } from './research.schema';
 
 export type ResearchServiceDeps = {
@@ -24,60 +24,45 @@ export function createResearchService(deps: ResearchServiceDeps): ResearchServic
   const { repository } = deps;
   const log = deps.logger ?? defaultLogger;
 
+  async function requireExisting(id: string): Promise<Research> {
+    const existing = await repository.findById(id);
+    if (!existing) throw new NotFoundError('Research work not found.');
+    return existing;
+  }
+
   return {
-    async list() {
-      try {
-        return ok(await repository.list());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    list: () => attempt(() => repository.list()),
 
-    async stats() {
-      try {
-        return ok(await repository.stats());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    stats: () => attempt(() => repository.stats()),
 
-    async create(input, actor) {
-      try {
-        const audit: AuditContext = { actor, action: 'research.create' };
-        const created = await repository.createWithAudit({ data: input, audit });
+    create: (input, actor) =>
+      attempt(async () => {
+        const created = await repository.createWithAudit({
+          data: input,
+          audit: { actor, action: 'research.create' },
+        });
         log.info('research_created', { id: created.id, actor });
-        return ok(created);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return created;
+      }),
 
-    async update(id, input, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Research work not found.'));
-
-        const audit: AuditContext = { actor, action: 'research.update' };
-        const updated = await repository.updateWithAudit({ id, data: input, audit });
+    update: (id, input, actor) =>
+      attempt(async () => {
+        await requireExisting(id);
+        const updated = await repository.updateWithAudit({
+          id,
+          data: input,
+          audit: { actor, action: 'research.update' },
+        });
         log.info('research_updated', { id, actor });
-        return ok(updated);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return updated;
+      }),
 
-    async remove(id, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Research work not found.'));
-
-        const audit: AuditContext = { actor, action: 'research.delete' };
-        await repository.deleteWithAudit({ id, audit });
+    remove: (id, actor) =>
+      attempt(async () => {
+        const existing = await requireExisting(id);
+        await repository.deleteWithAudit({ id, audit: { actor, action: 'research.delete' } });
         log.info('research_deleted', { id, actor });
-        return ok(existing);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return existing;
+      }),
   };
 }
