@@ -3,7 +3,6 @@
 export {
   createPublicationSchema,
   updatePublicationSchema,
-  publicationIdSchema,
   type CreatePublicationInput,
   type UpdatePublicationInput,
 } from './publication.schema';
