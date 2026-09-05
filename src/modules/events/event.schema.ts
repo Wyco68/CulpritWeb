@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
+import { entityId, httpUrl, optionalText, safeText } from '@/modules/shared/lib/schema-fields';
 import { parseInstitutionLocalDatetime } from '@/modules/shared/lib/timezone';
 import { parseYouTubeVideoId } from '@/modules/integrations/youtube/youtube-utils';
-
-// Single source of truth for event I/O. Free-text fields are sanitized (HTML stripped) via
-// `.transform` AFTER shape validation — same convention as every other module here.
-
-const safeText = (max: number) => z.string().trim().min(1).max(max).transform(stripHtml);
 
 // A bare `<input type="datetime-local">` value ("YYYY-MM-DDTHH:mm") carries no timezone, so a
 // plain `z.coerce.date()` would interpret it using whatever machine happens to run the parse
@@ -23,7 +19,7 @@ const institutionDate = z.preprocess(
  * A photo URL produced by POST /api/admin/events/photo. Validated as a URL rather than trusted:
  * the client sends back whatever the upload route handed it, and this is a server boundary.
  */
-const photoUrlSchema = z.string().trim().min(1).max(2000).url();
+const photoUrlSchema = httpUrl.min(1);
 
 /**
  * A video reference. Accepts a YouTube watch/share/embed/shorts URL or a bare 11-character video
@@ -48,15 +44,7 @@ const videoRefSchema = z
 export const createEventSchema = z.object({
   title: safeText(300),
   description: safeText(10_000),
-  // Nullable as well as optional so clearing it writes NULL — an undefined key vanishes from the
-  // JSON body, which the update route reads as "leave the column alone".
-  content: z
-    .string()
-    .trim()
-    .max(50_000)
-    .transform((v) => stripHtml(v) || null)
-    .nullable()
-    .optional(),
+  content: optionalText(50_000),
   eventDate: institutionDate,
   photoUrls: z.array(photoUrlSchema).max(20).optional(),
   videoUrls: z.array(videoRefSchema).max(10).optional(),
@@ -67,11 +55,8 @@ export type CreateEventInput = z.infer<typeof createEventSchema>;
 export const updateEventSchema = createEventSchema.partial();
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 
-/** Admin: identify an event by id (PUT/DELETE path param, re-validated at the boundary). */
-export const eventIdSchema = z.string().trim().min(1).max(200);
-
 /** Admin: identify one participant row (DELETE path param). */
-export const participantIdSchema = z.string().trim().min(1).max(200);
+export const participantIdSchema = entityId;
 
 /**
  * Admin: add one participant to an event.
@@ -85,7 +70,7 @@ export const participantIdSchema = z.string().trim().min(1).max(200);
 export const addParticipantSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('member'),
-    teamMemberId: z.string().trim().min(1).max(200),
+    teamMemberId: entityId,
   }),
   z.object({
     kind: z.literal('guest'),
@@ -106,6 +91,6 @@ export type AddParticipantInput = z.infer<typeof addParticipantSchema>;
  * group later cannot retroactively change who attended.
  */
 export const addGroupParticipantsSchema = z.object({
-  researchGroupId: z.string().trim().min(1).max(200),
+  researchGroupId: entityId,
 });
 export type AddGroupParticipantsInput = z.infer<typeof addGroupParticipantsSchema>;
