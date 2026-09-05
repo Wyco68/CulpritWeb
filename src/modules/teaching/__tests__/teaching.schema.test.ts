@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createCourseSchema,
-  createCvEntrySchema,
-  updateCvEntrySchema,
-} from '../teaching.schema';
+import { createCourseSchema, createCvEntrySchema, updateCvEntrySchema } from '../teaching.schema';
 
 describe('createCvEntrySchema', () => {
   const VALID = { section: 'education', title: 'PhD in Computer Science' };

@@ -217,7 +217,10 @@ describe('course service', () => {
     const repository = new FakeCourseRepository();
     const service = createCourseService({ repository, logger: SILENT_LOGGER });
 
-    const result = await service.create({ title: 'Systems Security', level: 'Undergraduate' }, 'admin:1');
+    const result = await service.create(
+      { title: 'Systems Security', level: 'Undergraduate' },
+      'admin:1',
+    );
 
     expect(result.ok).toBe(true);
     expect(repository.audits[0]).toMatchObject({ action: 'course.create' });

@@ -23,15 +23,24 @@ export async function purgeCloudflareCache(paths: string[]): Promise<void> {
 
   const files = paths.map((path) => new URL(path, appUrl).toString());
   try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files }),
-      signal: AbortSignal.timeout(PURGE_TIMEOUT_MS),
-    });
-    const body: { success?: boolean; errors?: unknown } | null = await response.json().catch(() => null);
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files }),
+        signal: AbortSignal.timeout(PURGE_TIMEOUT_MS),
+      },
+    );
+    const body: { success?: boolean; errors?: unknown } | null = await response
+      .json()
+      .catch(() => null);
     if (!response.ok || !body?.success) {
-      logger.error('cloudflare_purge_failed', { status: response.status, errors: body?.errors, files });
+      logger.error('cloudflare_purge_failed', {
+        status: response.status,
+        errors: body?.errors,
+        files,
+      });
     }
   } catch (error) {
     logger.error('cloudflare_purge_failed', {

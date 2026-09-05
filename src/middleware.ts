@@ -10,7 +10,11 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export type RateLimitRule = { key: string; limit: number; windowSeconds: number };
 
 /** Pure decision function (no NextRequest coupling) so it's unit-testable in isolation. */
-export function resolveRateLimitRule(pathname: string, method: string, ip: string): RateLimitRule | null {
+export function resolveRateLimitRule(
+  pathname: string,
+  method: string,
+  ip: string,
+): RateLimitRule | null {
   if (pathname === '/api/auth/sign-in/email' && method === 'POST') {
     return { key: `auth-signin:${ip}`, limit: 5, windowSeconds: 60 };
   }
@@ -31,7 +35,10 @@ export function getClientIp(headers: Headers): string {
 /** 429 shaped like the shared API error envelope (see shared/lib/api-response.ts#apiError). */
 export function rateLimitExceededResponse(retryAfterSeconds: number): NextResponse {
   return NextResponse.json(
-    { ok: false, error: { code: 'rate_limited', message: 'Too many requests. Please try again later.' } },
+    {
+      ok: false,
+      error: { code: 'rate_limited', message: 'Too many requests. Please try again later.' },
+    },
     { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
   );
 }

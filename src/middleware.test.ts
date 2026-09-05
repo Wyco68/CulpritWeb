@@ -34,7 +34,11 @@ describe('resolveRateLimitRule', () => {
   it('applies the admin rule to mutating methods under /api/admin/**', () => {
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
       const rule = resolveRateLimitRule('/api/admin/research', method, '5.6.7.8');
-      expect(rule).toEqual({ key: `admin:5.6.7.8:/api/admin/research`, limit: 30, windowSeconds: 60 });
+      expect(rule).toEqual({
+        key: `admin:5.6.7.8:/api/admin/research`,
+        limit: 30,
+        windowSeconds: 60,
+      });
     }
   });
 
@@ -84,11 +88,15 @@ describe('resolveTeamMembersCompatRedirect', () => {
     const res = resolveTeamMembersCompatRedirect(
       makeRequest('https://example.com/api/team-members?groupId=' + encodeURIComponent('grp/ 1')),
     );
-    expect(res?.headers.get('location')).toBe('https://example.com/api/team-members/group/grp%2F%201');
+    expect(res?.headers.get('location')).toBe(
+      'https://example.com/api/team-members/group/grp%2F%201',
+    );
   });
 
   it('is a no-op when there is no groupId param', () => {
-    expect(resolveTeamMembersCompatRedirect(makeRequest('https://example.com/api/team-members'))).toBeNull();
+    expect(
+      resolveTeamMembersCompatRedirect(makeRequest('https://example.com/api/team-members')),
+    ).toBeNull();
   });
 
   it('is a no-op for non-GET methods or other paths', () => {
@@ -98,7 +106,9 @@ describe('resolveTeamMembersCompatRedirect', () => {
       ),
     ).toBeNull();
     expect(
-      resolveTeamMembersCompatRedirect(makeRequest('https://example.com/api/team-members/group/x?groupId=y')),
+      resolveTeamMembersCompatRedirect(
+        makeRequest('https://example.com/api/team-members/group/x?groupId=y'),
+      ),
     ).toBeNull();
   });
 });

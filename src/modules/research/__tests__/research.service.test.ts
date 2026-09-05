@@ -59,7 +59,11 @@ class FakeRepository implements ResearchRepository {
   }): Promise<Research> {
     const current = this.store.get(input.id);
     if (!current) throw new Error('not found');
-    const updated: Research = { ...current, ...input.data, updatedAt: new Date('2026-08-05T01:00:00Z') };
+    const updated: Research = {
+      ...current,
+      ...input.data,
+      updatedAt: new Date('2026-08-05T01:00:00Z'),
+    };
     this.store.set(input.id, updated);
     this.audits.push({ ...input.audit, entityId: input.id });
     return { ...updated };

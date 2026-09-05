@@ -57,7 +57,9 @@ const DEFAULT_OPTIONS = { limit: 5, windowSeconds: 3600 };
 // windowed limiter without reintroducing env-gated branching.
 const instances = new Map<string, RateLimiter>();
 
-export function getRateLimiter(options: { limit: number; windowSeconds: number } = DEFAULT_OPTIONS): RateLimiter {
+export function getRateLimiter(
+  options: { limit: number; windowSeconds: number } = DEFAULT_OPTIONS,
+): RateLimiter {
   const cacheKey = `${options.limit}:${options.windowSeconds}`;
   let limiter = instances.get(cacheKey);
   if (!limiter) {

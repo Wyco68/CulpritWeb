@@ -7,9 +7,7 @@ describe('parseYouTubeVideoId', () => {
   });
 
   it('accepts a watch?v= URL', () => {
-    expect(parseYouTubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(
-      'dQw4w9WgXcQ',
-    );
+    expect(parseYouTubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
   });
 
   it('accepts a youtu.be short URL', () => {
@@ -17,9 +15,7 @@ describe('parseYouTubeVideoId', () => {
   });
 
   it('accepts an embed URL', () => {
-    expect(parseYouTubeVideoId('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe(
-      'dQw4w9WgXcQ',
-    );
+    expect(parseYouTubeVideoId('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
   });
 
   it('accepts a youtube-nocookie.com embed URL', () => {

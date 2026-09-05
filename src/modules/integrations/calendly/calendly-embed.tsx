@@ -104,8 +104,8 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
         <CalendarX2 className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
         <p className="font-serif text-lg text-foreground">The booking calendar didn&apos;t load</p>
         <p className="max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground">
-          Reloading the page usually fixes this. If it keeps happening, the scheduling link has
-          not been configured yet.
+          Reloading the page usually fixes this. If it keeps happening, the scheduling link has not
+          been configured yet.
         </p>
       </div>
     );
@@ -124,7 +124,10 @@ export function CalendlyEmbed({ url, className, minHeight = 700 }: CalendlyEmbed
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-background"
           style={{ minHeight }}
         >
-          <Loader2 className="size-6 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
+          <Loader2
+            className="size-6 animate-spin text-accent motion-reduce:animate-none"
+            aria-hidden="true"
+          />
           <span className="text-sm text-muted-foreground">Loading available times…</span>
         </div>
       )}

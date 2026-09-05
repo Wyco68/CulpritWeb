@@ -27,10 +27,7 @@ export default async function AdminAppointmentPage() {
 
   return (
     <AdminScreen title="Appointment" intro="Everything on the public Make Appointment tab.">
-      <ProfileFieldsForm
-        profile={result.ok ? result.data : null}
-        sections={PROFILE_SECTIONS}
-      />
+      <ProfileFieldsForm profile={result.ok ? result.data : null} sections={PROFILE_SECTIONS} />
     </AdminScreen>
   );
 }

@@ -34,7 +34,8 @@ const RETRYABLE_PATTERNS = [
 ];
 
 function isRetryableConnectionError(error: unknown): boolean {
-  const message = error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : String(error);
+  const message =
+    error instanceof Error ? `${error.message} ${String(error.cause ?? '')}` : String(error);
   return RETRYABLE_PATTERNS.some((pattern) => pattern.test(message));
 }
 

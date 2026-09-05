@@ -5,7 +5,10 @@ import { useState } from 'react';
 // re-exports `getTurnstileVerifier`, which imports `env.server.ts` (guarded by `server-only`) —
 // even an unused named import from the barrel drags that into this Client Component's bundle and
 // fails the build. Same reasoning as the admin form dialogs' deep imports elsewhere.
-import { CalendlyEmbed, type CalendlyEmbedProps } from '@/modules/integrations/calendly/calendly-embed';
+import {
+  CalendlyEmbed,
+  type CalendlyEmbedProps,
+} from '@/modules/integrations/calendly/calendly-embed';
 import { TurnstileChallenge } from '@/modules/integrations/turnstile/turnstile-challenge';
 
 /**
