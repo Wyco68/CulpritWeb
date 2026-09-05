@@ -1,4 +1,5 @@
 import { prisma } from '@/modules/shared/lib/prisma';
+import { auditLogData } from '@/modules/shared/lib/audit';
 import type { Prisma, TeamMember as PrismaTeamMember } from '@prisma/client';
 import type { AuditContext, TeamMember, TeamMemberStats } from './team-member.types';
 import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
@@ -49,15 +50,8 @@ export function toDomain(row: PrismaTeamMember): TeamMember {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'team_member',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('team_member', audit, entityId);
 
 export class PrismaTeamMemberRepository implements TeamMemberRepository {
   async findById(id: string): Promise<TeamMember | null> {
@@ -102,7 +96,7 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
           sortOrder: input.data.sortOrder ?? 0,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -116,19 +110,19 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.teamMember.update({
         where: { id: input.id },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
         data: {
-          ...(input.data.name !== undefined ? { name: input.data.name } : {}),
-          ...(input.data.nickname !== undefined ? { nickname: input.data.nickname } : {}),
-          ...(input.data.role !== undefined ? { role: input.data.role } : {}),
-          ...(input.data.bio !== undefined ? { bio: input.data.bio ?? null } : {}),
-          ...(input.data.photoUrl !== undefined ? { photoUrl: input.data.photoUrl ?? null } : {}),
-          ...(input.data.researchGroupId !== undefined
-            ? { researchGroupId: input.data.researchGroupId }
-            : {}),
-          ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
+          name: input.data.name,
+          nickname: input.data.nickname,
+          role: input.data.role,
+          bio: input.data.bio,
+          photoUrl: input.data.photoUrl,
+          researchGroupId: input.data.researchGroupId,
+          sortOrder: input.data.sortOrder,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -137,7 +131,7 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.teamMember.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }

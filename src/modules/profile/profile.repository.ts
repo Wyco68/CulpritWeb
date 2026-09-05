@@ -1,4 +1,5 @@
 import { prisma } from '@/modules/shared/lib/prisma';
+import { auditLogData } from '@/modules/shared/lib/audit';
 import type { Prisma, Profile as PrismaProfile } from '@prisma/client';
 import type { AuditContext, Profile } from './profile.types';
 import type { PatchProfileInput, UpdateProfileInput } from './profile.schema';
@@ -106,21 +107,14 @@ function toPatchFields(data: PatchProfileData): ProfileWritableFields {
   return fields;
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'profile',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
-
 /** Blank placeholder used only when the singleton row does not exist yet. */
 const BLANK_PROFILE_DATA: Prisma.ProfileCreateInput = {
   fullName: '',
   title: '',
 };
+
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('profile', audit, entityId);
 
 export class PrismaProfileRepository implements ProfileRepository {
   async get(): Promise<Profile> {
@@ -130,10 +124,7 @@ export class PrismaProfileRepository implements ProfileRepository {
     return toDomain(created);
   }
 
-  async updateWithAudit(input: {
-    data: UpdateProfileData;
-    audit: AuditContext;
-  }): Promise<Profile> {
+  async updateWithAudit(input: { data: UpdateProfileData; audit: AuditContext }): Promise<Profile> {
     return this.writeWithAudit(toFullWriteFields(input.data), input.audit);
   }
 
@@ -153,7 +144,7 @@ export class PrismaProfileRepository implements ProfileRepository {
         ? await tx.profile.update({ where: { id: existing.id }, data: fields })
         : await tx.profile.create({ data: { ...BLANK_PROFILE_DATA, ...fields } });
 
-      await tx.auditLog.create({ data: auditCreateInput(audit, row.id) });
+      await tx.auditLog.create({ data: auditData(audit, row.id) });
       return row;
     });
     return toDomain(written);

@@ -1,6 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
+import { auditLogData } from '@/modules/shared/lib/audit';
 import type {
-  Prisma,
   ResearchGroup as PrismaResearchGroup,
   TeamMember as PrismaTeamMember,
 } from '@prisma/client';
@@ -52,15 +52,8 @@ function toDomain(row: RowWithMembers): ResearchGroup {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'research_group',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('research_group', audit, entityId);
 
 export class PrismaResearchGroupRepository implements ResearchGroupRepository {
   async findById(id: string): Promise<ResearchGroup | null> {
@@ -111,7 +104,7 @@ export class PrismaResearchGroupRepository implements ResearchGroupRepository {
         data: { name: input.data.name, description: input.data.description },
         include: teamMembersInclude,
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -125,13 +118,12 @@ export class PrismaResearchGroupRepository implements ResearchGroupRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.researchGroup.update({
         where: { id: input.id },
-        data: {
-          ...(input.data.name !== undefined ? { name: input.data.name } : {}),
-          ...(input.data.description !== undefined ? { description: input.data.description } : {}),
-        },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
+        data: { name: input.data.name, description: input.data.description },
         include: teamMembersInclude,
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -140,7 +132,7 @@ export class PrismaResearchGroupRepository implements ResearchGroupRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.researchGroup.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }

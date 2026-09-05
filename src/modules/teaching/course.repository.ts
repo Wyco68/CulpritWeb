@@ -1,5 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
-import type { Prisma, Course as PrismaCourse } from '@prisma/client';
+import { auditLogData } from '@/modules/shared/lib/audit';
+import type { Course as PrismaCourse } from '@prisma/client';
 import type { AuditContext, Course, CourseStats } from './teaching.types';
 import type { CreateCourseInput, UpdateCourseInput } from './teaching.schema';
 
@@ -35,15 +36,8 @@ function toDomain(row: PrismaCourse): Course {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'course',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('course', audit, entityId);
 
 export class PrismaCourseRepository implements CourseRepository {
   async findById(id: string): Promise<Course | null> {
@@ -54,7 +48,9 @@ export class PrismaCourseRepository implements CourseRepository {
   async list(): Promise<Course[]> {
     // `sortOrder` is the admin's arrangement; `title` only breaks ties so equal-ordered rows
     // don't shuffle between requests. The public tab groups by `level` in render order.
-    const rows = await prisma.course.findMany({ orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }] });
+    const rows = await prisma.course.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+    });
     return rows.map(toDomain);
   }
 
@@ -75,7 +71,7 @@ export class PrismaCourseRepository implements CourseRepository {
           sortOrder: input.data.sortOrder ?? 0,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -89,19 +85,19 @@ export class PrismaCourseRepository implements CourseRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.course.update({
         where: { id: input.id },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
         data: {
-          ...(input.data.code !== undefined ? { code: input.data.code ?? null } : {}),
-          ...(input.data.title !== undefined ? { title: input.data.title } : {}),
-          ...(input.data.level !== undefined ? { level: input.data.level } : {}),
-          ...(input.data.term !== undefined ? { term: input.data.term ?? null } : {}),
-          ...(input.data.description !== undefined
-            ? { description: input.data.description ?? null }
-            : {}),
-          ...(input.data.link !== undefined ? { link: input.data.link ?? null } : {}),
-          ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
+          code: input.data.code,
+          title: input.data.title,
+          level: input.data.level,
+          term: input.data.term,
+          description: input.data.description,
+          link: input.data.link,
+          sortOrder: input.data.sortOrder,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -110,7 +106,7 @@ export class PrismaCourseRepository implements CourseRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.course.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }
