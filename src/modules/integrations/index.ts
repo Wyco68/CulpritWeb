@@ -1,6 +1,6 @@
 // integrations module — edges behind interfaces: EmailClient (Resend), TurnstileVerifier
 // (Cloudflare), RateLimiter (in-process, defense-in-depth behind the Cloudflare edge WAF rate
-// limit — see ADR-008), StorageAdapter (Supabase Storage). Each has a real
+// limit — see ADR-008), StorageAdapter (Cloudflare R2). Each has a real
 // adapter + a graceful no-op when its env is unset, so dev/test never crash. No domain logic
 // lives here.
 //
@@ -56,6 +56,7 @@ export {
   R2StorageAdapter,
   getStorageAdapter,
 } from './storage/storage-adapter';
+export { readUploadedPhoto, type UploadedPhoto } from './storage/uploaded-photo';
 
 export { YouTubeVideo, type YouTubeVideoProps } from './youtube/youtube-video';
 export { parseYouTubeVideoId } from './youtube/youtube-utils';
