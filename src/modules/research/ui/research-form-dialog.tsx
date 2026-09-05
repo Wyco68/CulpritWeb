@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -25,15 +26,10 @@ import { createResearchSchema, type CreateResearchInput } from '../research.sche
 // still receives the fully-validated, correctly-typed `CreateResearchInput`.
 type ResearchFormInput = z.input<typeof createResearchSchema>;
 
-async function submitResearch(id: string | undefined, input: CreateResearchInput) {
-  const response = await fetch(id ? `/api/admin/research/${id}` : '/api/admin/research', {
-    method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as Research;
+function submitResearch(id: string | undefined, input: CreateResearchInput) {
+  return id
+    ? apiSend<Research>('PUT', `/api/admin/research/${id}`, input)
+    : apiSend<Research>('POST', '/api/admin/research', input);
 }
 
 export function ResearchFormDialog({

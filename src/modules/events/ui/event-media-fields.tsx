@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Loader2, Plus, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Label } from '@/modules/shared/ui/label';
@@ -22,9 +23,9 @@ const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 const MAX_PHOTOS = 20;
 const MAX_VIDEOS = 10;
 
-// Kept in step with the route's own cap (src/app/api/admin/events/photo/route.ts). A phone photo is
-// routinely 5–12 MB, well over this, which is the single most common reason an upload was rejected
-// with a 400 before `prepareForUpload` shrank it here.
+// Kept in step with the server's own cap (modules/integrations/storage/uploaded-photo.ts). A phone
+// photo is routinely 5–12 MB, well over this, which is the single most common reason an upload was
+// rejected with a 400 before `prepareForUpload` shrank it here.
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 // Longest edge kept after downscale. A public gallery tile is a few hundred px; 2000 leaves plenty
 // of headroom for a full-bleed view without shipping a 6000px original.
@@ -82,10 +83,11 @@ async function uploadEventPhoto(file: File): Promise<string> {
   const prepared = await prepareForUpload(file);
   const formData = new FormData();
   formData.append('file', prepared);
-  const response = await fetch('/api/admin/events/photo', { method: 'POST', body: formData });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Upload failed');
-  return (body.data as { url: string }).url;
+  const { url } = await apiRequest<{ url: string }>('/api/admin/events/photo', {
+    method: 'POST',
+    body: formData,
+  });
+  return url;
 }
 
 export function PhotoUploadList({

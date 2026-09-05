@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -19,15 +20,10 @@ import { createPublicationSchema, type CreatePublicationInput } from '../publica
 
 type PublicationFormInput = z.input<typeof createPublicationSchema>;
 
-async function submitPublication(id: string | undefined, input: CreatePublicationInput) {
-  const response = await fetch(id ? `/api/admin/publications/${id}` : '/api/admin/publications', {
-    method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as Publication;
+function submitPublication(id: string | undefined, input: CreatePublicationInput) {
+  return id
+    ? apiSend<Publication>('PUT', `/api/admin/publications/${id}`, input)
+    : apiSend<Publication>('POST', '/api/admin/publications', input);
 }
 
 export function PublicationFormDialog({

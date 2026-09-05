@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Check, Loader2, Upload, X, ZoomIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
 import { Label } from '@/modules/shared/ui/label';
@@ -29,10 +30,8 @@ const MAX_ZOOM = 3;
 async function uploadPhoto(endpoint: string, file: Blob, filename: string): Promise<string> {
   const formData = new FormData();
   formData.append('file', file, filename);
-  const response = await fetch(endpoint, { method: 'POST', body: formData });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Upload failed');
-  return (body.data as { url: string }).url;
+  const { url } = await apiRequest<{ url: string }>(endpoint, { method: 'POST', body: formData });
+  return url;
 }
 
 type Pending = { src: string; width: number; height: number };
