@@ -1,44 +1,26 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
+import { httpUrl, optionalUrl, safeText } from '@/modules/shared/lib/schema-fields';
 
-// Single source of truth for profile I/O. Free-text fields are sanitized (HTML stripped) via
-// `.transform` AFTER shape validation — same convention as every other module here.
-//
 // The CV list fields are gone from this schema: they are `cv_entry` rows now, edited one at a
 // time through the teaching module rather than as part of this whole-document PUT (ADR-012).
 
-const safeText = (max: number) => z.string().trim().min(1).max(max).transform(stripHtml);
+// Local rather than the shared `optionalText`: these fields parse an emptied value to `undefined`,
+// which the profile repository's `key in data` check still writes as NULL. The shared helper's
+// explicit null would widen `UpdateProfileInput`, which the admin form's own types are built on.
 const optionalSafeText = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
-    .transform((v) => stripHtml(v) || undefined)
+    .transform((value) => stripHtml(value) || undefined)
     .optional();
-
-/** An optional external profile link. Empty string from an untouched form input means "unset". */
-const optionalUrl = z
-  .string()
-  .trim()
-  .max(2000)
-  .refine((v) => v === '' || z.string().url().safeParse(v).success, {
-    message: 'Must be a valid URL.',
-  })
-  .transform((v) => v || null)
-  .nullable()
-  .optional();
 
 /** Admin: replace the whole structured profile (singleton, full-document PUT). */
 export const updateProfileSchema = z.object({
   fullName: safeText(200),
   title: safeText(200),
-  photoUrl: z
-    .string()
-    .trim()
-    .max(2000)
-    .url()
-    .nullable()
-    .optional(),
+  photoUrl: httpUrl.nullable().optional(),
   bio: optionalSafeText(5000),
   positionAffiliation: optionalSafeText(3000),
   researchStatement: optionalSafeText(5000),

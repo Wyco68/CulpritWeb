@@ -60,7 +60,9 @@ export type PublicArea = keyof typeof AREA_PATHS;
  * forgotten here. Used by the `'profile'` purge, which affects all of them.
  */
 const PUBLIC_PAGE_PATHS: string[] = [
-  ...new Set(Object.values(AREA_PATHS).flatMap((paths) => paths.filter((p) => !p.startsWith('/api/')))),
+  ...new Set(
+    Object.values(AREA_PATHS).flatMap((paths) => paths.filter((p) => !p.startsWith('/api/'))),
+  ),
 ];
 
 /**

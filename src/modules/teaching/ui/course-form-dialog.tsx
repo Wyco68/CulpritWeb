@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -23,18 +24,10 @@ import { createCourseSchema, type CreateCourseInput } from '../teaching.schema';
 // `handleSubmit`'s callback still receives the fully-validated `CreateCourseInput`.
 type CourseFormInput = z.input<typeof createCourseSchema>;
 
-async function submitCourse(id: string | undefined, input: CreateCourseInput) {
-  const response = await fetch(
-    id ? `/api/admin/teaching/courses/${id}` : '/api/admin/teaching/courses',
-    {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    },
-  );
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as Course;
+function submitCourse(id: string | undefined, input: CreateCourseInput) {
+  return id
+    ? apiSend<Course>('PUT', `/api/admin/teaching/courses/${id}`, input)
+    : apiSend<Course>('POST', '/api/admin/teaching/courses', input);
 }
 
 export function CourseFormDialog({

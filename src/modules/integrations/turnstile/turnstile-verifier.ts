@@ -8,7 +8,10 @@ const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverif
 // Cloudflare Turnstile. The client widget protects nothing — server-side siteverify is mandatory.
 // Tokens are single-use and expire in 300s.
 export interface TurnstileVerifier {
-  verify(token: string, remoteIp?: string): Promise<Result<true, ValidationError | IntegrationError>>;
+  verify(
+    token: string,
+    remoteIp?: string,
+  ): Promise<Result<true, ValidationError | IntegrationError>>;
 }
 
 /** No-op verifier for dev/test when TURNSTILE_SECRET_KEY is unset — always passes, logs. */
@@ -26,14 +29,17 @@ export class CloudflareTurnstileVerifier implements TurnstileVerifier {
     token: string,
     remoteIp?: string,
   ): Promise<Result<true, ValidationError | IntegrationError>> {
-    if (!token) return err(new ValidationError('Bot challenge missing.', { turnstileToken: ['Required'] }));
+    if (!token)
+      return err(new ValidationError('Bot challenge missing.', { turnstileToken: ['Required'] }));
     try {
       const body = new URLSearchParams({ secret: this.secretKey, response: token });
       if (remoteIp) body.set('remoteip', remoteIp);
       const res = await fetch(SITEVERIFY_URL, { method: 'POST', body });
       const data = (await res.json()) as { success: boolean };
       if (!data.success) {
-        return err(new ValidationError('Bot challenge failed.', { turnstileToken: ['Verification failed'] }));
+        return err(
+          new ValidationError('Bot challenge failed.', { turnstileToken: ['Verification failed'] }),
+        );
       }
       return ok(true);
     } catch (cause) {

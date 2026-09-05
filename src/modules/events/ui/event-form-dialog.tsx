@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -27,15 +28,10 @@ import { PhotoUploadList, VideoLinkList } from './event-media-fields';
 // fully-validated, correctly-typed `CreateEventInput`.
 type EventFormInput = z.input<typeof createEventSchema>;
 
-async function submitEvent(id: string | undefined, input: CreateEventInput) {
-  const response = await fetch(id ? `/api/admin/events/${id}` : '/api/admin/events', {
-    method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as Event;
+function submitEvent(id: string | undefined, input: CreateEventInput) {
+  return id
+    ? apiSend<Event>('PUT', `/api/admin/events/${id}`, input)
+    : apiSend<Event>('POST', '/api/admin/events', input);
 }
 
 export function EventFormDialog({

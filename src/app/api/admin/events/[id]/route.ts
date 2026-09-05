@@ -10,7 +10,6 @@ import {
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: update an event.
 export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();

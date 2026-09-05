@@ -4,7 +4,6 @@
 export {
   createResearchGroupSchema,
   updateResearchGroupSchema,
-  researchGroupIdSchema,
   type CreateResearchGroupInput,
   type UpdateResearchGroupInput,
 } from './research-group.schema';
@@ -22,7 +21,6 @@ export type { ResearchGroupRepository } from './research-group.repository';
 export {
   createTeamMemberSchema,
   updateTeamMemberSchema,
-  teamMemberIdSchema,
   teamMemberGroupIdSchema,
   type CreateTeamMemberInput,
   type UpdateTeamMemberInput,

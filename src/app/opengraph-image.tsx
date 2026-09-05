@@ -22,47 +22,45 @@ export const contentType = 'image/png';
 
 export default function OpengraphImage() {
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        padding: 88,
+        backgroundColor: CARD_BACKGROUND,
+        color: CARD_FOREGROUND,
+        fontFamily: 'serif',
+      }}
+    >
+      {/* The same short accent rule that marks the start of every section on the site. */}
+      <div style={{ display: 'flex', width: 64, height: 3, backgroundColor: CARD_ACCENT }} />
+
       <div
         style={{
-          width: '100%',
-          height: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: 88,
-          backgroundColor: CARD_BACKGROUND,
-          color: CARD_FOREGROUND,
-          fontFamily: 'serif',
+          marginTop: 40,
+          fontSize: 128,
+          letterSpacing: -4,
+          lineHeight: 1,
         }}
       >
-        {/* The same short accent rule that marks the start of every section on the site. */}
-        <div style={{ display: 'flex', width: 64, height: 3, backgroundColor: CARD_ACCENT }} />
-
-        <div
-          style={{
-            display: 'flex',
-            marginTop: 40,
-            fontSize: 128,
-            letterSpacing: -4,
-            lineHeight: 1,
-          }}
-        >
-          The Culprit
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            marginTop: 28,
-            fontSize: 30,
-            color: CARD_MUTED,
-          }}
-        >
-          Information security research, teaching, and supervision
-        </div>
+        The Culprit
       </div>
-    ),
+
+      <div
+        style={{
+          display: 'flex',
+          marginTop: 28,
+          fontSize: 30,
+          color: CARD_MUTED,
+        }}
+      >
+        Information security research, teaching, and supervision
+      </div>
+    </div>,
     { ...size },
   );
 }

@@ -63,7 +63,9 @@ describe('InMemoryRateLimiter', () => {
 
 describe('getRateLimiter', () => {
   it('returns the same instance for the same config', () => {
-    expect(getRateLimiter({ limit: 5, windowSeconds: 60 })).toBe(getRateLimiter({ limit: 5, windowSeconds: 60 }));
+    expect(getRateLimiter({ limit: 5, windowSeconds: 60 })).toBe(
+      getRateLimiter({ limit: 5, windowSeconds: 60 }),
+    );
   });
 
   it('returns distinct instances for distinct configs', () => {

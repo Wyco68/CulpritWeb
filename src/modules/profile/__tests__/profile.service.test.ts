@@ -30,10 +30,7 @@ class FakeRepository implements ProfileRepository {
     return { ...this.current };
   }
 
-  async updateWithAudit(input: {
-    data: Partial<Profile>;
-    audit: AuditContext;
-  }): Promise<Profile> {
+  async updateWithAudit(input: { data: Partial<Profile>; audit: AuditContext }): Promise<Profile> {
     this.current = { ...this.current, ...input.data, updatedAt: new Date('2026-08-02T01:00:00Z') };
     this.audits.push(input.audit);
     return { ...this.current };

@@ -62,7 +62,10 @@ export function apiValidationError(error: z.ZodError): NextResponse<ApiError> {
 }
 
 /** Map a service Result to a response. Success -> data envelope; Err -> mapped error. */
-export function respond<T>(result: Result<T>, successStatus = 200): NextResponse<ApiResponseBody<T>> {
+export function respond<T>(
+  result: Result<T>,
+  successStatus = 200,
+): NextResponse<ApiResponseBody<T>> {
   return result.ok ? apiSuccess(result.data, successStatus) : apiError(result.error);
 }
 
@@ -88,7 +91,10 @@ export type PublicCacheOptions = {
  * here is respected as-is rather than overwritten — it's what lets browser TTL and edge TTL differ
  * intentionally instead of both inheriting the same `revalidate` value.
  */
-export function withPublicCache<T>(response: NextResponse<T>, opts: PublicCacheOptions): NextResponse<T> {
+export function withPublicCache<T>(
+  response: NextResponse<T>,
+  opts: PublicCacheOptions,
+): NextResponse<T> {
   response.headers.set(
     'Cache-Control',
     `public, max-age=${opts.browserTtl}, s-maxage=${opts.edgeTtl}, stale-while-revalidate=${opts.staleWhileRevalidate}`,

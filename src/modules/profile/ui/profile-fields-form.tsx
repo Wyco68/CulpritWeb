@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
@@ -206,15 +207,8 @@ function toPayload(values: FormValues, fields: readonly ProfileFieldKey[]) {
   return payload;
 }
 
-async function patchProfile(payload: Record<string, string | null>): Promise<Profile> {
-  const response = await fetch('/api/admin/profile', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as Profile;
+function patchProfile(payload: Record<string, string | null>): Promise<Profile> {
+  return apiSend<Profile>('PATCH', '/api/admin/profile', payload);
 }
 
 export interface ProfileFieldsFormProps {

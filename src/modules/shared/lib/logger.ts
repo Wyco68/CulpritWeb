@@ -12,7 +12,7 @@ export interface Logger {
 
 function emit(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
   const line = JSON.stringify({ level, message, time: new Date().toISOString(), ...meta });
-  // eslint-disable-next-line no-console -- single sanctioned sink for structured logs
+  // The single sanctioned `console` call in the codebase — every other log goes through here.
   (level === 'error' ? console.error : level === 'warn' ? console.warn : console.log)(line);
 }
 

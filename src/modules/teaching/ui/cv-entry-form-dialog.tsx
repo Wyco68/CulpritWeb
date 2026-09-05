@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -18,18 +19,10 @@ import { createCvEntrySchema, type CreateCvEntryInput } from '../teaching.schema
 
 type CvEntryFormInput = z.input<typeof createCvEntrySchema>;
 
-async function submitEntry(id: string | undefined, input: CreateCvEntryInput) {
-  const response = await fetch(
-    id ? `/api/admin/teaching/entries/${id}` : '/api/admin/teaching/entries',
-    {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    },
-  );
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as CvEntry;
+function submitEntry(id: string | undefined, input: CreateCvEntryInput) {
+  return id
+    ? apiSend<CvEntry>('PUT', `/api/admin/teaching/entries/${id}`, input)
+    : apiSend<CvEntry>('POST', '/api/admin/teaching/entries', input);
 }
 
 export function CvEntryFormDialog({

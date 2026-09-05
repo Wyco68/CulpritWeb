@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { Plus, Building2 } from 'lucide-react';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import {
   Table,
   TableBody,
@@ -22,12 +21,6 @@ import type { ResearchGroupSummary } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 import { ResearchGroupFormDialog } from './research-group-form-dialog';
 
-async function deleteGroup(id: string) {
-  const response = await fetch(`/api/admin/groups/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
-
 // Takes summaries, not full groups: the only thing this table says about a group's people is how
 // many there are, so it never needs the member rows.
 export function ResearchGroupsTable({
@@ -38,21 +31,10 @@ export function ResearchGroupsTable({
   /** Passed straight through to the dialog so it can manage this group's roster in memory. */
   members?: TeamMember[];
 }) {
-  const router = useRouter();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ResearchGroupSummary | undefined>(undefined);
-  const [deleting, setDeleting] = useState<ResearchGroupSummary | undefined>(undefined);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteGroup,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<ResearchGroupSummary>((id) => `/api/admin/groups/${id}`);
 
   return (
     <div id="groups" className="scroll-mt-24">
@@ -94,28 +76,15 @@ export function ResearchGroupsTable({
                   <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                   <TableCell className="text-muted-foreground">{item.memberCount}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit: ${item.name}`}
-                        onClick={() => {
-                          setEditing(item);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete: ${item.name}`}
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleting(item)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      editLabel={`Edit: ${item.name}`}
+                      deleteLabel={`Delete: ${item.name}`}
+                      onEdit={() => {
+                        setEditing(item);
+                        setFormOpen(true);
+                      }}
+                      onDelete={() => remove.request(item)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -132,14 +101,9 @@ export function ResearchGroupsTable({
       />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this item?"
         description="This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );

@@ -1,11 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { getResearchService, createResearchSchema } from '@/modules/research';
 import { requireAdmin } from '@/modules/auth';
-import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: create a research work.
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin();

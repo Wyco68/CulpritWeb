@@ -1,4 +1,5 @@
 import { prisma } from '@/modules/shared/lib/prisma';
+import { auditLogData } from '@/modules/shared/lib/audit';
 import type { Prisma, CvEntry as PrismaCvEntry } from '@prisma/client';
 import type { AuditContext, CvEntry, CvEntryStats, CvSection } from './teaching.types';
 import type { CreateCvEntryInput, UpdateCvEntryInput } from './teaching.schema';
@@ -37,16 +38,6 @@ function toDomain(row: PrismaCvEntry): CvEntry {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'cv_entry',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
-
 // `sortOrder` is scoped per section, so section has to lead the ordering or two sections'
 // positions interleave. `title` only breaks ties, so equal-ordered rows don't shuffle between
 // requests.
@@ -55,6 +46,9 @@ const LIST_ORDER: Prisma.CvEntryOrderByWithRelationInput[] = [
   { sortOrder: 'asc' },
   { title: 'asc' },
 ];
+
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('cv_entry', audit, entityId);
 
 export class PrismaCvEntryRepository implements CvEntryRepository {
   async findById(id: string): Promise<CvEntry | null> {
@@ -101,7 +95,7 @@ export class PrismaCvEntryRepository implements CvEntryRepository {
           sortOrder: input.data.sortOrder ?? 0,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -115,18 +109,18 @@ export class PrismaCvEntryRepository implements CvEntryRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.cvEntry.update({
         where: { id: input.id },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
         data: {
-          ...(input.data.section !== undefined ? { section: input.data.section } : {}),
-          ...(input.data.title !== undefined ? { title: input.data.title } : {}),
-          ...(input.data.subtitle !== undefined ? { subtitle: input.data.subtitle ?? null } : {}),
-          ...(input.data.year !== undefined ? { year: input.data.year ?? null } : {}),
-          ...(input.data.description !== undefined
-            ? { description: input.data.description ?? null }
-            : {}),
-          ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
+          section: input.data.section,
+          title: input.data.title,
+          subtitle: input.data.subtitle,
+          year: input.data.year,
+          description: input.data.description,
+          sortOrder: input.data.sortOrder,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -135,7 +129,7 @@ export class PrismaCvEntryRepository implements CvEntryRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.cvEntry.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }

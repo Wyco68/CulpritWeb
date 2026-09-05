@@ -1,8 +1,8 @@
-import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
-import { err, ok, type Result } from '@/modules/shared/lib/result';
+import { NotFoundError } from '@/modules/shared/lib/errors';
+import { attempt, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
-import type { EventRepository } from './event.repository';
-import type { AuditContext, Event, EventParticipant, EventStats } from './event.types';
+import type { EventRepository, NewParticipant } from './event.repository';
+import type { Event, EventParticipant, EventStats } from './event.types';
 import type {
   AddGroupParticipantsInput,
   AddParticipantInput,
@@ -87,107 +87,96 @@ export interface EventService {
   ): Promise<Result<EventParticipant>>;
 }
 
+/** Freeze a member's current details onto the event row — see `EventParticipant`. */
+function snapshotOf(member: TeamMemberSnapshot): NewParticipant {
+  return {
+    teamMemberId: member.id,
+    name: member.name,
+    role: member.role,
+    photoUrl: member.photoUrl,
+  };
+}
+
 export function createEventService(deps: EventServiceDeps): EventService {
   const { repository, teamMembers } = deps;
   const log = deps.logger ?? defaultLogger;
 
+  async function requireExisting(id: string): Promise<Event> {
+    const existing = await repository.findById(id);
+    if (!existing) throw new NotFoundError('Event not found.');
+    return existing;
+  }
+
   return {
-    async list() {
-      try {
-        return ok(await repository.list());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    list: () => attempt(() => repository.list()),
 
-    async stats(now = new Date()) {
-      try {
-        return ok(await repository.stats(now));
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    stats: (now = new Date()) => attempt(() => repository.stats(now)),
 
-    async create(input, actor) {
-      try {
-        const audit: AuditContext = { actor, action: 'event.create' };
-        const created = await repository.createWithAudit({ data: input, audit });
+    create: (input, actor) =>
+      attempt(async () => {
+        const created = await repository.createWithAudit({
+          data: input,
+          audit: { actor, action: 'event.create' },
+        });
         log.info('event_created', { id: created.id, actor });
-        return ok(created);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return created;
+      }),
 
-    async update(id, input, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Event not found.'));
-
-        const audit: AuditContext = { actor, action: 'event.update' };
-        const updated = await repository.updateWithAudit({ id, data: input, audit });
+    update: (id, input, actor) =>
+      attempt(async () => {
+        await requireExisting(id);
+        const updated = await repository.updateWithAudit({
+          id,
+          data: input,
+          audit: { actor, action: 'event.update' },
+        });
         log.info('event_updated', { id, actor });
-        return ok(updated);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return updated;
+      }),
 
-    async remove(id, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Event not found.'));
-
+    remove: (id, actor) =>
+      attempt(async () => {
+        const existing = await requireExisting(id);
         // The audit entry carries the full pre-delete state, written inside the same transaction
         // as the delete. An event's description and media list are otherwise unrecoverable — this
         // is the same before-state convention the deleted appointment module used.
-        const audit: AuditContext = {
-          actor,
-          action: 'event.delete',
-          metadata: {
-            title: existing.title,
-            eventDate: existing.eventDate.toISOString(),
-            description: existing.description,
-            photoUrls: existing.photoUrls,
-            videoUrls: existing.videoUrls,
+        await repository.deleteWithAudit({
+          id,
+          audit: {
+            actor,
+            action: 'event.delete',
+            metadata: {
+              title: existing.title,
+              eventDate: existing.eventDate.toISOString(),
+              description: existing.description,
+              photoUrls: existing.photoUrls,
+              videoUrls: existing.videoUrls,
+            },
           },
-        };
-        await repository.deleteWithAudit({ id, audit });
+        });
         log.info('event_deleted', { id, actor });
-        return ok(existing);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return existing;
+      }),
 
-    async addParticipant(eventId, input, actor) {
-      try {
-        const event = await repository.findById(eventId);
-        if (!event) return err(new NotFoundError('Event not found.'));
+    addParticipant: (eventId, input, actor) =>
+      attempt(async () => {
+        await requireExisting(eventId);
 
-        // A member's details are read here and frozen onto the row. The client sends only an id,
-        // so it cannot claim someone attended under a name or title they never held.
-        const participant =
-          input.kind === 'member'
-            ? await (async () => {
-                const member = await teamMembers.byId(input.teamMemberId);
-                return member
-                  ? {
-                      teamMemberId: member.id,
-                      name: member.name,
-                      role: member.role,
-                      photoUrl: member.photoUrl,
-                    }
-                  : null;
-              })()
-            : {
-                teamMemberId: null,
-                name: input.name,
-                role: input.role ?? null,
-                photoUrl: null,
-              };
-
-        if (!participant) return err(new NotFoundError('Team member not found.'));
+        let participant: NewParticipant;
+        if (input.kind === 'guest') {
+          participant = {
+            teamMemberId: null,
+            name: input.name,
+            role: input.role ?? null,
+            photoUrl: null,
+          };
+        } else {
+          // A member's details are read here and frozen onto the row. The client sends only an id,
+          // so it cannot claim someone attended under a name or title they never held.
+          const member = await teamMembers.byId(input.teamMemberId);
+          if (!member) throw new NotFoundError('Team member not found.');
+          participant = snapshotOf(member);
+        }
 
         const added = await repository.addParticipantsWithAudit({
           eventId,
@@ -195,20 +184,16 @@ export function createEventService(deps: EventServiceDeps): EventService {
           audit: { actor, action: 'event.participant.add' },
         });
         log.info('event_participant_added', { eventId, actor, added: added.length });
-        return ok({ added, skipped: 1 - added.length });
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return { added, skipped: 1 - added.length };
+      }),
 
-    async addGroupParticipants(eventId, input, actor) {
-      try {
-        const event = await repository.findById(eventId);
-        if (!event) return err(new NotFoundError('Event not found.'));
+    addGroupParticipants: (eventId, input, actor) =>
+      attempt(async () => {
+        await requireExisting(eventId);
 
         const members = await teamMembers.byGroup(input.researchGroupId);
         if (members.length === 0) {
-          return err(new NotFoundError('That research group has no members to add.'));
+          throw new NotFoundError('That research group has no members to add.');
         }
 
         // Expanded to individual rows here, deliberately: the event records the people who were
@@ -216,12 +201,7 @@ export function createEventService(deps: EventServiceDeps): EventService {
         // leaves this event alone.
         const added = await repository.addParticipantsWithAudit({
           eventId,
-          participants: members.map((member) => ({
-            teamMemberId: member.id,
-            name: member.name,
-            role: member.role,
-            photoUrl: member.photoUrl,
-          })),
+          participants: members.map(snapshotOf),
           audit: {
             actor,
             action: 'event.participant.add_group',
@@ -229,25 +209,19 @@ export function createEventService(deps: EventServiceDeps): EventService {
           },
         });
         log.info('event_group_added', { eventId, actor, added: added.length });
-        return ok({ added, skipped: members.length - added.length });
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return { added, skipped: members.length - added.length };
+      }),
 
-    async removeParticipant(eventId, participantId, actor) {
-      try {
+    removeParticipant: (eventId, participantId, actor) =>
+      attempt(async () => {
         const removed = await repository.removeParticipantWithAudit({
           eventId,
           participantId,
           audit: { actor, action: 'event.participant.remove' },
         });
         log.info('event_participant_removed', { eventId, participantId, actor });
-        return ok(removed);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return removed;
+      }),
   };
 }
 

@@ -16,8 +16,18 @@ export async function GET() {
       getCvEntryService().listBySections(TEACHING_SECTIONS),
     ]);
 
-    if (!courses.ok) return respondPublicCache(courses, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
-    if (!entries.ok) return respondPublicCache(entries, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
+    if (!courses.ok)
+      return respondPublicCache(courses, {
+        browserTtl: 300,
+        edgeTtl: 3600,
+        staleWhileRevalidate: 300,
+      });
+    if (!entries.ok)
+      return respondPublicCache(entries, {
+        browserTtl: 300,
+        edgeTtl: 3600,
+        staleWhileRevalidate: 300,
+      });
 
     return respondPublicCache(
       { ok: true as const, data: { courses: courses.data, entries: entries.data } },

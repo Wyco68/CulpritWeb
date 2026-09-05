@@ -1,64 +1,28 @@
 import { randomUUID } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { requireAdmin } from '@/modules/auth';
-import { getStorageAdapter } from '@/modules/integrations';
+import { getStorageAdapter, readUploadedPhoto } from '@/modules/integrations';
 import { apiError, apiSuccess, apiUnexpected } from '@/modules/shared/lib/api-response';
-import { ValidationError } from '@/modules/shared/lib/errors';
 
-// Admin: upload one team-member photo. Same contract as the profile- and event-photo routes
-// `{ url }` back), with one deliberate difference: the object key is a fresh random id per upload
-// rather than a fixed name.
-//
-// The profile has exactly one photo, so overwriting a fixed `avatar` key is correct there. An
-// event has a gallery of up to 20, and they are created and removed independently — a fixed key
-// would make every upload clobber the last. A random key also means no cache-busting query string
-// is needed: a new object is a new URL.
-//
-// Removing a photo from an event only drops the URL from the row; the object stays in R2. That is
-// a deliberate trade for a single-admin site on a 10 GB free tier — a delete-on-removal path would
-// have to be transactional with the row update to avoid orphaning live URLs, and orphaned objects
-// are the cheaper failure. Revisit if storage ever becomes the binding constraint.
-// Vercel caps a serverless function's request body at 4.5 MB, and rejects anything larger at the
-// platform edge — before this handler runs, so the admin would get an opaque 413 instead of the
-// message below. The cap is set under that ceiling so the app's own validation is what the admin
-// actually sees. Raising it means moving uploads to a presigned direct-to-R2 PUT, where the file
-// never passes through a function at all.
-const MAX_PHOTO_BYTES = 4 * 1024 * 1024; // 4 MB — see the Vercel body limit above
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+// Admin: upload one team-member photo. Same contract and same random-key policy as the
+// event-photo route — see it for why a fixed key would be wrong for a many-photo bucket.
 
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin();
     if (!admin.ok) return apiError(admin.error);
 
-    const formData = await request.formData().catch(() => null);
-    const file = formData?.get('file');
-    if (!(file instanceof File)) {
-      return apiError(new ValidationError('No photo was uploaded.', { file: ['Required'] }));
-    }
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return apiError(
-        new ValidationError('Unsupported file type. Use JPEG, PNG, WebP or GIF.', {
-          file: ['Unsupported file type.'],
-        }),
-      );
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      return apiError(
-        new ValidationError('Photo is too large (4 MB max).', {
-          file: ['Photo is too large (4 MB max).'],
-        }),
-      );
-    }
+    const photo = await readUploadedPhoto(request);
+    if (!photo.ok) return apiError(photo.error);
 
-    // Server-generated key — the client's filename is never used, so there is nothing
-    // user-controlled in the object key at all.
+    // Server-generated key — the client's filename is never used, so nothing user-controlled ends
+    // up in the object key.
     const key = randomUUID();
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await getStorageAdapter().upload('team', key, buffer, file.type);
-    if (!result.ok) return apiError(result.error);
+    const storage = getStorageAdapter();
+    const stored = await storage.upload('team', key, photo.data.bytes, photo.data.contentType);
+    if (!stored.ok) return apiError(stored.error);
 
-    return apiSuccess({ url: getStorageAdapter().getPublicUrl('team', key) });
+    return apiSuccess({ url: storage.getPublicUrl('team', key) });
   } catch (error) {
     return apiUnexpected(error);
   }

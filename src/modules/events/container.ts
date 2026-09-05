@@ -12,9 +12,9 @@ import { createEventService, type EventService, type TeamMemberDirectory } from 
  * in one composition file instead of being buried in business logic — the service only knows the
  * `TeamMemberDirectory` shape, and never imports another module's repository or Prisma.
  *
- * Both reads throw on failure rather than returning a Result: the service already wraps every call
- * in try/catch and maps thrown errors through `toAppError`, so unwrapping here keeps the port's
- * signature to the two fields events actually needs.
+ * Both reads throw on failure rather than returning a Result: the service runs every method inside
+ * `attempt()`, which maps a thrown error through `toAppError` onto the Result channel, so
+ * unwrapping here keeps the port's signature to the two fields events actually needs.
  */
 const teamMemberDirectory: TeamMemberDirectory = {
   async byId(id) {

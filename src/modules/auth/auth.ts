@@ -10,8 +10,8 @@ import { publicEnv } from '@/modules/shared/lib/env';
 // it only hands the client to Better Auth's adapter (which owns the user/session/account tables);
 // no domain query runs here.
 
-const trustedOrigins = [env.BETTER_AUTH_URL, publicEnv.appUrl].filter(
-  (value): value is string => Boolean(value),
+const trustedOrigins = [env.BETTER_AUTH_URL, publicEnv.appUrl].filter((value): value is string =>
+  Boolean(value),
 );
 
 export const auth = betterAuth({

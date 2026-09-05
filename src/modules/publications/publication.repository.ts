@@ -1,5 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
-import type { Prisma, Publication as PrismaPublication } from '@prisma/client';
+import { auditLogData } from '@/modules/shared/lib/audit';
+import type { Publication as PrismaPublication } from '@prisma/client';
 import type { AuditContext, Publication, PublicationStats } from './publication.types';
 import type { CreatePublicationInput, UpdatePublicationInput } from './publication.schema';
 
@@ -40,15 +41,8 @@ function toDomain(row: PrismaPublication): Publication {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'publication',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('publication', audit, entityId);
 
 export class PrismaPublicationRepository implements PublicationRepository {
   async findById(id: string): Promise<Publication | null> {
@@ -95,7 +89,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
           link: input.data.link ?? null,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -109,15 +103,17 @@ export class PrismaPublicationRepository implements PublicationRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.publication.update({
         where: { id: input.id },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
         data: {
-          ...(input.data.title !== undefined ? { title: input.data.title } : {}),
-          ...(input.data.authors !== undefined ? { authors: input.data.authors } : {}),
-          ...(input.data.venue !== undefined ? { venue: input.data.venue } : {}),
-          ...(input.data.year !== undefined ? { year: input.data.year } : {}),
-          ...(input.data.link !== undefined ? { link: input.data.link ?? null } : {}),
+          title: input.data.title,
+          authors: input.data.authors,
+          venue: input.data.venue,
+          year: input.data.year,
+          link: input.data.link,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -126,7 +122,7 @@ export class PrismaPublicationRepository implements PublicationRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.publication.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }

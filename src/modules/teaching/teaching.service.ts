@@ -1,16 +1,9 @@
-import { NotFoundError, toAppError } from '@/modules/shared/lib/errors';
-import { err, ok, type Result } from '@/modules/shared/lib/result';
+import { NotFoundError } from '@/modules/shared/lib/errors';
+import { attempt, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
 import type { CvEntryRepository } from './cv-entry.repository';
 import type { CourseRepository } from './course.repository';
-import type {
-  AuditContext,
-  Course,
-  CourseStats,
-  CvEntry,
-  CvEntryStats,
-  CvSection,
-} from './teaching.types';
+import type { Course, CourseStats, CvEntry, CvEntryStats, CvSection } from './teaching.types';
 import type {
   CreateCourseInput,
   CreateCvEntryInput,
@@ -42,81 +35,63 @@ export function createCvEntryService(deps: CvEntryServiceDeps): CvEntryService {
   const { repository } = deps;
   const log = deps.logger ?? defaultLogger;
 
+  async function requireExisting(id: string): Promise<CvEntry> {
+    const existing = await repository.findById(id);
+    if (!existing) throw new NotFoundError('Entry not found.');
+    return existing;
+  }
+
   return {
-    async list() {
-      try {
-        return ok(await repository.list());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    list: () => attempt(() => repository.list()),
 
-    async listBySections(sections) {
-      try {
-        return ok(await repository.listBySections(sections));
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    listBySections: (sections) => attempt(() => repository.listBySections(sections)),
 
-    async stats() {
-      try {
-        return ok(await repository.stats());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    stats: () => attempt(() => repository.stats()),
 
-    async create(input, actor) {
-      try {
-        const audit: AuditContext = { actor, action: 'cv_entry.create' };
-        const created = await repository.createWithAudit({ data: input, audit });
+    create: (input, actor) =>
+      attempt(async () => {
+        const created = await repository.createWithAudit({
+          data: input,
+          audit: { actor, action: 'cv_entry.create' },
+        });
         log.info('cv_entry_created', { id: created.id, section: created.section, actor });
-        return ok(created);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return created;
+      }),
 
-    async update(id, input, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Entry not found.'));
-
-        const audit: AuditContext = { actor, action: 'cv_entry.update' };
-        const updated = await repository.updateWithAudit({ id, data: input, audit });
+    update: (id, input, actor) =>
+      attempt(async () => {
+        await requireExisting(id);
+        const updated = await repository.updateWithAudit({
+          id,
+          data: input,
+          audit: { actor, action: 'cv_entry.update' },
+        });
         log.info('cv_entry_updated', { id, actor });
-        return ok(updated);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return updated;
+      }),
 
-    async remove(id, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Entry not found.'));
-
+    remove: (id, actor) =>
+      attempt(async () => {
+        const existing = await requireExisting(id);
         // The before-state goes into the audit entry inside the delete transaction. A CV line is
         // typed by hand and has no other copy once the row is gone.
-        const audit: AuditContext = {
-          actor,
-          action: 'cv_entry.delete',
-          metadata: {
-            section: existing.section,
-            title: existing.title,
-            subtitle: existing.subtitle,
-            year: existing.year,
-            description: existing.description,
+        await repository.deleteWithAudit({
+          id,
+          audit: {
+            actor,
+            action: 'cv_entry.delete',
+            metadata: {
+              section: existing.section,
+              title: existing.title,
+              subtitle: existing.subtitle,
+              year: existing.year,
+              description: existing.description,
+            },
           },
-        };
-        await repository.deleteWithAudit({ id, audit });
+        });
         log.info('cv_entry_deleted', { id, actor });
-        return ok(existing);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return existing;
+      }),
   };
 }
 
@@ -138,70 +113,58 @@ export function createCourseService(deps: CourseServiceDeps): CourseService {
   const { repository } = deps;
   const log = deps.logger ?? defaultLogger;
 
+  async function requireExisting(id: string): Promise<Course> {
+    const existing = await repository.findById(id);
+    if (!existing) throw new NotFoundError('Course not found.');
+    return existing;
+  }
+
   return {
-    async list() {
-      try {
-        return ok(await repository.list());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    list: () => attempt(() => repository.list()),
 
-    async stats() {
-      try {
-        return ok(await repository.stats());
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+    stats: () => attempt(() => repository.stats()),
 
-    async create(input, actor) {
-      try {
-        const audit: AuditContext = { actor, action: 'course.create' };
-        const created = await repository.createWithAudit({ data: input, audit });
+    create: (input, actor) =>
+      attempt(async () => {
+        const created = await repository.createWithAudit({
+          data: input,
+          audit: { actor, action: 'course.create' },
+        });
         log.info('course_created', { id: created.id, actor });
-        return ok(created);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return created;
+      }),
 
-    async update(id, input, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Course not found.'));
-
-        const audit: AuditContext = { actor, action: 'course.update' };
-        const updated = await repository.updateWithAudit({ id, data: input, audit });
+    update: (id, input, actor) =>
+      attempt(async () => {
+        await requireExisting(id);
+        const updated = await repository.updateWithAudit({
+          id,
+          data: input,
+          audit: { actor, action: 'course.update' },
+        });
         log.info('course_updated', { id, actor });
-        return ok(updated);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return updated;
+      }),
 
-    async remove(id, actor) {
-      try {
-        const existing = await repository.findById(id);
-        if (!existing) return err(new NotFoundError('Course not found.'));
-
-        const audit: AuditContext = {
-          actor,
-          action: 'course.delete',
-          metadata: {
-            code: existing.code,
-            title: existing.title,
-            level: existing.level,
-            term: existing.term,
+    remove: (id, actor) =>
+      attempt(async () => {
+        const existing = await requireExisting(id);
+        await repository.deleteWithAudit({
+          id,
+          audit: {
+            actor,
+            action: 'course.delete',
+            metadata: {
+              code: existing.code,
+              title: existing.title,
+              level: existing.level,
+              term: existing.term,
+            },
           },
-        };
-        await repository.deleteWithAudit({ id, audit });
+        });
         log.info('course_deleted', { id, actor });
-        return ok(existing);
-      } catch (error) {
-        return err(toAppError(error));
-      }
-    },
+        return existing;
+      }),
   };
 }
 

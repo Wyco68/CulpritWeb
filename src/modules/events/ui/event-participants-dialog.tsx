@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Plus, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { apiDelete, apiSend } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
@@ -26,19 +27,14 @@ import type { Event } from '../event.types';
 export type ParticipantPerson = { id: string; name: string; role: string };
 export type ParticipantGroup = { id: string; name: string };
 
-async function post(url: string, body: unknown) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const payload = await response.json();
-  if (!payload.ok) throw new Error(payload.error?.message ?? 'Request failed');
-  return payload.data as { added: unknown[]; skipped: number };
+type AddResult = { added: unknown[]; skipped: number };
+
+function post(url: string, body: unknown) {
+  return apiSend<AddResult>('POST', url, body);
 }
 
 /** "Added 3." / "Added 2, 1 already on this event." — says what actually happened. */
-function describeAdd(result: { added: unknown[]; skipped: number }): string {
+function describeAdd(result: AddResult): string {
   const added = result.added.length;
   if (added === 0) return 'Everyone selected is already on this event.';
   if (result.skipped === 0) return added === 1 ? 'Added.' : `Added ${added}.`;
@@ -110,13 +106,8 @@ export function EventParticipantsDialog({
   });
 
   const remove = useMutation({
-    mutationFn: async (participantId: string) => {
-      const response = await fetch(`/api/admin/events/${event?.id}/participants/${participantId}`, {
-        method: 'DELETE',
-      });
-      const payload = await response.json();
-      if (!payload.ok) throw new Error(payload.error?.message ?? 'Request failed');
-    },
+    mutationFn: (participantId: string) =>
+      apiDelete(`/api/admin/events/${event?.id}/participants/${participantId}`),
     onSuccess: () => refresh('Removed.'),
     onError: () => toast.error('Could not remove. Please try again.'),
   });

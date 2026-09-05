@@ -30,7 +30,10 @@ describe('POST /api/admin/research', () => {
   });
 
   it('returns 400 for an invalid body', async () => {
-    requireAdmin.mockResolvedValueOnce({ ok: true, data: { userId: 'u1', email: 'admin@example.com' } });
+    requireAdmin.mockResolvedValueOnce({
+      ok: true,
+      data: { userId: 'u1', email: 'admin@example.com' },
+    });
 
     const res = await POST(makeRequest({ title: '' }));
     expect(res.status).toBe(400);
@@ -41,7 +44,10 @@ describe('POST /api/admin/research', () => {
   });
 
   it('returns 201 and the created record on success', async () => {
-    requireAdmin.mockResolvedValueOnce({ ok: true, data: { userId: 'u1', email: 'admin@example.com' } });
+    requireAdmin.mockResolvedValueOnce({
+      ok: true,
+      data: { userId: 'u1', email: 'admin@example.com' },
+    });
     const { ok } = await import('@/modules/shared/lib/result');
     create.mockResolvedValueOnce(
       ok({
@@ -55,7 +61,9 @@ describe('POST /api/admin/research', () => {
       }),
     );
 
-    const res = await POST(makeRequest({ title: 'Malware Analysis', summary: 'Summary', area: 'security' }));
+    const res = await POST(
+      makeRequest({ title: 'Malware Analysis', summary: 'Summary', area: 'security' }),
+    );
     expect(res.status).toBe(201);
     expect(create).toHaveBeenCalledWith(
       { title: 'Malware Analysis', summary: 'Summary', area: 'security' },

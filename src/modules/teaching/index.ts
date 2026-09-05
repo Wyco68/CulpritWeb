@@ -9,7 +9,6 @@ export {
   updateCvEntrySchema,
   createCourseSchema,
   updateCourseSchema,
-  teachingIdSchema,
   type CreateCvEntryInput,
   type UpdateCvEntryInput,
   type CreateCourseInput,

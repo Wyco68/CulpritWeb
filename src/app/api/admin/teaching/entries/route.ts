@@ -1,11 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { getCvEntryService, createCvEntrySchema } from '@/modules/teaching';
 import { requireAdmin } from '@/modules/auth';
-import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: create a CV entry.
 //
 // Both public areas are purged regardless of which section the entry landed in: `section` is
 // editable, so a single edit can move an entry from About to Teaching and back, and working out

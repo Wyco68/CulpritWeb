@@ -57,7 +57,12 @@ describe('ResearchTable', () => {
     await user.type(screen.getByLabelText('Summary', { exact: false }), 'A summary');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/research', expect.objectContaining({ method: 'POST' })));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/research',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });
 
@@ -90,7 +95,10 @@ describe('ResearchTable', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/admin/research/r1', expect.objectContaining({ method: 'DELETE' })),
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/research/r1',
+        expect.objectContaining({ method: 'DELETE' }),
+      ),
     );
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });

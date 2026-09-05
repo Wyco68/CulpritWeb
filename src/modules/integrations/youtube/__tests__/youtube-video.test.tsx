@@ -8,10 +8,7 @@ describe('YouTubeVideo', () => {
 
     const iframe = screen.getByTitle('Conference keynote recording');
     expect(iframe.tagName).toBe('IFRAME');
-    expect(iframe).toHaveAttribute(
-      'src',
-      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
-    );
+    expect(iframe).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
     expect(iframe).toHaveAttribute('loading', 'lazy');
   });
 

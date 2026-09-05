@@ -3,7 +3,6 @@
 export {
   createResearchSchema,
   updateResearchSchema,
-  researchIdSchema,
   type CreateResearchInput,
   type UpdateResearchInput,
 } from './research.schema';

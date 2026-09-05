@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
@@ -21,26 +22,15 @@ import type { ResearchGroup } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 import { createResearchGroupSchema, type CreateResearchGroupInput } from '../research-group.schema';
 
-async function submitGroup(id: string | undefined, input: CreateResearchGroupInput) {
-  const response = await fetch(id ? `/api/admin/groups/${id}` : '/api/admin/groups', {
-    method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as ResearchGroup;
+function submitGroup(id: string | undefined, input: CreateResearchGroupInput) {
+  return id
+    ? apiSend<ResearchGroup>('PUT', `/api/admin/groups/${id}`, input)
+    : apiSend<ResearchGroup>('POST', '/api/admin/groups', input);
 }
 
 /** Reassign one person to a group, or to no group at all. Membership lives on the member row. */
-async function setMemberGroup(memberId: string, researchGroupId: string | null) {
-  const response = await fetch(`/api/admin/team-members/${memberId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ researchGroupId }),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
+function setMemberGroup(memberId: string, researchGroupId: string | null) {
+  return apiSend('PUT', `/api/admin/team-members/${memberId}`, { researchGroupId });
 }
 
 /**

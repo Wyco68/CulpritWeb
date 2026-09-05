@@ -66,7 +66,10 @@ describe('LoginForm', () => {
   });
 
   it('surfaces the server error message without redirecting on failure', async () => {
-    signInEmailMock.mockResolvedValue({ data: null, error: { message: 'Invalid email or password.' } });
+    signInEmailMock.mockResolvedValue({
+      data: null,
+      error: { message: 'Invalid email or password.' },
+    });
     const user = userEvent.setup();
     render(<LoginForm />);
 

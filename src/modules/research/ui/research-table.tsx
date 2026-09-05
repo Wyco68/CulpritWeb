@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2, FlaskConical } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { Plus, FlaskConical } from 'lucide-react';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import {
   Table,
@@ -21,28 +20,11 @@ import {
 import type { Research } from '../research.types';
 import { ResearchFormDialog } from './research-form-dialog';
 
-async function deleteResearch(id: string) {
-  const response = await fetch(`/api/admin/research/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
-
 export function ResearchTable({ items }: { items: Research[] }) {
-  const router = useRouter();
-
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Research | undefined>(undefined);
-  const [deleting, setDeleting] = useState<Research | undefined>(undefined);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteResearch,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<Research>((id) => `/api/admin/research/${id}`);
 
   return (
     <div id="works" className="scroll-mt-24">
@@ -96,28 +78,15 @@ export function ResearchTable({ items }: { items: Research[] }) {
                   </TableCell>
                   <TableCell className="tabular text-muted-foreground">{item.sortOrder}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit: ${item.title}`}
-                        onClick={() => {
-                          setEditing(item);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete: ${item.title}`}
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleting(item)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      editLabel={`Edit: ${item.title}`}
+                      deleteLabel={`Delete: ${item.title}`}
+                      onEdit={() => {
+                        setEditing(item);
+                        setFormOpen(true);
+                      }}
+                      onDelete={() => remove.request(item)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -129,14 +98,9 @@ export function ResearchTable({ items }: { items: Research[] }) {
       <ResearchFormDialog open={formOpen} onOpenChange={setFormOpen} research={editing} />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this item?"
         description="This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );

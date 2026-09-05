@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Script from 'next/script';
 import { ShieldCheck } from 'lucide-react';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { publicEnv } from '@/modules/shared/lib/env';
 import { cn } from '@/modules/shared/lib/utils';
 
@@ -62,14 +63,11 @@ export function TurnstileChallenge({ onVerified, className }: TurnstileChallenge
     setVerifying(true);
     setFailed(false);
     try {
-      const res = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      const body = await res.json();
-      if (body.ok) onVerified();
-      else setFailed(true);
+      // A rejected verification and a network failure are the same thing to the visitor: the
+      // challenge did not pass, so try again. `apiSend` turns the former into a throw, which is
+      // why both land in the one catch.
+      await apiSend('POST', '/api/turnstile/verify', { token });
+      onVerified();
     } catch {
       setFailed(true);
     } finally {

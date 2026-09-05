@@ -1,7 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { getProfileService, patchProfileSchema, updateProfileSchema } from '@/modules/profile';
 import { requireAdmin } from '@/modules/auth';
-import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
@@ -14,7 +19,10 @@ export async function PUT(request: NextRequest) {
     const parsed = updateProfileSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
-    const result = await getProfileService().updateProfile(parsed.data, `admin:${admin.data.userId}`);
+    const result = await getProfileService().updateProfile(
+      parsed.data,
+      `admin:${admin.data.userId}`,
+    );
     return respond(revalidateOn(result, 'profile'));
   } catch (error) {
     return apiUnexpected(error);
@@ -32,7 +40,10 @@ export async function PATCH(request: NextRequest) {
     const parsed = patchProfileSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
-    const result = await getProfileService().patchProfile(parsed.data, `admin:${admin.data.userId}`);
+    const result = await getProfileService().patchProfile(
+      parsed.data,
+      `admin:${admin.data.userId}`,
+    );
     return respond(revalidateOn(result, 'profile'));
   } catch (error) {
     return apiUnexpected(error);

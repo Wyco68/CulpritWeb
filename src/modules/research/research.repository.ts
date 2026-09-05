@@ -1,5 +1,6 @@
 import { prisma } from '@/modules/shared/lib/prisma';
-import type { Prisma, Research as PrismaResearch } from '@prisma/client';
+import { auditLogData } from '@/modules/shared/lib/audit';
+import type { Research as PrismaResearch } from '@prisma/client';
 import type { AuditContext, Research, ResearchStats } from './research.types';
 import type { CreateResearchInput, UpdateResearchInput } from './research.schema';
 
@@ -36,15 +37,8 @@ function toDomain(row: PrismaResearch): Research {
   };
 }
 
-function auditCreateInput(audit: AuditContext, entityId: string): Prisma.AuditLogCreateInput {
-  return {
-    actor: audit.actor,
-    action: audit.action,
-    entityType: 'research',
-    entityId,
-    metadata: (audit.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
-  };
-}
+const auditData = (audit: AuditContext, entityId: string) =>
+  auditLogData('research', audit, entityId);
 
 export class PrismaResearchRepository implements ResearchRepository {
   async findById(id: string): Promise<Research | null> {
@@ -86,7 +80,7 @@ export class PrismaResearchRepository implements ResearchRepository {
           sortOrder: input.data.sortOrder ?? 0,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(created);
@@ -100,15 +94,17 @@ export class PrismaResearchRepository implements ResearchRepository {
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.research.update({
         where: { id: input.id },
+        // Prisma leaves a column untouched when its value is `undefined`, so the partial
+        // input maps straight through — an absent key is not a cleared column.
         data: {
-          ...(input.data.title !== undefined ? { title: input.data.title } : {}),
-          ...(input.data.summary !== undefined ? { summary: input.data.summary } : {}),
-          ...(input.data.area !== undefined ? { area: input.data.area } : {}),
-          ...(input.data.link !== undefined ? { link: input.data.link ?? null } : {}),
-          ...(input.data.sortOrder !== undefined ? { sortOrder: input.data.sortOrder } : {}),
+          title: input.data.title,
+          summary: input.data.summary,
+          area: input.data.area,
+          link: input.data.link,
+          sortOrder: input.data.sortOrder,
         },
       });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, row.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
     });
     return toDomain(updated);
@@ -117,7 +113,7 @@ export class PrismaResearchRepository implements ResearchRepository {
   async deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.research.delete({ where: { id: input.id } });
-      await tx.auditLog.create({ data: auditCreateInput(input.audit, input.id) });
+      await tx.auditLog.create({ data: auditData(input.audit, input.id) });
     });
   }
 }

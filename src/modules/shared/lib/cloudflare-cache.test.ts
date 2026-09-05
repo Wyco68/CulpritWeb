@@ -57,7 +57,9 @@ describe('purgeCloudflareCache', () => {
 
   it('never throws when Cloudflare returns a non-success body', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false, errors: [{ message: 'nope' }] }), { status: 200 }),
+      new Response(JSON.stringify({ success: false, errors: [{ message: 'nope' }] }), {
+        status: 200,
+      }),
     );
 
     await expect(purgeCloudflareCache(['/research'])).resolves.toBeUndefined();

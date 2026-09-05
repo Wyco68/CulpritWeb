@@ -1,11 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { getResearchService, updateResearchSchema } from '@/modules/research';
 import { requireAdmin } from '@/modules/auth';
-import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: update a research work.
 export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();
@@ -22,7 +26,6 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
   }
 }
 
-// Admin: delete a research work.
 export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();

@@ -51,11 +51,7 @@ export default async function AdminAboutPage() {
   ]);
 
   return (
-    <AdminScreen
-      title="About"
-      intro="Everything on the public About tab."
-      sections={SECTIONS}
-    >
+    <AdminScreen title="About" intro="Everything on the public About tab." sections={SECTIONS}>
       <ProfileFieldsForm
         profile={profileResult.ok ? profileResult.data : null}
         sections={PROFILE_SECTIONS}

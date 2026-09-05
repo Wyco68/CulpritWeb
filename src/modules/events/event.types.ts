@@ -55,9 +55,4 @@ export type EventStats = {
   nextEventDate: Date | null;
 };
 
-/** Append-only audit context supplied by the service, persisted by the repository. */
-export type AuditContext = {
-  actor: string;
-  action: string;
-  metadata?: Record<string, unknown>;
-};
+export type { AuditContext } from '@/modules/shared/lib/audit';

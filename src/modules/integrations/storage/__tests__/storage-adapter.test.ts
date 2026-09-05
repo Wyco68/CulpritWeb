@@ -67,7 +67,13 @@ const BUCKET_NAME = 'culprit-files';
 const PUBLIC_URL = 'https://pub-abc123.r2.dev';
 
 function makeAdapter() {
-  return new R2StorageAdapter(ACCOUNT_ID, ACCESS_KEY_ID, SECRET_ACCESS_KEY, BUCKET_NAME, PUBLIC_URL);
+  return new R2StorageAdapter(
+    ACCOUNT_ID,
+    ACCESS_KEY_ID,
+    SECRET_ACCESS_KEY,
+    BUCKET_NAME,
+    PUBLIC_URL,
+  );
 }
 
 describe('R2StorageAdapter', () => {

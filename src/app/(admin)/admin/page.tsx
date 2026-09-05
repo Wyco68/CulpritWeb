@@ -6,6 +6,7 @@ import { getPublicationService } from '@/modules/publications';
 import { getResearchGroupService, getTeamMemberService } from '@/modules/research-groups';
 import { getEventService } from '@/modules/events';
 import { ABOUT_SECTIONS, getCourseService, getCvEntryService } from '@/modules/teaching';
+import { unwrapOr } from '@/modules/shared/lib/result';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { YearColumns, DistributionBars, CompletenessMeter } from './_components/charts';
@@ -77,16 +78,14 @@ export default async function AdminDashboardPage() {
     ]);
 
   // A failed read degrades to zeroes, which hides the panel — exactly what the empty list did.
-  const profile = profileResult.ok ? profileResult.data : null;
-  const researchStats = research.ok ? research.data : { total: 0, byArea: [] };
-  const publicationStats = publications.ok
-    ? publications.data
-    : { total: 0, byYear: [], latestYear: null };
-  const groupItems = groups.ok ? groups.data : [];
-  const memberStats = teamMembers.ok ? teamMembers.data : { total: 0, ungrouped: 0 };
-  const eventStats = events.ok ? events.data : { total: 0, upcoming: 0, nextEventDate: null };
-  const courseStats = courses.ok ? courses.data : { total: 0 };
-  const cvEntryStats = cvEntries.ok ? cvEntries.data : { total: 0, sections: [] };
+  const profile = unwrapOr(profileResult, null);
+  const researchStats = unwrapOr(research, { total: 0, byArea: [] });
+  const publicationStats = unwrapOr(publications, { total: 0, byYear: [], latestYear: null });
+  const groupItems = unwrapOr(groups, []);
+  const memberStats = unwrapOr(teamMembers, { total: 0, ungrouped: 0 });
+  const eventStats = unwrapOr(events, { total: 0, upcoming: 0, nextEventDate: null });
+  const courseStats = unwrapOr(courses, { total: 0 });
+  const cvEntryStats = unwrapOr(cvEntries, { total: 0, sections: [] });
 
   const years = toYearSeries(publicationStats.byYear);
   const byArea = researchStats.byArea.map(({ area, count }) => ({ label: area, count }));

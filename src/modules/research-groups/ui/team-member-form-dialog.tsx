@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { apiSend } from '@/modules/shared/lib/api-client';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
@@ -25,15 +26,10 @@ type TeamMemberFormInput = z.input<typeof createTeamMemberSchema>;
 /** The select needs an id and a label, nothing else — so a summary or a full group both fit. */
 type GroupOption = Pick<ResearchGroup, 'id' | 'name'>;
 
-async function submitTeamMember(id: string | undefined, input: CreateTeamMemberInput) {
-  const response = await fetch(id ? `/api/admin/team-members/${id}` : '/api/admin/team-members', {
-    method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-  return body.data as TeamMember;
+function submitTeamMember(id: string | undefined, input: CreateTeamMemberInput) {
+  return id
+    ? apiSend<TeamMember>('PUT', `/api/admin/team-members/${id}`, input)
+    : apiSend<TeamMember>('POST', '/api/admin/team-members', input);
 }
 
 export function TeamMemberFormDialog({

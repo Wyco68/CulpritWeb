@@ -6,7 +6,6 @@
 export {
   createEventSchema,
   updateEventSchema,
-  eventIdSchema,
   addParticipantSchema,
   addGroupParticipantsSchema,
   participantIdSchema,

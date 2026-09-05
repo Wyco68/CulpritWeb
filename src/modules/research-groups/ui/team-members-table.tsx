@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2, Users2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { Plus, Users2 } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
+import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
+import { RowActions } from '@/modules/shared/ui/row-actions';
 import {
   Table,
   TableBody,
@@ -23,12 +22,6 @@ import type { ResearchGroupSummary } from '../research-group.types';
 import type { TeamMember } from '../team-member.types';
 import { TeamMemberFormDialog } from './team-member-form-dialog';
 
-async function deleteTeamMember(id: string) {
-  const response = await fetch(`/api/admin/team-members/${id}`, { method: 'DELETE' });
-  const body = await response.json();
-  if (!body.ok) throw new Error(body.error?.message ?? 'Request failed');
-}
-
 // `groups` is only ever read for an id-to-name map and the form's select options, so it takes
 // summaries — the member rows nested inside a full `ResearchGroup` were never touched here.
 export function TeamMembersTable({
@@ -38,22 +31,12 @@ export function TeamMembersTable({
   items: TeamMember[];
   groups: ResearchGroupSummary[];
 }) {
-  const router = useRouter();
   const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TeamMember | undefined>(undefined);
-  const [deleting, setDeleting] = useState<TeamMember | undefined>(undefined);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteTeamMember,
-    onSuccess: () => {
-      toast.success('Deleted.');
-      setDeleting(undefined);
-      router.refresh();
-    },
-    onError: () => toast.error('Could not delete. Please try again.'),
-  });
+  const remove = useDeleteRecord<TeamMember>((id) => `/api/admin/team-members/${id}`);
 
   return (
     <div id="members" className="scroll-mt-24">
@@ -112,28 +95,15 @@ export function TeamMembersTable({
                       : 'None'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit: ${item.name}`}
-                        onClick={() => {
-                          setEditing(item);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete: ${item.name}`}
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleting(item)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      editLabel={`Edit: ${item.name}`}
+                      deleteLabel={`Delete: ${item.name}`}
+                      onEdit={() => {
+                        setEditing(item);
+                        setFormOpen(true);
+                      }}
+                      onDelete={() => remove.request(item)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -150,14 +120,9 @@ export function TeamMembersTable({
       />
 
       <ConfirmDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => !open && setDeleting(undefined)}
+        {...remove.dialogProps}
         title="Delete this item?"
         description="This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
       />
     </div>
   );
