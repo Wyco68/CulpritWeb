@@ -7,6 +7,7 @@ import {
   apiValidationError,
   respond,
 } from '@/modules/shared/lib/api-response';
+import { entityId } from '@/modules/shared/lib/schema-fields';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 
 // Admin: remove one participant from an event. Both ids are re-validated here even though they
@@ -21,11 +22,14 @@ export async function DELETE(
     if (!admin.ok) return apiError(admin.error);
 
     const { id, participantId } = await ctx.params;
+    const parsedId = entityId.safeParse(id);
+    if (!parsedId.success) return apiValidationError(parsedId.error);
+
     const parsed = participantIdSchema.safeParse(participantId);
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const result = await getEventService().removeParticipant(
-      id,
+      parsedId.data,
       parsed.data,
       `admin:${admin.data.userId}`,
     );

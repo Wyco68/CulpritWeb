@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+const [input, outDir, prefix] = process.argv.slice(2);
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 794, height: 1123 } });
+await p.goto(pathToFileURL(resolve(input)).href, { waitUntil: 'networkidle' });
+await p.waitForTimeout(1500);
+await p.screenshot({ path: `${outDir}/${prefix}-cover.png` });
+await p.evaluate(() => window.scrollTo(0, 3200));
+await p.waitForTimeout(300);
+await p.screenshot({ path: `${outDir}/${prefix}-body.png` });
+await b.close();
+console.log('done');
