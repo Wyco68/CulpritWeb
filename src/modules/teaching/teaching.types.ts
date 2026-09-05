@@ -34,7 +34,10 @@ export const ABOUT_SECTIONS = [
 export const RESEARCH_SECTIONS = ['research_interest'] as const satisfies readonly CvSection[];
 
 /** The sections the public Teaching tab renders, in the order it renders them. */
-export const TEACHING_SECTIONS = ['teaching_role', 'teaching_award'] as const satisfies readonly CvSection[];
+export const TEACHING_SECTIONS = [
+  'teaching_role',
+  'teaching_award',
+] as const satisfies readonly CvSection[];
 
 /** Human-readable heading for each section, used on both the public tabs and the admin screen. */
 export const CV_SECTION_LABELS: Record<CvSection, string> = {
@@ -87,9 +90,4 @@ export type CourseStats = {
   total: number;
 };
 
-/** Append-only audit context supplied by the service, persisted by the repository. */
-export type AuditContext = {
-  actor: string;
-  action: string;
-  metadata?: Record<string, unknown>;
-};
+export type { AuditContext } from '@/modules/shared/lib/audit';
