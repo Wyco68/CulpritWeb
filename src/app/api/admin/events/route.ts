@@ -10,7 +10,6 @@ import {
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: create an event.
 export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin();

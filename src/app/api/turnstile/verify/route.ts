@@ -3,7 +3,12 @@ import type { NextRequest } from 'next/server';
 import { getTurnstileVerifier, getRateLimiter } from '@/modules/integrations';
 import { getClientIp, readJsonBody } from '@/modules/shared/lib/request';
 import { RateLimitError } from '@/modules/shared/lib/errors';
-import { apiError, apiSuccess, apiUnexpected, apiValidationError } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiSuccess,
+  apiUnexpected,
+  apiValidationError,
+} from '@/modules/shared/lib/api-response';
 
 const verifyTurnstileSchema = z.object({ token: z.string().trim().min(1) });
 

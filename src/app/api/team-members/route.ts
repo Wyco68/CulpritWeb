@@ -18,7 +18,11 @@ export const revalidate = 3600;
 export async function GET() {
   try {
     const result = await getTeamMemberService().list();
-    return respondPublicCache(result, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
+    return respondPublicCache(result, {
+      browserTtl: 300,
+      edgeTtl: 3600,
+      staleWhileRevalidate: 300,
+    });
   } catch (error) {
     return apiUnexpected(error);
   }

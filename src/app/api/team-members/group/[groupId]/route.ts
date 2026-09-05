@@ -1,6 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { getTeamMemberService, teamMemberGroupIdSchema } from '@/modules/research-groups';
-import { apiUnexpected, apiValidationError, respondPublicCache } from '@/modules/shared/lib/api-response';
+import {
+  apiUnexpected,
+  apiValidationError,
+  respondPublicCache,
+} from '@/modules/shared/lib/api-response';
 
 // Public: list team members belonging to one research group, ordered by sortOrder. Split out of
 // the unfiltered `/api/team-members` route (see ADR-007's addendum) because a `[groupId]` path
@@ -17,7 +21,11 @@ export async function GET(_request: NextRequest, ctx: { params: Promise<{ groupI
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const result = await getTeamMemberService().list({ groupId: parsed.data });
-    return respondPublicCache(result, { browserTtl: 300, edgeTtl: 3600, staleWhileRevalidate: 300 });
+    return respondPublicCache(result, {
+      browserTtl: 300,
+      edgeTtl: 3600,
+      staleWhileRevalidate: 300,
+    });
   } catch (error) {
     return apiUnexpected(error);
   }

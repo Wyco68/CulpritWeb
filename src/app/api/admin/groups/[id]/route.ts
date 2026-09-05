@@ -1,11 +1,15 @@
 import type { NextRequest } from 'next/server';
 import { getResearchGroupService, updateResearchGroupSchema } from '@/modules/research-groups';
 import { requireAdmin } from '@/modules/auth';
-import { apiError, apiUnexpected, apiValidationError, respond } from '@/modules/shared/lib/api-response';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
 import { revalidateOn } from '@/modules/shared/lib/revalidate';
 import { readJsonBody } from '@/modules/shared/lib/request';
 
-// Admin: update a research group.
 export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();
@@ -15,7 +19,11 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
     const parsed = updateResearchGroupSchema.safeParse(await readJsonBody(request));
     if (!parsed.success) return apiValidationError(parsed.error);
 
-    const result = await getResearchGroupService().update(id, parsed.data, `admin:${admin.data.userId}`);
+    const result = await getResearchGroupService().update(
+      id,
+      parsed.data,
+      `admin:${admin.data.userId}`,
+    );
     return respond(revalidateOn(result, 'team'));
   } catch (error) {
     return apiUnexpected(error);

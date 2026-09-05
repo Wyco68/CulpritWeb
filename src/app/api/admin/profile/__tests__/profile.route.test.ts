@@ -24,7 +24,10 @@ function makeRequest(method: 'PATCH' | 'PUT', body: unknown) {
 }
 
 function asAdmin() {
-  requireAdmin.mockResolvedValueOnce({ ok: true, data: { userId: 'u1', email: 'admin@example.com' } });
+  requireAdmin.mockResolvedValueOnce({
+    ok: true,
+    data: { userId: 'u1', email: 'admin@example.com' },
+  });
 }
 
 const PROFILE = {
