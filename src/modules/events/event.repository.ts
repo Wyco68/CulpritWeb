@@ -59,19 +59,36 @@ export type NewParticipant = {
 /** Prisma's ordering for a participant list, shared by every read so the order is never a surprise. */
 const PARTICIPANT_ORDER = [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }];
 
-function toParticipant(row: PrismaEventParticipant): EventParticipant {
+/**
+ * Every event read includes its participants in order, plus the linked member's CURRENT photo.
+ * Only the photo is read live — see `toParticipant`.
+ */
+const WITH_PARTICIPANTS = {
+  participants: {
+    orderBy: PARTICIPANT_ORDER,
+    include: { teamMember: { select: { photoUrl: true } } },
+  },
+};
+
+type ParticipantRow = PrismaEventParticipant & { teamMember?: { photoUrl: string | null } | null };
+
+function toParticipant(row: ParticipantRow): EventParticipant {
   return {
     id: row.id,
     eventId: row.eventId,
     teamMemberId: row.teamMemberId,
     name: row.name,
     role: row.role,
-    photoUrl: row.photoUrl,
+    // The linked member's current photo wins; the snapshot is the fallback for a guest, a deleted
+    // member, or a member who has since removed their photo. Name and role stay snapshots — they
+    // are claims about who someone was at the event. A photo only identifies them, and a snapshot
+    // taken before the member had uploaded one left every early participant as initials forever.
+    photoUrl: row.teamMember?.photoUrl ?? row.photoUrl,
     sortOrder: row.sortOrder,
   };
 }
 
-function toDomain(row: PrismaEvent & { participants?: PrismaEventParticipant[] }): Event {
+function toDomain(row: PrismaEvent & { participants?: ParticipantRow[] }): Event {
   return {
     id: row.id,
     title: row.title,
@@ -92,7 +109,7 @@ export class PrismaEventRepository implements EventRepository {
   async findById(id: string): Promise<Event | null> {
     const row = await prisma.event.findUnique({
       where: { id },
-      include: { participants: { orderBy: PARTICIPANT_ORDER } },
+      include: WITH_PARTICIPANTS,
     });
     return row ? toDomain(row) : null;
   }
@@ -104,7 +121,7 @@ export class PrismaEventRepository implements EventRepository {
     // baked into the prerendered page and go stale. The volume is tens of rows.
     const rows = await prisma.event.findMany({
       orderBy: { eventDate: 'desc' },
-      include: { participants: { orderBy: PARTICIPANT_ORDER } },
+      include: WITH_PARTICIPANTS,
     });
     return rows.map(toDomain);
   }
@@ -163,7 +180,7 @@ export class PrismaEventRepository implements EventRepository {
           photoUrls: input.data.photoUrls === undefined ? undefined : { set: input.data.photoUrls },
           videoUrls: input.data.videoUrls === undefined ? undefined : { set: input.data.videoUrls },
         },
-        include: { participants: { orderBy: PARTICIPANT_ORDER } },
+        include: WITH_PARTICIPANTS,
       });
       await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;

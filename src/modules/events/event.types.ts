@@ -3,9 +3,13 @@
 /**
  * One person who took part in an event — a team member or an outside guest, in one list.
  *
- * `name`/`role`/`photoUrl` are a snapshot taken when the participant was added, NOT a live read
- * through `teamMemberId`. An event is a historical record: renaming a member or changing their
- * title must not rewrite what a past event says, and deleting a member must not blank the row.
+ * `name`/`role` are a snapshot taken when the participant was added, NOT a live read through
+ * `teamMemberId`. An event is a historical record: renaming a member or changing their title must
+ * not rewrite what a past event says, and deleting a member must not blank the row.
+ *
+ * `photoUrl` is the exception: the linked member's current photo when they have one, otherwise the
+ * snapshot. A photo identifies a person rather than stating a fact about the event, and a snapshot
+ * taken before the member uploaded one would otherwise show initials forever.
  * `teamMemberId` survives only as a soft link, used to stop the same person being added twice.
  */
 export type EventParticipant = {
