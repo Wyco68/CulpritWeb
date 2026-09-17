@@ -1,14 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import {
-  Mail,
-  GraduationCap,
-  BookOpen,
-  ExternalLink,
-} from 'lucide-react';
+import { ArrowUpRight, GraduationCap } from 'lucide-react';
 
 import { getProfileCached } from '@/modules/profile';
-import { getTeamMemberService } from '@/modules/research-groups';
+import { getTeamMemberService, memberInitials } from '@/modules/research-groups';
+import { Avatar } from '@/modules/shared/ui/avatar';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { toMetaDescription } from './_lib/page-meta';
@@ -28,131 +24,77 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  const [profileResult, membersResult] = await Promise.all([
+  // The lab overview plus a card for the director (ADR-016). Her CV lives on her own profile page,
+  // which the card links to; her external links are her `member_link` rows, edited in the admin.
+  const [profileResult, directorResult] = await Promise.all([
     getProfileCached(),
-    getTeamMemberService().list(),
+    getTeamMemberService().findDirectorProfile(),
   ]);
 
-  const overview = profileResult.ok
-    ? profileResult.data?.labOverview
-    : null;
-
-  const director = membersResult.ok
-    ? membersResult.data.find((member) => member.isDirector)
-    : undefined;
+  const overview = profileResult.ok ? profileResult.data?.labOverview : null;
+  const directorProfile = directorResult.ok ? directorResult.data : null;
+  const pill =
+    'inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
   return (
     <div>
       <PageHeading title="About" />
 
-      {!overview && !director ? (
+      {!overview && !directorProfile ? (
         <EmptyState title="Nothing here yet" className="mt-10" />
       ) : (
         <div className="mt-12 space-y-12">
-          {/* Lab Overview */}
           {overview && (
             <p className="rise max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
               {overview}
             </p>
           )}
 
-          {/* Lab Director */}
-          {director && (
-            <section aria-labelledby="about-director">
-              <h3
-                id="about-director"
-                className="mb-4 font-mono text-xs uppercase tracking-[0.12em] text-emerald-700"
-              >
-                Lab Director
-              </h3>
+          {directorProfile && (
+            <section
+              aria-labelledby="about-director"
+              className="flex max-w-3xl flex-col gap-6 rounded-xl border border-border bg-surface p-7 shadow-sm sm:flex-row sm:items-center sm:gap-8"
+            >
+              <Avatar
+                src={directorProfile.member.photoUrl}
+                alt={`Portrait of ${directorProfile.member.name}`}
+                fallback={memberInitials(directorProfile.member.name)}
+                size="lg"
+                shape="circle"
+              />
+              <div className="min-w-0">
+                <h3
+                  id="about-director"
+                  className="break-words font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent"
+                >
+                  Lab director · {directorProfile.member.role}
+                </h3>
+                <p className="mt-2 break-words text-3xl font-bold leading-tight tracking-[-0.02em] text-foreground">
+                  {directorProfile.member.name}
+                </p>
+                {directorProfile.member.affiliation && (
+                  <p className="mt-1 whitespace-pre-line break-words text-muted-foreground">
+                    {directorProfile.member.affiliation}
+                  </p>
+                )}
 
-              <div className="max-w-4xl overflow-hidden rounded-[1.5rem] border border-emerald-100 bg-white shadow-sm">
-                <div className="grid md:grid-cols-[220px_1fr]">
-
-                  {/* Director Photo */}
-                  <div className="flex h-[300px] items-center justify-center bg-emerald-50 md:h-[320px]">
-                    {director.photoUrl ? (
-                      <img
-                        src={director.photoUrl}
-                        alt={`Portrait of ${director.name}`}
-                        className="size-52 rounded-full object-cover shadow-sm md:size-60"
-                      />
-                    ) : (
-                      <div className="flex size-52 items-center justify-center rounded-full bg-white text-5xl font-serif text-emerald-700 shadow-sm md:size-60">
-                        {director.name
-                          .split(' ')
-                          .map((name) => name[0])
-                          .slice(0, 2)
-                          .join('')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Director Information */}
-                  <div className="flex flex-col justify-center p-7 sm:p-8">
-                    <p className="font-mono text-xs uppercase tracking-[0.12em] text-emerald-700">
-                      Lab Director
-                    </p>
-
-                    <h2 className="mt-4 break-words font-serif text-3xl font-semibold leading-tight tracking-[-0.025em] text-slate-950">
-                      {director.name}
-                    </h2>
-
-                    <p className="mt-3 text-lg text-slate-500">
-                      {director.role}
-                    </p>
-
-                    <div className="mt-6 space-y-1 text-sm leading-relaxed text-slate-500">
-                      <p>Department of Computer Engineering</p>
-                      <p>Chiang Mai University</p>
-                    </div>
-
-                    {/* Links */}
-                    <div className="mt-7 flex flex-wrap gap-2.5">
-
-                      {/* Email */}
-                      <a
-                        href="mailto:jenjira.j@cmu.ac.th"
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 transition hover:bg-emerald-100"
-                      >
-                        <Mail className="size-4" />
-                        Email
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  <li>
+                    <Link href={`/team/${directorProfile.member.id}`} className={pill}>
+                      <GraduationCap className="size-3.5" aria-hidden="true" />
+                      Profile
+                    </Link>
+                  </li>
+                  {directorProfile.links.map((link) => (
+                    <li key={link.id}>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className={pill}>
+                        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                        {link.label}
+                        <span className="sr-only"> (opens in a new tab)</span>
                       </a>
-
-                      {/* Profile */}
-                      <Link
-                        href={`/team/${director.id}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 transition hover:bg-emerald-100"
-                      >
-                        <GraduationCap className="size-4" />
-                        Profile
-                      </Link>
-
-                      {/* Google Scholar */}
-                      <a
-                        href="https://scholar.google.com/citations?user=Evff3gsAAAAJ&hl=en"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 transition hover:bg-emerald-100"
-                      >
-                        <BookOpen className="size-4" />
-                        Google Scholar
-                      </a>
-
-                      {/* LinkedIn */}
-                      <a
-                        href="https://www.linkedin.com/in/jenjira-jaimunk-535b7734/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 transition hover:bg-emerald-100"
-                      >
-                        <ExternalLink className="size-4" />
-                        LinkedIn
-                      </a>
-
-                    </div>
-                  </div>
-                </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
           )}
