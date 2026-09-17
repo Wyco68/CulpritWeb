@@ -6,16 +6,17 @@ import { ImageResponse } from 'next/og';
 //
 // Colours are hardcoded because CSS custom properties aren't available inside `ImageResponse`'s
 // isolated Satori renderer. This stays a dark card by design even though the live `--masthead`
-// band is light cyan: a social-preview card needs strong contrast against arbitrary feed
+// band is light green: a social-preview card needs strong contrast against arbitrary feed
 // backgrounds, so it intentionally doesn't mirror the on-site palette.
 //
 // Laid out left-aligned against a rule, the same editorial structure the site's own pages use,
 // rather than as a centred logo card.
 
-const CARD_BACKGROUND = 'hsl(215, 59%, 11%)';
-const CARD_FOREGROUND = 'hsl(210, 20%, 92%)';
-const CARD_ACCENT = 'hsl(190, 90%, 55%)';
-const CARD_MUTED = 'hsl(210, 16%, 72%)';
+// Same green family as the site palette, darkened for the card: 13.72:1 text, 7.96:1 accent.
+const CARD_BACKGROUND = 'hsl(150, 30%, 11%)';
+const CARD_FOREGROUND = 'hsl(150, 20%, 92%)';
+const CARD_ACCENT = 'hsl(158, 55%, 55%)';
+const CARD_MUTED = 'hsl(150, 12%, 72%)';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
