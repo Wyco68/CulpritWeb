@@ -34,7 +34,6 @@ const PROFILE = {
   id: 'profile_1',
   labName: 'The Culprit of Privacy Technologies',
   labTagline: null,
-  logoUrl: null,
   labOverview: null,
   positionAffiliation: null,
   researchStatement: null,

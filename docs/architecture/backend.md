@@ -82,7 +82,7 @@ route and no projects tab — a project exists only on its owner's profile page.
 | Method | Path |
 |---|---|
 | POST/GET | `/api/auth/[...all]` — Better Auth's own handler (login/logout/session) |
-| PUT | `/api/admin/profile`, POST `/api/admin/profile/photo` |
+| PUT | `/api/admin/profile` |
 | CRUD | `/api/admin/research[/{id}]`, `/api/admin/publications[/{id}]`, `/api/admin/groups[/{id}]`, `/api/admin/team-members[/{id}]` |
 
 ### Bot-defense edge

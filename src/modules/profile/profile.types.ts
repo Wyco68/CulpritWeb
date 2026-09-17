@@ -9,7 +9,6 @@ export type Profile = {
   /** "The Culprit of Privacy Technologies" — the site header's h1. */
   labName: string;
   labTagline: string | null;
-  logoUrl: string | null;
   /** The About page body. */
   labOverview: string | null;
   /** The lab's department / host institution. */

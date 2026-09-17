@@ -62,6 +62,7 @@ export {
 export { getTeamMemberService } from './container';
 
 export { TeamMembersView, TeamMemberCard, memberInitials } from './ui/team-members-view';
+export { MemberCard } from './ui/member-card';
 export { BylineNames } from './ui/byline-names';
 export { CreditedWorkList, type CreditedWork } from './ui/credited-works';
 export { TeamMembersTable } from './ui/team-members-table';

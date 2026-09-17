@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * What a complete lab identity needs: the fields the site header and the public About tab render.
  * Member CVs are not counted — each is its own profile, and an empty list there is normal.
  */
-const LAB_FIELDS = ['labName', 'labTagline', 'logoUrl', 'positionAffiliation', 'labOverview'] as const;
+const LAB_FIELDS = ['labName', 'labTagline', 'positionAffiliation', 'labOverview'] as const;
 
 /**
  * Restores the empty years between the populated ones — a gap in output is itself information, and

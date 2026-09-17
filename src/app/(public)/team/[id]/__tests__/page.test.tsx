@@ -17,10 +17,6 @@ vi.mock('next/navigation', () => ({
   },
 }));
 
-vi.mock('@/modules/profile', async () => ({
-  ProfileLinks: (await import('@/modules/profile/ui/profile-links')).ProfileLinks,
-}));
-
 vi.mock('@/modules/projects', async () => ({
   ProjectList: (await import('@/modules/projects/ui/project-list')).ProjectList,
 }));
@@ -40,6 +36,7 @@ vi.mock('@/modules/research-groups', async () => {
   const teamKind = await import('@/modules/shared/lib/team-kind');
   return {
     memberInitials: view.memberInitials,
+    MemberCard: (await import('@/modules/research-groups/ui/member-card')).MemberCard,
     CreditedWorkList: credited.CreditedWorkList,
     isMemberByline: byline.isMemberByline,
     allowsResearchAndPublications: teamKind.allowsResearchAndPublications,
