@@ -2,9 +2,9 @@ import Link from 'next/link';
 import type { Profile } from '@/modules/profile';
 import { NavTabs } from './nav-tabs';
 
-// The masthead: a band carrying the lab's name, tagline and the tab bar (no logo or photo — the
-// logo stays in the profile data, it just isn't shown here). The only inverted
-// surface in the design — an editorial device (the head of a printed page).
+// The masthead: a band carrying the lab's name, tagline and the tab bar. No logo or photo — the
+// logo is still stored on the profile, it just isn't shown here. The only inverted surface in the
+// design — an editorial device (the head of a printed page).
 //
 // Rendered once by the (public) layout. The lab name is the site shell's single <h1>; each tab's
 // own heading below is an <h2>.
