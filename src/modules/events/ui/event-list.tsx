@@ -16,6 +16,11 @@ import type { Event } from '../event.types';
 // rendering them inline made every card as tall as its own content and turned the list into a
 // ragged column. `h-full` on the card plus a fixed summary clamp keeps them uniform.
 
+/** "1 photo", "3 photos", or nothing for zero. */
+function count(n: number, noun: string): string | false {
+  return n > 0 && `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
 export function EventList({ events }: { events: Event[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   // Read from `events` rather than holding the event object, so a refresh can't leave the dialog
@@ -27,9 +32,9 @@ export function EventList({ events }: { events: Event[] }) {
       <ul className="grid gap-5 sm:grid-cols-2">
         {events.map((event, index) => {
           const extras = [
-            event.photoUrls.length > 0 && `${event.photoUrls.length} photos`,
-            event.videoUrls.length > 0 && `${event.videoUrls.length} videos`,
-            event.participants.length > 0 && `${event.participants.length} participants`,
+            count(event.photoUrls.length, 'photo'),
+            count(event.videoUrls.length, 'video'),
+            count(event.participants.length, 'participant'),
           ].filter(Boolean) as string[];
 
           return (
@@ -69,10 +74,10 @@ export function EventList({ events }: { events: Event[] }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  aria-label={`Show detail: ${event.title}`}
+                  aria-label={`Show Details: ${event.title}`}
                   onClick={() => setOpenId(event.id)}
                 >
-                  Show detail
+                  Show Details
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Button>
               </div>
