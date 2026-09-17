@@ -17,8 +17,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AdminHeader adminName={session.data.name} />
+    // White body under the masthead, the same treatment as the public layout: `--background` is
+    // re-pointed at `--surface` for this subtree, so dialogs and sticky bars turn white with it.
+    <div className="flex min-h-screen flex-col bg-background [--background:var(--surface)]">
+      <AdminHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 sm:px-8 sm:py-16">
         {children}
       </main>
