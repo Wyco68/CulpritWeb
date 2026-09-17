@@ -32,36 +32,36 @@ export function ResearchList({
   const groups = groupByArea(items);
 
   return (
-    <div>
+    <div className="space-y-10">
       {groups.map((group, groupIndex) => (
         <section
           key={group.area}
           aria-labelledby={`research-${groupIndex}`}
           style={{ '--i': groupIndex } as React.CSSProperties}
-          className="rise grid gap-x-6 border-b border-border py-8 first:pt-0 sm:grid-cols-[11rem_1fr] sm:py-10 sm:first:pt-0"
+          className="rise"
         >
           <h3
             id={`research-${groupIndex}`}
-            className="mb-4 font-mono text-xs uppercase leading-5 tracking-[0.12em] text-accent sm:mb-0 sm:pt-1.5"
+            className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent"
           >
             {group.area}
           </h3>
 
-          <ul className="min-w-0">
+          <ul className="grid gap-4">
             {group.items.map((item) => (
               <li
                 key={item.id}
-                className="group border-t border-border/70 py-6 first:border-t-0 first:pt-0 last:pb-0"
+                className="group min-w-0 rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-7"
               >
-                <h4 className="text-balance font-serif text-xl leading-snug text-foreground sm:text-2xl">
+                <h4 className="text-balance break-words text-xl font-bold leading-snug tracking-[-0.01em] text-foreground">
                   {item.title}
                 </h4>
-                <p className="mt-3 max-w-[62ch] text-pretty leading-[1.7] text-muted-foreground">
+                <p className="mt-2 max-w-[62ch] text-pretty break-words leading-[1.7] text-muted-foreground">
                   {item.summary}
                 </p>
                 {/* Omitted entirely when nobody is credited — that means it is his own work. */}
                 {item.contributors.length > 0 && (
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <p className="mt-3 text-sm text-muted-foreground">
                     With{' '}
                     <BylineNames
                       names={item.contributors.map((contributor) => contributor.name)}
@@ -75,13 +75,10 @@ export function ResearchList({
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
+                    <ArrowUpRight className="size-3.5" aria-hidden="true" />
                     View project
-                    <ArrowUpRight
-                      className="size-4 transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                      aria-hidden="true"
-                    />
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )}
