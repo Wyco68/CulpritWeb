@@ -27,7 +27,7 @@ export const optionalText = (max: number) =>
  * `z.string().url()` alone is not enough here. It delegates to the URL parser, which accepts ANY
  * scheme — `javascript:alert(1)` and `data:text/html,...` both pass it. Every URL below is
  * rendered straight into an `href` or `src` on the public site (publications-list, research-list,
- * profile-links, the Calendly embed), so a stored `javascript:` URL would be a live XSS vector the
+ * member-card, the Calendly embed), so a stored `javascript:` URL would be a live XSS vector the
  * moment a visitor clicked it. Restricting the scheme at the boundary is what closes that.
  */
 function isHttpUrl(value: string): boolean {

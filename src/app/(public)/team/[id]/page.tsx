@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { ProfileLinks } from '@/modules/profile';
 import { ProjectList } from '@/modules/projects';
 import { getPublicationService } from '@/modules/publications';
 import { getResearchService } from '@/modules/research';
@@ -12,7 +11,7 @@ import {
   CreditedWorkList,
   getTeamMemberService,
   isMemberByline,
-  memberInitials,
+  MemberCard,
   type CreditedWork,
 } from '@/modules/research-groups';
 import {
@@ -24,8 +23,6 @@ import {
   groupBySection,
 } from '@/modules/teaching';
 import { cvSectionAnchorId } from '@/modules/teaching/ui/cv-entry-list';
-import { Avatar } from '@/modules/shared/ui/avatar';
-import { PageHeading } from '@/modules/shared/ui/page-heading';
 import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
 import { toMetaDescription } from '../../_lib/page-meta';
 
@@ -130,40 +127,21 @@ export default async function TeamMemberPage({ params }: Props) {
         Back to Team
       </Link>
 
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:gap-8">
-        <Avatar
-          src={member.photoUrl}
-          alt={`Portrait of ${member.name}`}
-          fallback={memberInitials(member.name)}
-          size="lg"
-        />
-        <div className="min-w-0">
-          {member.isDirector && (
-            <p className="mb-2 font-mono text-xs uppercase tracking-[0.12em] text-accent">
-              Director
-            </p>
-          )}
-          <PageHeading title={member.name} />
-          <p className="mt-2 break-words font-serif text-lg italic text-accent">{member.role}</p>
-          {member.affiliation && (
-            <p className="mt-1 max-w-xl text-pretty text-sm leading-relaxed text-muted-foreground">
-              {member.affiliation}
-            </p>
-          )}
-        </div>
-      </div>
+      <MemberCard
+        member={member}
+        links={links}
+        eyebrow={member.isDirector ? `Lab Director · ${member.role}` : undefined}
+        as="h2"
+      />
 
       <div className="mt-12 space-y-10">
         <SectionNav items={sections} />
 
-        {(member.bio || links.length > 0) && (
-          <section id="biography" aria-label="Biography" className="space-y-8">
-            {member.bio && (
-              <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-                {member.bio}
-              </p>
-            )}
-            <ProfileLinks links={links} />
+        {member.bio && (
+          <section id="biography" aria-label="Biography">
+            <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+              {member.bio}
+            </p>
           </section>
         )}
 

@@ -21,7 +21,6 @@ export type { ProfileRepository } from './profile.repository';
 
 export { getProfileService, getProfileCached } from './container';
 
-export { ProfileLinks, type ProfileLinkItem } from './ui/profile-links';
 export {
   ProfileFieldsForm,
   PROFILE_FIELD_KEYS,
