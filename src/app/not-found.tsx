@@ -39,7 +39,7 @@ export default async function NotFound() {
             href="/"
             className="group inline-flex h-11 items-center gap-2.5 rounded-sm bg-accent px-6 text-sm font-medium tracking-tight text-accent-foreground transition-[background-color,scale] duration-300 ease-[var(--ease-out-expo)] hover:bg-accent/90 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            Back to the About page
+            Back to About
             <span
               aria-hidden="true"
               className="transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5"

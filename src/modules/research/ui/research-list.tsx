@@ -78,7 +78,7 @@ export function ResearchList({
                     className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                    View project
+                    View Project
                     <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )}

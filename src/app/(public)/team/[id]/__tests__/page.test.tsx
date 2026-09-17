@@ -150,7 +150,7 @@ describe('TeamMemberPage', () => {
 
     const projects = screen.getByRole('region', { name: 'Projects' });
     expect(within(projects).getByRole('heading', { name: 'Consent ledger' })).toBeInTheDocument();
-    expect(within(projects).getByRole('link', { name: /View project/ })).toHaveAttribute(
+    expect(within(projects).getByRole('link', { name: /View Project/ })).toHaveAttribute(
       'href',
       'https://example.com/ledger',
     );

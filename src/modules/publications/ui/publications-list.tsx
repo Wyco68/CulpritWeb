@@ -79,7 +79,7 @@ export function PublicationsList({
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    View publication
+                    View Publication
                     <ArrowUpRight
                       className="size-4 transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                       aria-hidden="true"

@@ -142,7 +142,7 @@ export function EventFormDialog({
         <FormField
           label="Full write-up"
           htmlFor="event-content"
-          description="Optional. Shown only inside Show detail on the public tab, so the card itself stays one fixed size however long this gets."
+          description="Optional. Shown only inside Show Details on the public tab, so the card itself stays one fixed size however long this gets."
           error={errors.content?.message}
         >
           {(fieldProps) => (

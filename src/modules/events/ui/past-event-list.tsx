@@ -26,7 +26,7 @@ export function PastEventList({ events }: { events: Event[] }) {
             <li key={event.id} style={{ '--i': index } as React.CSSProperties} className="rise">
               <button
                 type="button"
-                aria-label={`Show detail: ${event.title}`}
+                aria-label={`Show Details: ${event.title}`}
                 onClick={() => setSelectedId(event.id)}
                 className={cn(
                   'inline-flex max-w-full items-center gap-2.5 rounded-pill border px-4 py-2 text-left transition-colors duration-300 ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',

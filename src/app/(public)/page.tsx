@@ -67,7 +67,7 @@ export default async function AboutPage() {
                   id="about-director"
                   className="break-words font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent"
                 >
-                  Lab director · {directorProfile.member.role}
+                  Lab Director · {directorProfile.member.role}
                 </h3>
                 <p className="mt-2 break-words text-3xl font-bold leading-tight tracking-[-0.02em] text-foreground">
                   {directorProfile.member.name}
