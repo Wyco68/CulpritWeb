@@ -39,9 +39,10 @@ export const PUBLIC_STORAGE_BUCKETS = ['profile', 'research', 'publications', 'e
 
 ## Upload / download flow
 
-1. Admin uploads a profile photo through `photo-upload-field.tsx` → `POST /api/admin/profile/photo`.
+1. Admin uploads a team-member photo through the member dialog → `POST /api/admin/team-members/photo`
+   (event photos use `POST /api/admin/events/photo` the same way).
 2. The route calls `getStorageAdapter().upload(bucket, path, file, contentType)`.
-3. On success, the returned `path` is turned into a public URL and stored on `Profile.photoUrl` —
+3. On success, the returned `path` is turned into a public URL and stored on `TeamMember.photoUrl` —
    **the database never holds binary data**, only the URL/reference.
 
 ## Adapter interface

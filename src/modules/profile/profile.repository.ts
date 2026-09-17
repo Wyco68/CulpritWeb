@@ -32,7 +32,6 @@ export interface ProfileRepository {
 type ProfileWritableFields = {
   labName?: string;
   labTagline?: string | null;
-  logoUrl?: string | null;
   labOverview?: string | null;
   positionAffiliation?: string | null;
   researchStatement?: string | null;
@@ -46,7 +45,6 @@ type ProfileWritableFields = {
 /** Nullable columns, in one list so full-write and partial-write stay in step. */
 const NULLABLE_FIELDS = [
   'labTagline',
-  'logoUrl',
   'labOverview',
   'positionAffiliation',
   'researchStatement',
@@ -62,7 +60,6 @@ function toDomain(row: PrismaProfile): Profile {
     id: row.id,
     labName: row.labName,
     labTagline: row.labTagline,
-    logoUrl: row.logoUrl,
     labOverview: row.labOverview,
     positionAffiliation: row.positionAffiliation,
     researchStatement: row.researchStatement,

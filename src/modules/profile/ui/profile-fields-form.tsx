@@ -18,7 +18,6 @@ import { UnsavedChangesGuard } from '@/modules/shared/ui/unsaved-changes-guard';
 // their concrete files.
 import type { Profile } from '../profile.types';
 import { patchProfileSchema, type PatchProfileInput } from '../profile.schema';
-import { PhotoUploadField } from './photo-upload-field';
 
 // The one profile editor, shared by every admin screen.
 //
@@ -36,7 +35,6 @@ import { PhotoUploadField } from './photo-upload-field';
 export const PROFILE_FIELD_KEYS = [
   'labName',
   'labTagline',
-  'logoUrl',
   'positionAffiliation',
   'labOverview',
   'researchStatement',
@@ -52,13 +50,11 @@ export type ProfileFieldKey = (typeof PROFILE_FIELD_KEYS)[number];
 /**
  * How a field is drawn, and — the part that matters — what "empty" looks like on the wire.
  *
- * The three prose/URL kinds send `''`, which the schema's transform turns into `undefined` with
- * the KEY STILL PRESENT, so the repository writes NULL. `logoUrl` cannot: its schema is a bare
- * `.url()` and `''` fails it, so clearing a photo has to send an explicit `null` (the schema is
- * `.nullable()` for exactly this). Sending `undefined` would be wrong for all four — JSON.stringify
+ * Every kind sends `''`, which the schema's transform turns into `undefined` with the KEY STILL
+ * PRESENT, so the repository writes NULL. Sending `undefined` would be wrong — JSON.stringify
  * drops undefined keys, and a dropped key means "leave the column alone".
  */
-type FieldKind = 'text' | 'textarea' | 'url' | 'photo';
+type FieldKind = 'text' | 'textarea' | 'url';
 
 type FieldMeta = {
   label: string;
@@ -81,7 +77,6 @@ const FIELD_META: Record<ProfileFieldKey, FieldMeta> = {
     kind: 'text',
     description: 'Optional. The line directly beneath the lab name.',
   },
-  logoUrl: { label: 'Logo', kind: 'photo' },
   positionAffiliation: {
     label: 'Affiliation',
     kind: 'textarea',
@@ -136,7 +131,7 @@ const FIELD_META: Record<ProfileFieldKey, FieldMeta> = {
 /** A field takes the full width when it is a paragraph or the portrait picker. */
 function isWide(key: ProfileFieldKey): boolean {
   const kind = FIELD_META[key].kind;
-  return kind === 'textarea' || kind === 'photo';
+  return kind === 'textarea';
 }
 
 export type ProfileFormSection = {
@@ -148,7 +143,7 @@ export type ProfileFormSection = {
 };
 
 /** The fields whose schema is `.nullable()`, so `null` is a legal value to send. */
-type NullableFieldKey = 'logoUrl' | 'calendlyUrl';
+type NullableFieldKey = 'calendlyUrl';
 
 /**
  * Raw form state — structurally the schema's INPUT type, so `zodResolver`'s generics line up
@@ -164,9 +159,8 @@ function toDefaults(profile: Profile | null, fields: readonly ProfileFieldKey[])
   // TS can only narrow per-key. Every write below is legal for the key it targets.
   const defaults: Record<string, string | null> = {};
   for (const key of fields) {
-    // `logoUrl` keeps null (it is the value the picker sets to clear); everything else uses ''
-    // so an untouched empty field and a deliberately emptied one look the same on the wire.
-    defaults[key] = profile?.[key] ?? (FIELD_META[key].kind === 'photo' ? null : '');
+    // '' so an untouched empty field and a deliberately emptied one look the same on the wire.
+    defaults[key] = profile?.[key] ?? '';
   }
   return defaults as FormValues;
 }
@@ -180,7 +174,7 @@ function toPayload(values: FormValues, fields: readonly ProfileFieldKey[]) {
   const payload: Record<string, string | null> = {};
   for (const key of fields) {
     const value = values[key];
-    payload[key] = value ?? (FIELD_META[key].kind === 'photo' ? null : '');
+    payload[key] = value ?? '';
   }
   return payload;
 }
@@ -276,19 +270,6 @@ function ProfileField({ fieldKey, register, errors }: FieldProps) {
   const meta = FIELD_META[fieldKey];
   const error = errors[fieldKey]?.message;
   const wide = isWide(fieldKey);
-
-  if (meta.kind === 'photo') {
-    return (
-      <div className="sm:col-span-2">
-        <PhotoUploadField />
-        {error && (
-          <p role="alert" className="mt-2 text-xs font-medium text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  }
 
   return (
     <FormField

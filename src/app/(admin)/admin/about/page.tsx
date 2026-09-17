@@ -18,8 +18,8 @@ const PROFILE_SECTIONS = [
   {
     id: 'identity',
     title: 'Identity',
-    description: 'The name, tagline, affiliation and logo at the head of every public page.',
-    fields: ['labName', 'labTagline', 'positionAffiliation', 'logoUrl'],
+    description: 'The name, tagline and affiliation at the head of every public page.',
+    fields: ['labName', 'labTagline', 'positionAffiliation'],
   },
   {
     id: 'overview',

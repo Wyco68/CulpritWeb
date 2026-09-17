@@ -27,7 +27,7 @@ related_decisions: [ADR-001, ADR-004, ADR-010, ADR-015, ADR-016]
 
 | Model | Purpose | Notes |
 |---|---|---|
-| `Profile` | Singleton — the **lab's** profile | Since 2026-09-11 ([ADR-016](../decisions/ADR-016-lab-team-profiles.md)): `labName`, `labTagline`, `logoUrl`, `labOverview`, `positionAffiliation` (the lab's department), research statement, Calendly link and the per-tab intros. The professor's personal fields moved to her `TeamMember` row. |
+| `Profile` | Singleton — the **lab's** profile | Since 2026-09-11 ([ADR-016](../decisions/ADR-016-lab-team-profiles.md)): `labName`, `labTagline`, `labOverview`, `positionAffiliation` (the lab's department), research statement, Calendly link and the per-tab intros. The professor's personal fields moved to her `TeamMember` row. |
 | `CvEntry` | CV lines, tagged by `section` | One table with a `CvSection` discriminator ([ADR-012](../decisions/ADR-012-cv-entries-and-courses.md)). Required `teamMemberId` (cascade) since ADR-016 — renders on that member's profile page. |
 | `Course` | Taught courses | Required `teamMemberId` (cascade) since ADR-016; grouped by free-text `level` on the member's profile page. |
 | `Research` | Research works | `link` nullable. Contributors are `ResearchContributor` rows, not a column. |

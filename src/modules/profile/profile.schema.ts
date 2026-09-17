@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
-import { httpUrl, optionalUrl, safeText } from '@/modules/shared/lib/schema-fields';
+import { optionalUrl, safeText } from '@/modules/shared/lib/schema-fields';
 
 // The lab's singleton (ADR-016). The professor's personal fields moved to her team-member row; CV
 // lists are `cv_entry` rows edited through the teaching module (ADR-012).
@@ -20,7 +20,6 @@ const optionalSafeText = (max: number) =>
 export const updateProfileSchema = z.object({
   labName: safeText(200),
   labTagline: optionalSafeText(300),
-  logoUrl: httpUrl.nullable().optional(),
   labOverview: optionalSafeText(5000),
   positionAffiliation: optionalSafeText(3000),
   researchStatement: optionalSafeText(5000),

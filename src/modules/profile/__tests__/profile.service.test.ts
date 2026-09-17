@@ -7,7 +7,6 @@ const BLANK: Profile = {
   id: 'profile_1',
   labName: '',
   labTagline: null,
-  logoUrl: null,
   labOverview: null,
   positionAffiliation: null,
   researchStatement: null,

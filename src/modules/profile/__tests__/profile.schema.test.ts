@@ -6,7 +6,6 @@ describe('updateProfileSchema', () => {
     const result = updateProfileSchema.safeParse({
       labName: 'The Culprit of Privacy Technologies',
       labTagline: 'Privacy engineering research',
-      logoUrl: 'https://example.com/logo.png',
       labOverview: 'Short overview.',
       positionAffiliation: 'Professor, University College London',
       education: [{ title: 'PhD, Computer Science', subtitle: 'MIT', year: '2010' }],
@@ -52,20 +51,12 @@ describe('updateProfileSchema', () => {
     }
   });
 
-  it('rejects a non-URL logoUrl', () => {
+  it('strips a logoUrl, which is no longer part of the profile', () => {
     const result = updateProfileSchema.safeParse({
       labName: 'Lab',
-      logoUrl: 'not-a-url',
+      logoUrl: 'https://example.com/logo.png',
     });
-    expect(result.success).toBe(false);
-  });
-
-  it('allows logoUrl to be explicitly null (clear the logo)', () => {
-    const result = updateProfileSchema.safeParse({
-      labName: 'Lab',
-      logoUrl: null,
-    });
-    expect(result.success).toBe(true);
+    expect(result.success && 'logoUrl' in result.data).toBe(false);
   });
 
   // The CV list fields left this schema in ADR-012 — Zod now strips them as unknown keys, so

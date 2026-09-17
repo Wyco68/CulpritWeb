@@ -13,7 +13,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// Singleton. The LAB's profile — "The Culprit of Privacy Technologies": its name, tagline, logo,
+// Singleton. The LAB's profile — "The Culprit of Privacy Technologies": its name, tagline,
 // overview, department, the Research intro, and the per-tab standfirst copy. Until 2026-09-11 this
 // row held the professor's personal identity; that moved onto her `TeamMember` row (the director)
 // when the site was re-scoped from a personal site to a lab site (ADR-016). The model keeps the
@@ -34,7 +34,6 @@ model Profile {
   /// The lab's name, rendered as the site header's h1 on every public page.
   labName             String   @map("lab_name")
   labTagline          String?  @map("lab_tagline")
-  logoUrl             String?  @map("logo_url")
   /// The About page body.
   labOverview         String?  @map("lab_overview") @db.Text
   /// The lab's department / host institution.
