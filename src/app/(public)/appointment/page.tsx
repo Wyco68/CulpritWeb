@@ -44,7 +44,7 @@ export default async function AppointmentPage() {
       <PageHeading title="Make Appointment" />
 
       {intro && (
-        <p className="rise mt-12 max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+        <p className="mt-12 max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
           {intro}
         </p>
       )}

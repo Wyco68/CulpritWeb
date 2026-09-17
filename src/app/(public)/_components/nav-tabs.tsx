@@ -46,8 +46,15 @@ export function NavTabs() {
                 ref={active ? activeRef : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 px-3.5 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,border-color,background-color] duration-500 ease-[var(--ease-out-expo)] hover:bg-masthead-foreground/[0.06] hover:border-masthead-foreground/25 hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
-                  active ? 'border-accent-on-band text-masthead-foreground' : 'border-transparent',
+                  'relative inline-flex items-center whitespace-nowrap rounded-t-md border-b-2 border-transparent px-3.5 pb-3.5 pt-3 text-sm tracking-tight text-masthead-foreground/60 transition-[color,background-color] duration-500 ease-[var(--ease-out-expo)] hover:bg-masthead-foreground/[0.06] hover:text-masthead-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-on-band',
+                  // The underline is a pseudo-element drawn over the transparent border, so it can
+                  // grow from the centre (`scale`) instead of snapping on as a border colour. The
+                  // layout persists across tab navigations, so leaving one tab and landing on the
+                  // next reads as the marker moving between them.
+                  'after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:transition-[scale,background-color] after:duration-300 after:ease-[var(--ease-out-expo)]',
+                  active
+                    ? 'text-masthead-foreground after:scale-x-100 after:bg-accent-on-band'
+                    : 'after:scale-x-0 after:bg-masthead-foreground/25 hover:after:scale-x-100',
                 )}
               >
                 {label}

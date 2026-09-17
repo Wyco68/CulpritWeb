@@ -159,7 +159,7 @@ export default async function TeamMemberPage({ params }: Props) {
         {(member.bio || links.length > 0) && (
           <section id="biography" aria-label="Biography" className="space-y-8">
             {member.bio && (
-              <p className="rise max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+              <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
                 {member.bio}
               </p>
             )}

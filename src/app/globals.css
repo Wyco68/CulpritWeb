@@ -21,38 +21,34 @@
      by a heavy border or a drop shadow. Same hue family as the masthead band, so the band, the
      ground and the panels read as one palette.
 
-     The separation is deliberately small — rgb(244 247 248) against 255, roughly 8-11 points — and
+     The separation is deliberately small — rgb(245 249 247) against 255, roughly 6-10 points — and
      is carried as much by --border-strong as by the fill. Widening it turns the ground grey, which
      is the look this palette was chosen to avoid. */
   --background: hsl(150 25% 97%);
   --surface: hsl(0 0% 100%); /* cards, panels, tables, dialogs, form sections */
-  --foreground: hsl(150 15% 12%); /* 15.69:1 on background, 16.91:1 on surface */
+  --foreground: hsl(150 15% 12%); /* 15.18:1 on background, 16.08:1 on surface */
   --muted: hsl(145 15% 95%);
-  --muted-foreground: hsl(150 8% 42%); /* 5.20:1 on background, 5.61:1 on surface */
+  --muted-foreground: hsl(150 8% 42%); /* 4.70:1 on background, 4.98:1 on surface */
   /* Recessive rule between rows inside a panel. --border-strong is the panel's own edge: it has to
      hold a shape against the ground, which a hairline at 91% lightness could not do. */
   --border: hsl(145 15% 88%);
   --border-strong: hsl(145 15% 80%);
-  --accent: hsl(158 55% 32%); /* 4.61:1 on background, 4.97:1 on surface */
-  --accent-foreground: hsl(0 0% 100%); /* 4.97:1 on accent */
-  /* Fixed brand band (site header/hero + active-tab underline surface) — a constant cyan identity
-     element distinct from the light page background used everywhere else. Same hue as the
-     original 190/85/88, lifted a touch brighter/lighter on request — contrast against both
-     --masthead-foreground and --accent-on-band only improves at this lightness, so no other token
-     needed to move with it. */
+  --accent: hsl(158 55% 32%); /* 4.67:1 on background, 4.95:1 on surface */
+  --accent-foreground: hsl(0 0% 100%); /* 4.95:1 on accent */
+  /* Fixed brand band (site header/hero + active-tab underline surface) — a constant light-green
+     identity element distinct from the light page background used everywhere else. Every other
+     token takes its hue from this green family (150–158). */
   --masthead: hsl(150 35% 91%);
-  --masthead-foreground: hsl(150 30% 15%); /* 14.08:1 on the band */
+  --masthead-foreground: hsl(150 30% 15%); /* 11.67:1 on the band */
 
-  /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.13:1
-     against the cyan band — below the 4.5:1 AA threshold for normal-size text, which the
-     professor's title line on the masthead is. This sibling measures 5.52:1 there. Text sitting
+  /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.19:1
+     against the green band — below the 4.5:1 AA threshold for normal-size text, which the
+     tagline on the masthead is. This sibling measures 5.46:1 there. Text sitting
      ON the band uses this; everything on the white page keeps --accent. */
   --accent-on-band: hsl(158 55% 27%);
 
-  /* The portrait mount on the masthead. The band is a light cyan, so the old `--background`
-     mount (a near-white card) read as a hard white ring cut out of the band rather than as a
-     mounted print. Four points darker than the band and the same hue: the mount still lifts the
-     photo off the surface, but it belongs to it. */
+  /* The mount for a framed image on the band, five points darker than the band and the same hue.
+     The header no longer shows one; kept so the token set stays whole. */
   --masthead-mount: hsl(150 35% 86%);
 
   /* --- Form controls --------------------------------------------------------------------- */
@@ -60,17 +56,17 @@
      WCAG 2.1 AA §1.4.11 asks for 3:1 on the visual information that identifies a control, so a
      field was not reliably distinguishable from the page it sat on — the single biggest reason
      the admin forms read as an undifferentiated stack of boxes.
-     A field is now a shallow well: a tinted fill plus a border measuring 3.24:1 against the page
-     and 3.02:1 against its own fill. On focus the fill lifts to white and the border takes the
+     A field is now a shallow well: a tinted fill plus a border measuring 3.21:1 against the page
+     and 3.20:1 against its own fill. On focus the fill lifts to white and the border takes the
      accent, so the active field is unambiguous. */
-  --input: hsl(220 14% 97%);
+  --input: hsl(145 15% 97%);
   /* Darkened four points when the ground moved. A field now has to identify itself against a white
-     panel as well as against the tinted page, and white is the stricter of the two. */
-  --input-border: hsl(215 14% 54%);
+     panel as well as against the tinted page, and white is the stricter of the two (3.40:1). */
+  --input-border: hsl(150 10% 52%);
 
   --destructive: hsl(3 72% 42%); /* 5.84:1 on background, 6.30:1 on surface */
   --destructive-foreground: hsl(0 0% 100%);
-  --ring: hsl(190 90% 30%);
+  --ring: hsl(158 55% 32%); /* same as --accent: 4.67:1 on background */
 
   /* --- Radii ---------------------------------------------------------------------------- */
   /* Deliberately not one uniform value. Containers are softer than the controls inside them.
@@ -82,12 +78,12 @@
   --radius-pill: 999px;
 
   /* --- Shadows -------------------------------------------------------------------------- */
-  /* Tinted with the palette's own cool hue and heavily diffused, rather than flat black at low
+  /* Tinted with the palette's own green hue and heavily diffused, rather than flat black at low
      opacity. A single consistent light source, from above. */
-  --shadow-hairline: 0 1px 2px hsl(220 20% 20% / 0.05);
+  --shadow-hairline: 0 1px 2px hsl(150 20% 20% / 0.05);
   --shadow-raised:
-    0 1px 2px hsl(220 20% 20% / 0.04), 0 4px 12px -2px hsl(220 20% 20% / 0.06),
-    0 12px 32px -8px hsl(220 20% 20% / 0.07);
+    0 1px 2px hsl(150 20% 20% / 0.04), 0 4px 12px -2px hsl(150 20% 20% / 0.06),
+    0 12px 32px -8px hsl(150 20% 20% / 0.07);
 
   /* --- Motion --------------------------------------------------------------------------- */
   /* No linear, no ease-in-out. Weighted curves that decelerate like something with mass. */
@@ -243,8 +239,35 @@ video {
 }
 
 .rise {
-  animation: rise 700ms var(--ease-out-expo) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: rise 500ms var(--ease-out-expo) both;
+  /* Capped at the ninth item, so a long list finishes arriving in under a second instead of the
+     last rows waiting on everything above them. */
+  animation-delay: calc(min(var(--i, 0), 8) * 50ms);
+}
+
+/* Modal entrance for the public event dialog: the panel settles in from a hair below and a touch
+   smaller while the backdrop dims. Enter only — closing stays instant, which reads as dismissal
+   rather than a second animation to wait through. Keyed on `[open]`, so it replays every time
+   `showModal()` puts the dialog back in the top layer. */
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.98);
+  }
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.dialog-enter[open] {
+  animation: dialog-enter 240ms var(--ease-out-expo);
+}
+
+.dialog-enter[open]::backdrop {
+  animation: backdrop-enter 240ms var(--ease-out-expo);
 }
 
 @media (prefers-reduced-motion: reduce) {

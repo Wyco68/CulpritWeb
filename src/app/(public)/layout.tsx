@@ -26,7 +26,10 @@ export default async function PublicLayout({ children }: { children: React.React
   const profile = result.ok ? result.data : null;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    // White page body, as in the prototype. `--background` is re-pointed at `--surface` for this
+    // subtree only, so everything that paints the ground (the sticky section nav, dialogs) turns
+    // white with it while the admin keeps its tinted ground.
+    <div className="flex min-h-[100dvh] flex-col bg-background [--background:var(--surface)]">
       <SiteHeader profile={profile} />
       {/* `id` is the target of the skip-link in the root layout (WCAG 2.4.1). The measure is
           capped at 68ch on the prose column rather than the full 5xl shell — long-form CV copy

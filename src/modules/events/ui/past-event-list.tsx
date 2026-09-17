@@ -29,7 +29,7 @@ export function PastEventList({ events }: { events: Event[] }) {
                 aria-label={`Show Details: ${event.title}`}
                 onClick={() => setSelectedId(event.id)}
                 className={cn(
-                  'inline-flex max-w-full items-center gap-2.5 rounded-pill border px-4 py-2 text-left transition-colors duration-300 ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  'inline-flex max-w-full items-center gap-2.5 rounded-pill border px-4 py-2 text-left transition-[background-color,border-color,color,scale] duration-300 active:scale-[0.98] ease-[var(--ease-out-expo)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                   active
                     ? 'border-accent bg-muted text-accent'
                     : 'border-border text-foreground hover:border-accent/40',

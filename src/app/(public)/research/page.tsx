@@ -44,7 +44,7 @@ export default async function ResearchPage() {
 
           {researchStatement && (
             <section id="statement" aria-label="Research statement">
-              <p className="rise max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+              <p className="max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
                 {researchStatement}
               </p>
             </section>
