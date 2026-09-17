@@ -72,7 +72,8 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([existing]);
 
-    await user.click(screen.getByRole('button', { name: /Edit/ }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Malware analysis at scale' }));
+    await user.click(screen.getByRole('menuitem', { name: /Edit/ }));
     const titleInput = screen.getByLabelText('Title', { exact: false });
     await user.clear(titleInput);
     await user.type(titleInput, 'Updated title');
@@ -91,8 +92,12 @@ describe('ResearchTable', () => {
     const user = userEvent.setup();
     renderTable([existing]);
 
-    await user.click(screen.getByRole('button', { name: /Delete/ }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Malware analysis at scale' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     const dialog = screen.getByRole('dialog', { name: 'Delete this item?' });
+    // Typed confirmation: the destructive button stays disabled until the word is typed.
+    expect(within(dialog).getByRole('button', { name: 'Delete' })).toBeDisabled();
+    await user.type(within(dialog).getByLabelText(/to confirm/), 'delete');
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>

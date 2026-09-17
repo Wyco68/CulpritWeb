@@ -80,7 +80,8 @@ describe('ProjectsAdmin', () => {
     const user = userEvent.setup();
     renderAdmin([project]);
 
-    await user.click(screen.getByRole('button', { name: 'Edit project: Consent ledger' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Consent ledger' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit project: Consent ledger' }));
     const title = screen.getByLabelText(/^Title/);
     await user.clear(title);
     await user.type(title, 'Consent ledger v2');
@@ -119,9 +120,11 @@ describe('ProjectsAdmin', () => {
     const user = userEvent.setup();
     renderAdmin([project]);
 
-    await user.click(screen.getByRole('button', { name: 'Delete project: Consent ledger' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Consent ledger' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Delete project: Consent ledger' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Delete this project?')).toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText(/to confirm/), 'delete');
 
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
     await waitFor(() =>

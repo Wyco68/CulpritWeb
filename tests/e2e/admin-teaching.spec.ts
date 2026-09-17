@@ -56,10 +56,12 @@ test.describe('Admin teaching screen', () => {
 
     // --- delete -------------------------------------------------------------------------------
     await page.goto('/admin/teaching');
-    await page.getByRole('button', { name: `Delete course: ${COURSE_TITLE}` }).click();
+    await page.getByRole('button', { name: `Actions: ${COURSE_TITLE}` }).click();
+    await page.getByRole('menuitem', { name: `Delete course: ${COURSE_TITLE}` }).click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText('Delete this course?')).toBeVisible();
+    await dialog.getByLabel(/to confirm/).fill('delete');
     await dialog.getByRole('button', { name: 'Delete' }).click();
 
     await expect(page.getByText(COURSE_TITLE)).toBeHidden({ timeout: 15_000 });
@@ -84,7 +86,9 @@ test.describe('Admin teaching screen', () => {
     await expect(page.getByText(entryTitle)).toBeVisible({ timeout: 15_000 });
 
     await page.goto('/admin/teaching');
-    await page.getByRole('button', { name: `Delete entry: ${entryTitle}` }).click();
+    await page.getByRole('button', { name: `Actions: ${entryTitle}` }).click();
+    await page.getByRole('menuitem', { name: `Delete entry: ${entryTitle}` }).click();
+    await page.getByRole('dialog').getByLabel(/to confirm/).fill('delete');
     await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
     await expect(page.getByText(entryTitle)).toBeHidden({ timeout: 15_000 });
   });

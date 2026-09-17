@@ -48,6 +48,8 @@ export function useDeleteRecord<T extends { id: string }>(endpointFor: (id: stri
   }
 
   return {
+    /** The record awaiting confirmation, so the dialog can name it. */
+    target,
     /** Open the confirmation for one record. */
     request: (record: T) => {
       const trigger = document.activeElement;

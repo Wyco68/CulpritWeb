@@ -21,10 +21,12 @@ export interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description?: string;
+  /** A call to action, e.g. "Add your first team member". */
+  action?: React.ReactNode;
   className?: string;
 }
 
-export function EmptyState({ icon: Icon, title, description, className }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -39,6 +41,7 @@ export function EmptyState({ icon: Icon, title, description, className }: EmptyS
           {description}
         </p>
       )}
+      {action && <div className="mt-3">{action}</div>}
     </div>
   );
 }

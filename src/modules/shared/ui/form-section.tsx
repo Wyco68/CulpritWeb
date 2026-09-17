@@ -58,8 +58,9 @@ export function FormSection({
 
       {/* A table renders its own bordered, rounded frame. Inside this panel that would be a second
           border just inside the first, so the frame is stripped and the table bleeds to the panel's
-          edges. Anything that is not a table keeps the normal padded body. */}
-      <div className="px-6 py-6 [&>[data-slot=table-container]]:-mx-6 [&>[data-slot=table-container]]:-my-6 [&>[data-slot=table-container]]:w-auto [&>[data-slot=table-container]]:rounded-none [&>[data-slot=table-container]]:border-x-0 [&>[data-slot=table-container]]:border-b-0">
+          edges. When something sits above it (a list's search bar) the table starts below that,
+          and its top rule becomes the divider. Anything that is not a table keeps the padding. */}
+      <div className="px-6 py-6 [&>[data-slot=table-container]]:-mx-6 [&>[data-slot=table-container]]:-mb-6 [&>[data-slot=table-container]:first-child]:-mt-6 [&>[data-slot=table-container]:not(:first-child)]:mt-5 [&>[data-slot=table-container]]:w-auto [&>[data-slot=table-container]]:rounded-none [&>[data-slot=table-container]]:border-x-0 [&>[data-slot=table-container]]:border-b-0">
         {children}
       </div>
     </section>

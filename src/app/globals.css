@@ -266,6 +266,11 @@ video {
   animation: dialog-enter 240ms var(--ease-out-expo);
 }
 
+.menu-enter {
+  animation: dialog-enter 160ms var(--ease-out-expo);
+  transform-origin: top right;
+}
+
 .dialog-enter[open]::backdrop {
   animation: backdrop-enter 240ms var(--ease-out-expo);
 }

@@ -1,21 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Hammer, Plus } from 'lucide-react';
+import { Hammer, Link2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
-import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/modules/shared/ui/table';
+import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
 // Deep imports, not the barrel — see project-form-dialog.tsx's comment.
 import type { Project } from '../project.types';
 import { ProjectFormDialog } from './project-form-dialog';
@@ -36,6 +27,11 @@ export function ProjectsAdmin({
 
   const remove = useDeleteRecord<Project>((id) => `/api/admin/projects/${id}`);
 
+  function openCreate() {
+    setEditing(undefined);
+    setFormOpen(true);
+  }
+
   return (
     <div id="projects" className="scroll-mt-24">
       <FormSection
@@ -43,75 +39,52 @@ export function ProjectsAdmin({
         description="Shown on the member's public profile, in sort order."
         badge={<FormSectionCount count={projects.length} />}
         action={
-          <Button
-            aria-label="Add project"
-            onClick={() => {
-              setEditing(undefined);
-              setFormOpen(true);
-            }}
-          >
+          <Button aria-label="Add project" onClick={openCreate}>
             <Plus className="size-4" aria-hidden="true" />
             Add
           </Button>
         }
       >
-        {projects.length === 0 ? (
-          <EmptyState
-            icon={Hammer}
-            title="No projects yet."
-            description="Add the first project to show it on the public profile."
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Link</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="min-w-0 font-medium text-foreground">
-                    {/* User-entered text: bounded and wrapped, or one long unbroken title
-                        stretches the table past its container. */}
-                    <span className="line-clamp-2 block max-w-[46ch] break-words">
-                      {project.title}
-                    </span>
-                    <span className="mt-0.5 line-clamp-2 block max-w-[46ch] break-words text-xs font-normal text-muted-foreground">
-                      {project.summary}
-                    </span>
-                  </TableCell>
-                  <TableCell className="min-w-0 text-muted-foreground">
-                    {project.link ? (
-                      <span className="block max-w-[24ch] truncate" title={project.link}>
-                        {project.link}
-                      </span>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                  <TableCell className="tabular text-muted-foreground">
-                    {project.sortOrder}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <RowActions
-                      editLabel={`Edit project: ${project.title}`}
-                      deleteLabel={`Delete project: ${project.title}`}
-                      onEdit={() => {
-                        setEditing(project);
-                        setFormOpen(true);
-                      }}
-                      onDelete={() => remove.request(project)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <RecordTable
+          items={projects}
+          noun="projects"
+          searchText={(project) => [project.title, project.summary].join(' ')}
+          identityHeader="Project"
+          identity={(project) => <RecordIdentity title={project.title} detail={project.summary} />}
+          statusHeader="Link"
+          status={(project) =>
+            project.link
+              ? { tone: 'ok', label: 'Linked', icon: Link2 }
+              : { tone: 'neutral', label: 'No link' }
+          }
+          groupHeader="Order"
+          group={(project) => <span className="tabular">{project.sortOrder}</span>}
+          rowLabel={(project) => `Actions: ${project.title}`}
+          actions={(project) => [
+            {
+              label: 'Edit',
+              ariaLabel: `Edit project: ${project.title}`,
+              icon: Pencil,
+              onSelect: () => {
+                setEditing(project);
+                setFormOpen(true);
+              },
+            },
+            {
+              label: 'Delete',
+              ariaLabel: `Delete project: ${project.title}`,
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => remove.request(project),
+            },
+          ]}
+          empty={{
+            icon: Hammer,
+            title: 'No projects yet.',
+            description: "Projects appear on the member's public profile.",
+            action: { label: 'Add your first project', onClick: openCreate },
+          }}
+        />
       </FormSection>
 
       <ProjectFormDialog
@@ -125,6 +98,7 @@ export function ProjectsAdmin({
         {...remove.dialogProps}
         title="Delete this project?"
         description="It is removed from the public profile. This action cannot be undone."
+        confirmationText="delete"
       />
     </div>
   );

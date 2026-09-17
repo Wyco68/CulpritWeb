@@ -55,11 +55,13 @@ describe('TeamMembersTable', () => {
     expect(screen.getByText('No team members yet.')).toBeInTheDocument();
   });
 
-  it('labels the director and links each row to its profile editor', () => {
+  it('labels the director and links each row to its profile editor', async () => {
+    const user = userEvent.setup();
     renderTable([member]);
     const row = screen.getByRole('row', { name: /Jane Jaimunk/ });
     expect(within(row).getByText('Director')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Edit profile: Jane Jaimunk' })).toHaveAttribute(
+    await user.click(within(row).getByRole('button', { name: 'Actions: Jane Jaimunk' }));
+    expect(screen.getByRole('menuitem', { name: 'Edit profile: Jane Jaimunk' })).toHaveAttribute(
       'href',
       '/admin/team/m1',
     );
@@ -104,7 +106,8 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([member], { m1: [memberLink] });
 
-    await user.click(screen.getByRole('button', { name: 'Edit: Jane Jaimunk' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Jane Jaimunk' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit: Jane Jaimunk' }));
     // The stored links are in the editor, untouched.
     expect(screen.getByLabelText('Link 1 label')).toHaveValue('GitHub');
 
@@ -125,7 +128,8 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([member], { m1: [memberLink] });
 
-    await user.click(screen.getByRole('button', { name: 'Edit: Jane Jaimunk' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Jane Jaimunk' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit: Jane Jaimunk' }));
     await user.click(screen.getByRole('button', { name: 'Add link' }));
     await user.type(screen.getByLabelText('Link 2 label'), 'ORCID');
     await user.type(screen.getByLabelText('Link 2 URL'), 'https://orcid.org/1');
@@ -144,7 +148,8 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([member], { m1: [memberLink] });
 
-    await user.click(screen.getByRole('button', { name: 'Edit: Jane Jaimunk' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Jane Jaimunk' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit: Jane Jaimunk' }));
     await user.click(screen.getByRole('button', { name: 'Remove GitHub' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
@@ -157,7 +162,8 @@ describe('TeamMembersTable', () => {
     const user = userEvent.setup();
     renderTable([member], { m1: [memberLink] });
 
-    await user.click(screen.getByRole('button', { name: 'Edit: Jane Jaimunk' }));
+    await user.click(screen.getByRole('button', { name: 'Actions: Jane Jaimunk' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Edit: Jane Jaimunk' }));
     const url = screen.getByLabelText('Link 1 URL');
     await user.clear(url);
     await user.type(url, 'javascript:alert(1)');
