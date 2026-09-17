@@ -1,36 +1,35 @@
-import { ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
 import { LogoutButton } from '@/modules/auth';
+import { getProfileCached } from '@/modules/profile';
 import { AdminNav } from './admin-nav';
 
-// The admin chrome's masthead hero band — deliberately the same `--masthead` brand surface as the public
-// site header (per the Figma "Admin View" prototype) so the two apps read as one product, not two
-// disconnected shells.
-export async function AdminHeader({ adminName }: { adminName: string }) {
+// The admin masthead, built exactly like the public site header so the two read as one product:
+// the same band, the lab's name in the same type, and the tab bar beneath a rule. Only the lab
+// name sits in the header — the admin's own name and any "Admin" badge stay out of it — and the
+// tab bar carries Log out at its end.
+//
+// The name is a `<p>`, not the public header's `<h1>`: every admin screen already names itself
+// with its own `h1`.
+
+const DEFAULT_LAB_NAME = 'The Culprit';
+
+export async function AdminHeader() {
+  const result = await getProfileCached();
+  const labName = (result.ok && result.data?.labName) || DEFAULT_LAB_NAME;
+
   return (
     <header className="bg-masthead text-masthead-foreground">
-      <div className="mx-auto max-w-6xl px-6 pt-6 sm:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2.5 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-on-band"
-          >
-            <span className="inline-flex size-8 items-center justify-center rounded-full bg-accent-on-band/15 text-accent-on-band">
-              <ShieldCheck className="size-4" aria-hidden="true" />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold tracking-tight">The Culprit — Admin</span>
-              <span className="text-xs text-masthead-foreground/70">{adminName}</span>
-            </span>
-          </Link>
+      <div className="mx-auto max-w-6xl px-6 pt-14 sm:px-8 sm:pt-20">
+        <p className="text-pretty font-serif text-[2.125rem] font-normal leading-[1.05] tracking-[-0.02em] sm:text-6xl">
+          {labName}
+        </p>
 
-          <div className="flex items-center gap-2">
+        <div className="mt-10 flex items-end justify-between gap-4 border-t border-masthead-foreground/12 sm:mt-14">
+          <div className="min-w-0 flex-1">
+            <AdminNav />
+          </div>
+          <div className="shrink-0 pb-2">
             <LogoutButton />
           </div>
-        </div>
-
-        <div className="mt-5 border-t border-masthead-foreground/10">
-          <AdminNav />
         </div>
       </div>
     </header>

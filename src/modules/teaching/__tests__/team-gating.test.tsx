@@ -70,16 +70,19 @@ describe('CoursesAdmin team gating', () => {
     expect(screen.getByText('Introduction to Information Security')).toBeInTheDocument();
     expect(screen.getByText(/This team does not teach/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add course' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /^Edit course/ }),
-    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Actions: Introduction to Information Security' }),
+    );
+    expect(screen.queryByRole('menuitem', { name: /^Edit course/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Hidden')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {
+      screen.getByRole('menuitem', {
         name: 'Delete course: Introduction to Information Security',
       }),
     );
     const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/to confirm/), 'delete');
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -89,11 +92,15 @@ describe('CoursesAdmin team gating', () => {
     );
   });
 
-  it('offers Add and Edit for a team that teaches', () => {
+  it('offers Add and Edit for a team that teaches', async () => {
+    const user = userEvent.setup();
     renderWithQuery(<CoursesAdmin teamMemberId="m1" courses={[course]} />);
     expect(screen.getByRole('button', { name: 'Add course' })).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Actions: Introduction to Information Security' }),
+    );
     expect(
-      screen.getByRole('button', { name: 'Edit course: Introduction to Information Security' }),
+      screen.getByRole('menuitem', { name: 'Edit course: Introduction to Information Security' }),
     ).toBeInTheDocument();
   });
 });
@@ -104,7 +111,8 @@ describe('CvEntriesAdmin team gating', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  it('edits only the sections the team allows and shows the rest read-only-ish', () => {
+  it('edits only the sections the team allows and shows the rest read-only-ish', async () => {
+    const user = userEvent.setup();
     renderWithQuery(
       <CvEntriesAdmin
         teamMemberId="m1"
@@ -120,9 +128,10 @@ describe('CvEntriesAdmin team gating', () => {
     expect(screen.getByText('PhD, Computer Science')).toBeInTheDocument();
     expect(screen.getByText(/This team does not use this list/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add education entry' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Edit entry/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions: PhD, Computer Science' }));
+    expect(screen.queryByRole('menuitem', { name: /^Edit entry/ })).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Delete entry: PhD, Computer Science' }),
+      screen.getByRole('menuitem', { name: 'Delete entry: PhD, Computer Science' }),
     ).toBeInTheDocument();
   });
 

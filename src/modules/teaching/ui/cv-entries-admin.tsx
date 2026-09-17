@@ -1,22 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { GraduationCap, Plus } from 'lucide-react';
+import { EyeOff, GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
-import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { DeleteOnlyAction } from '@/modules/shared/ui/delete-only-action';
-import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/modules/shared/ui/table';
+import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
+import type { RowAction } from '@/modules/shared/ui/row-actions-menu';
 // Deep imports, not the barrel — see course-form-dialog.tsx's comment.
 import { CV_SECTION_LABELS, type CvEntry, type CvSection } from '../teaching.types';
 import { CvEntryFormDialog } from './cv-entry-form-dialog';
@@ -125,63 +116,56 @@ export function CvEntriesAdmin({
                 )
               }
             >
-              {rows.length === 0 ? (
-                <EmptyState
-                  icon={GraduationCap}
-                  title={`No ${CV_SECTION_LABELS[section].toLowerCase()} yet.`}
-                  description={`Add the first ${itemLabel} to show this list on the public profile.`}
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Entry</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead>Order</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="min-w-0 font-medium text-foreground">
-                          {/* User-entered text: bounded and wrapped, or one long unbroken title
-                              stretches the table past its container. */}
-                          <span className="line-clamp-2 block max-w-[46ch] break-words">
-                            {entry.title}
-                          </span>
-                          {entry.subtitle && (
-                            <span className="mt-0.5 line-clamp-2 block max-w-[46ch] break-words text-xs font-normal text-muted-foreground">
-                              {entry.subtitle}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="tabular whitespace-nowrap text-muted-foreground">
-                          {entry.year ?? '—'}
-                        </TableCell>
-                        <TableCell className="tabular text-muted-foreground">
-                          {entry.sortOrder}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {retired ? (
-                            <DeleteOnlyAction
-                              label={`Delete entry: ${entry.title}`}
-                              onDelete={() => remove.request(entry)}
-                            />
-                          ) : (
-                            <RowActions
-                              editLabel={`Edit entry: ${entry.title}`}
-                              deleteLabel={`Delete entry: ${entry.title}`}
-                              onEdit={() => openEdit(entry)}
-                              onDelete={() => remove.request(entry)}
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <RecordTable
+                items={rows}
+                noun={CV_SECTION_LABELS[section].toLowerCase()}
+                searchText={(entry) =>
+                  [entry.title, entry.subtitle, entry.year].filter(Boolean).join(' ')
+                }
+                identityHeader="Entry"
+                identity={(entry) => (
+                  <RecordIdentity title={entry.title} detail={entry.subtitle ?? undefined} />
+                )}
+                statusHeader="Profile"
+                status={() =>
+                  retired
+                    ? { tone: 'neutral', label: 'Hidden', icon: EyeOff }
+                    : { tone: 'ok', label: 'On profile' }
+                }
+                groupHeader="Year"
+                group={(entry) => (
+                  <span className="tabular whitespace-nowrap">{entry.year ?? '—'}</span>
+                )}
+                rowLabel={(entry) => `Actions: ${entry.title}`}
+                actions={(entry) => {
+                  const del: RowAction = {
+                    label: 'Delete',
+                    ariaLabel: `Delete entry: ${entry.title}`,
+                    icon: Trash2,
+                    destructive: true,
+                    onSelect: () => remove.request(entry),
+                  };
+                  if (retired) return [del];
+                  return [
+                    {
+                      label: 'Edit',
+                      ariaLabel: `Edit entry: ${entry.title}`,
+                      icon: Pencil,
+                      onSelect: () => openEdit(entry),
+                    },
+                    del,
+                  ];
+                }}
+                empty={{
+                  icon: GraduationCap,
+                  title: `No ${CV_SECTION_LABELS[section].toLowerCase()} yet.`,
+                  description: "Entries appear in this list on the member's public profile.",
+                  action: {
+                    label: `Add your first ${itemLabel}`,
+                    onClick: () => openCreate(section),
+                  },
+                }}
+              />
             </FormSection>
           </div>
         );
@@ -199,6 +183,7 @@ export function CvEntriesAdmin({
         {...remove.dialogProps}
         title="Delete this entry?"
         description="It is removed from the public site. This action cannot be undone."
+        confirmationText="delete"
       />
     </>
   );

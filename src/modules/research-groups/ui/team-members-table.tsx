@@ -1,26 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { IdCard, Plus, Users2 } from 'lucide-react';
+import { IdCard, ImageOff, Pencil, Plus, Trash2, Users2 } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
+import { TEAM_KIND_LABELS } from '@/modules/shared/lib/team-kind';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
-import { Button, buttonVariants } from '@/modules/shared/ui/button';
+import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
-import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { RowActions } from '@/modules/shared/ui/row-actions';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/modules/shared/ui/table';
+import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
 // Deep imports, not the barrel — see team-member-form-dialog.tsx's comment.
 import type { MemberLink, TeamMember } from '../team-member.types';
 import { TeamMemberFormDialog } from './team-member-form-dialog';
+import { memberInitials } from './team-members-view';
 
 export function TeamMembersTable({
   items,
@@ -40,6 +32,11 @@ export function TeamMembersTable({
 
   const remove = useDeleteRecord<TeamMember>((id) => `/api/admin/team-members/${id}`);
 
+  function openCreate() {
+    setEditing(undefined);
+    setFormOpen(true);
+  }
+
   return (
     <div id="members" className="scroll-mt-24">
       <FormSection
@@ -47,80 +44,75 @@ export function TeamMembersTable({
         description="Everyone on the public Team tab. Each member has a profile page with their CV and courses."
         badge={<FormSectionCount count={items.length} />}
         action={
-          <Button
-            aria-label="Add team member"
-            onClick={() => {
-              setEditing(undefined);
-              setFormOpen(true);
-            }}
-          >
+          <Button aria-label="Add team member" onClick={openCreate}>
             <Plus className="size-4" aria-hidden="true" />
             Add
           </Button>
         }
       >
-        {items.length === 0 ? (
-          <EmptyState
-            icon={Users2}
-            title="No team members yet."
-            description="Add the first team member."
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium text-foreground">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar
-                        src={item.photoUrl}
-                        alt=""
-                        fallback={item.name.slice(0, 1).toUpperCase()}
-                        size="sm"
-                        className="size-8 ring-0"
-                      />
-                      <span className="min-w-0 break-words">{item.name}</span>
-                      {item.isDirector && (
-                        <span className="rounded-full border border-accent/40 px-2 py-0.5 text-xs font-medium text-accent">
-                          Director
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{item.role}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/admin/team/${item.id}`}
-                        aria-label={`Edit profile: ${item.name}`}
-                        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                      >
-                        <IdCard className="size-4" aria-hidden="true" />
-                        Edit profile
-                      </Link>
-                    <RowActions
-                      editLabel={`Edit: ${item.name}`}
-                      deleteLabel={`Delete: ${item.name}`}
-                      onEdit={() => {
-                        setEditing(item);
-                        setFormOpen(true);
-                      }}
-                      onDelete={() => remove.request(item)}
-                    />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <RecordTable
+          items={items}
+          noun="team members"
+          searchText={(item) =>
+            [item.name, item.citationName, item.role, TEAM_KIND_LABELS[item.teamKind]].join(' ')
+          }
+          identityHeader="Member"
+          identity={(item) => (
+            <RecordIdentity
+              leading={
+                <Avatar
+                  src={item.photoUrl}
+                  alt=""
+                  fallback={memberInitials(item.name)}
+                  size="sm"
+                  shape="circle"
+                  className="size-8 ring-0"
+                />
+              }
+              title={item.name}
+              detail={item.role}
+            />
+          )}
+          statusHeader="Profile"
+          status={(item) =>
+            item.photoUrl
+              ? { tone: 'ok', label: 'Has photo' }
+              : { tone: 'attention', label: 'No photo', icon: ImageOff }
+          }
+          groupHeader="Team"
+          group={(item) => (item.isDirector ? 'Director' : TEAM_KIND_LABELS[item.teamKind])}
+          rowLabel={(item) => `Actions: ${item.name}`}
+          actions={(item) => [
+            {
+              label: 'Edit profile',
+              ariaLabel: `Edit profile: ${item.name}`,
+              icon: IdCard,
+              href: `/admin/team/${item.id}`,
+            },
+            {
+              label: 'Edit details',
+              ariaLabel: `Edit: ${item.name}`,
+              icon: Pencil,
+              onSelect: () => {
+                setEditing(item);
+                setFormOpen(true);
+              },
+            },
+            {
+              label: 'Delete',
+              ariaLabel: `Delete: ${item.name}`,
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => remove.request(item),
+            },
+          ]}
+          empty={{
+            icon: Users2,
+            title: 'No team members yet.',
+            description: 'Members appear on the public Team tab, each with their own profile page.',
+            action: { label: 'Add your first team member', onClick: openCreate },
+          }}
+        />
       </FormSection>
 
       <TeamMemberFormDialog
@@ -133,6 +125,7 @@ export function TeamMembersTable({
       <ConfirmDialog
         {...remove.dialogProps}
         title="Delete this member?"
+        confirmationText={remove.target?.name}
         description="Their profile, CV entries and courses are removed from the public site. This action cannot be undone."
       />
     </div>

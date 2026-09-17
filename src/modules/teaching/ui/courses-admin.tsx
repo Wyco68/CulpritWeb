@@ -1,22 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { Button } from '@/modules/shared/ui/button';
-import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
-import { DeleteOnlyAction } from '@/modules/shared/ui/delete-only-action';
-import { RowActions } from '@/modules/shared/ui/row-actions';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/modules/shared/ui/table';
+import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
+import type { RowAction } from '@/modules/shared/ui/row-actions-menu';
 // Deep imports, not the barrel — see course-form-dialog.tsx's comment.
 import type { Course } from '../teaching.types';
 import { CourseFormDialog } from './course-form-dialog';
@@ -49,6 +40,11 @@ export function CoursesAdmin({
 
   const remove = useDeleteRecord<Course>((id) => `/api/admin/teaching/courses/${id}`);
 
+  function openCreate() {
+    setEditing(undefined);
+    setFormOpen(true);
+  }
+
   // Nothing to show and nothing to add: the section would be an empty box explaining an absence.
   if (!allowed && courses.length === 0) return null;
 
@@ -62,85 +58,78 @@ export function CoursesAdmin({
         badge={<FormSectionCount count={courses.length} />}
         action={
           allowed ? (
-            <Button
-              aria-label="Add course"
-              onClick={() => {
-                setEditing(undefined);
-                setFormOpen(true);
-              }}
-            >
+            <Button aria-label="Add course" onClick={openCreate}>
               <Plus className="size-4" aria-hidden="true" />
               Add
             </Button>
           ) : undefined
         }
       >
-        {courses.length === 0 ? (
-          <EmptyState
-            icon={BookOpen}
-            title="No courses yet."
-            description="Add the first course to show it on the public profile."
-          />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Course</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Term</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {courses.map((course) => (
-                <TableRow key={course.id}>
-                  <TableCell className="min-w-0 font-medium text-foreground">
-                    <span className="line-clamp-2 block max-w-[46ch] break-words">
-                      {course.code && (
-                        <span className="mr-2 font-mono text-xs text-muted-foreground">
-                          {course.code}
-                        </span>
-                      )}
-                      {course.title}
+        <RecordTable
+          items={courses}
+          noun="courses"
+          searchText={(course) =>
+            [course.code, course.title, course.level, course.term].filter(Boolean).join(' ')
+          }
+          identityHeader="Course"
+          identity={(course) => (
+            <RecordIdentity
+              title={
+                <>
+                  {course.code && (
+                    <span className="mr-2 font-mono text-xs text-muted-foreground">
+                      {course.code}
                     </span>
-                  </TableCell>
-                  <TableCell className="min-w-0 text-muted-foreground">
-                    <span className="block max-w-[20ch] truncate" title={course.level}>
-                      {course.level}
-                    </span>
-                  </TableCell>
-                  <TableCell className="min-w-0 text-muted-foreground">
-                    <span className="block max-w-[18ch] truncate" title={course.term ?? undefined}>
-                      {course.term ?? '—'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="tabular text-muted-foreground">
-                    {course.sortOrder}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {allowed ? (
-                      <RowActions
-                        editLabel={`Edit course: ${course.title}`}
-                        deleteLabel={`Delete course: ${course.title}`}
-                        onEdit={() => {
-                          setEditing(course);
-                          setFormOpen(true);
-                        }}
-                        onDelete={() => remove.request(course)}
-                      />
-                    ) : (
-                      <DeleteOnlyAction
-                        label={`Delete course: ${course.title}`}
-                        onDelete={() => remove.request(course)}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+                  )}
+                  {course.title}
+                </>
+              }
+              detail={course.term ?? undefined}
+            />
+          )}
+          statusHeader="Profile"
+          // Retired rows are the ones a team change left behind (ADR-017): kept, but not shown.
+          status={() =>
+            allowed
+              ? { tone: 'ok', label: 'On profile' }
+              : { tone: 'neutral', label: 'Hidden', icon: EyeOff }
+          }
+          groupHeader="Level"
+          group={(course) => (
+            <span className="block max-w-[20ch] truncate" title={course.level}>
+              {course.level}
+            </span>
+          )}
+          rowLabel={(course) => `Actions: ${course.title}`}
+          actions={(course) => {
+            const del: RowAction = {
+              label: 'Delete',
+              ariaLabel: `Delete course: ${course.title}`,
+              icon: Trash2,
+              destructive: true,
+              onSelect: () => remove.request(course),
+            };
+            if (!allowed) return [del];
+            return [
+              {
+                label: 'Edit',
+                ariaLabel: `Edit course: ${course.title}`,
+                icon: Pencil,
+                onSelect: () => {
+                  setEditing(course);
+                  setFormOpen(true);
+                },
+              },
+              del,
+            ];
+          }}
+          empty={{
+            icon: BookOpen,
+            title: 'No courses yet.',
+            description: "Courses appear on the member's public profile, grouped by level.",
+            action: { label: 'Add your first course', onClick: openCreate },
+          }}
+        />
       </FormSection>
 
       {allowed && (
@@ -156,6 +145,7 @@ export function CoursesAdmin({
         {...remove.dialogProps}
         title="Delete this course?"
         description="It is removed from the public profile. This action cannot be undone."
+        confirmationText="delete"
       />
     </div>
   );
