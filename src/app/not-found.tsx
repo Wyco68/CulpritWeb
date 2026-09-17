@@ -21,7 +21,7 @@ export default async function NotFound() {
   const profile = result.ok ? result.data : null;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-background [--background:var(--surface)]">
       <SiteHeader profile={profile} />
       <main
         id="main"
