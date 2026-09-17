@@ -53,12 +53,12 @@ export default async function EventsPage() {
               under it is a real answer to the question a visitor came with, and silently showing
               only past events would read as if those were the next ones. */}
             <section aria-labelledby="events-upcoming-heading">
-              <h2
+              <h3
                 id="events-upcoming-heading"
                 className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-accent"
               >
                 Upcoming
-              </h2>
+              </h3>
               {upcoming.length === 0 ? (
                 <EmptyState title="Nothing scheduled" className="mt-5" />
               ) : (
@@ -70,12 +70,12 @@ export default async function EventsPage() {
 
             {past.length > 0 && (
               <section aria-labelledby="events-past-heading">
-                <h2
+                <h3
                   id="events-past-heading"
                   className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground"
                 >
                   Past
-                </h2>
+                </h3>
                 <div className="mt-5">
                   <PastEventList events={past} />
                 </div>

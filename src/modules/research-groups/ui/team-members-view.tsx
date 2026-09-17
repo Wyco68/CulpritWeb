@@ -91,9 +91,9 @@ export function TeamMembersView({ members }: { members: TeamMember[] }) {
             aria-labelledby={headingId}
             className="border-t border-border pt-8 first:border-t-0 first:pt-0"
           >
-            <h2 id={headingId} className="font-serif text-xl font-semibold text-accent">
+            <h3 id={headingId} className="font-serif text-xl font-semibold text-accent">
               {TEAM_KIND_LABELS[group.kind]}
-            </h2>
+            </h3>
 
             <ul aria-labelledby={headingId} className="mt-5 grid gap-5 sm:grid-cols-2">
               {group.members.map((member) => (

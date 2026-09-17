@@ -31,7 +31,7 @@ describe('TeamMembersView', () => {
     // Deliberately out of order: the display order is the component's, not the caller's.
     render(<TeamMembersView members={[everyTeam[3]!, everyTeam[2]!, everyTeam[1]!, everyTeam[0]!]} />);
 
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Director',
       'Professors',
       'Research Team',
@@ -47,7 +47,7 @@ describe('TeamMembersView', () => {
   it('drops teams with nobody in them', () => {
     render(<TeamMembersView members={[everyTeam[0]!, everyTeam[3]!]} />);
 
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Director',
       'Development Team',
     ]);
