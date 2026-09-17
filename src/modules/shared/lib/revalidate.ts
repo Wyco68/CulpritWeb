@@ -54,7 +54,7 @@ const AREA_PATHS = {
   projects: ['/team/[id]'],
   /**
    * The About tab alone. Separate from `'profile'`, which drops the whole layout subtree because
-   * the lab's name and logo render in the site header on every page.
+   * the lab's name and tagline render in the site header on every page.
    */
   about: ['/'],
   /**
@@ -90,7 +90,7 @@ const edgePurgeable = (paths: readonly string[]) => paths.filter((path) => !isTe
 /**
  * Invalidate the public pages (and mirrored public API routes) affected by a change.
  *
- * Use `'profile'` for profile edits: the lab's name, tagline and logo render in the site
+ * Use `'profile'` for profile edits: the lab's name and tagline render in the site
  * header, which lives in the public *layout* and therefore appears on every tab — so a profile
  * save has to drop the whole subtree, not just the About page. `/api/profile` is purged alongside it.
  */
