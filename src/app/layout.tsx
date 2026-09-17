@@ -37,7 +37,8 @@ const plexMono = IBM_Plex_Mono({
   weight: ['400', '500'],
 });
 
-const SITE_DESCRIPTION = 'Personal academic website of an information-security professor.';
+const SITE_DESCRIPTION =
+  'The Culprit of Privacy Technologies — an information-security research lab.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -61,13 +62,13 @@ export const metadata: Metadata = {
 };
 
 // Paints the browser's own chrome — Chrome/Edge on Android, and Safari's toolbars on iOS 15+ — in
-// the masthead's cyan, so the band at the top of every page runs straight into the URL bar instead
+// the masthead's green, so the band at the top of every page runs straight into the URL bar instead
 // of stopping at a strip of the browser's default grey. The literal is the resolved value of
-// `--masthead` (hsl(190 90% 92%)) in globals.css: this is emitted into <head> at build time, where
+// `--masthead` (hsl(150 35% 91%)) in globals.css: this is emitted into <head> at build time, where
 // a CSS custom property has not been resolved yet and cannot be read. Keep the two in step.
 // Single unconditional value, no `media` variants — the site has one fixed light look.
 export const viewport: Viewport = {
-  themeColor: '#d8f7fd',
+  themeColor: '#e0f0e8',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
