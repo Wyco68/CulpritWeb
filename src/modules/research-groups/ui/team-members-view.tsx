@@ -46,7 +46,7 @@ export function TeamMemberCard({
       href={`/team/${member.id}`}
       style={style}
       className={cn(
-        'group flex h-full items-center gap-4 transition-[border-color,translate] duration-500 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+        'group flex h-full items-center gap-4 transition-[border-color,translate,scale] duration-500 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] active:duration-150 hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         panelClassName,
         className,
       )}

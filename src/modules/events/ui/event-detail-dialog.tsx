@@ -39,7 +39,7 @@ export function EventDetailDialog({
       description={`${dateFormatter.format(event.eventDate)} at ${timeFormatter.format(event.eventDate)}`}
       closeLabel="Close"
       // Wider than the default dialog: this one holds a reading column and a sidebar side by side.
-      className="max-w-4xl"
+      className="dialog-enter max-w-4xl"
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_14rem]">
         <div className="min-w-0">

@@ -40,7 +40,7 @@ export default async function EventsPage() {
 
       <div className="mt-12 space-y-14">
         {intro && (
-          <p className="rise max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+          <p className="max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
             {intro}
           </p>
         )}

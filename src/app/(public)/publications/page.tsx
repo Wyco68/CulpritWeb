@@ -44,7 +44,7 @@ export default async function PublicationsPage() {
             node: an unfilled intro leaves the list sitting directly under the heading exactly as
             it did before the column existed. */}
         {intro && (
-          <p className="rise max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+          <p className="max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
             {intro}
           </p>
         )}

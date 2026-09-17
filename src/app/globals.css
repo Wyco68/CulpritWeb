@@ -243,8 +243,35 @@ video {
 }
 
 .rise {
-  animation: rise 700ms var(--ease-out-expo) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: rise 500ms var(--ease-out-expo) both;
+  /* Capped at the ninth item, so a long list finishes arriving in under a second instead of the
+     last rows waiting on everything above them. */
+  animation-delay: calc(min(var(--i, 0), 8) * 50ms);
+}
+
+/* Modal entrance for the public event dialog: the panel settles in from a hair below and a touch
+   smaller while the backdrop dims. Enter only — closing stays instant, which reads as dismissal
+   rather than a second animation to wait through. Keyed on `[open]`, so it replays every time
+   `showModal()` puts the dialog back in the top layer. */
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.98);
+  }
+}
+
+@keyframes backdrop-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.dialog-enter[open] {
+  animation: dialog-enter 240ms var(--ease-out-expo);
+}
+
+.dialog-enter[open]::backdrop {
+  animation: backdrop-enter 240ms var(--ease-out-expo);
 }
 
 @media (prefers-reduced-motion: reduce) {

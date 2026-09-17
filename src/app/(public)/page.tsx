@@ -34,7 +34,7 @@ export default async function AboutPage() {
   const overview = profileResult.ok ? profileResult.data?.labOverview : null;
   const directorProfile = directorResult.ok ? directorResult.data : null;
   const pill =
-    'inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+    'inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-[background-color,color,scale] duration-200 ease-[var(--ease-out-expo)] hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
   return (
     <div>
@@ -45,7 +45,7 @@ export default async function AboutPage() {
       ) : (
         <div className="mt-12 space-y-12">
           {overview && (
-            <p className="rise max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
+            <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
               {overview}
             </p>
           )}
