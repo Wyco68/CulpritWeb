@@ -168,7 +168,7 @@ html {
      of the accent at low alpha says "this responded" in the palette's own voice. Not `transparent`:
      removing it entirely leaves a touch user with no press feedback at all, since hover and
      focus-visible styling never fires for them. */
-  -webkit-tap-highlight-color: hsl(190 90% 30% / 0.14);
+  -webkit-tap-highlight-color: hsl(158 55% 32% / 0.14);
 }
 
 /* Anchor targets clear the sticky section nav. Scoped to `[id]` rather than a bespoke class so a

@@ -179,9 +179,9 @@ export default async function TeamMemberPage({ params }: Props) {
             one sequence of sections rather than two families of them. */}
         {projects.length > 0 && (
           <section id="projects" aria-labelledby="projects-heading">
-            <h2 id="projects-heading" className="font-serif text-xl font-semibold text-accent">
+            <h3 id="projects-heading" className="font-serif text-xl font-semibold text-accent">
               Projects
-            </h2>
+            </h3>
             <div className="mt-5">
               <ProjectList projects={projects} />
             </div>
@@ -190,9 +190,9 @@ export default async function TeamMemberPage({ params }: Props) {
 
         {research.length > 0 && (
           <section id="research" aria-labelledby="research-heading">
-            <h2 id="research-heading" className="font-serif text-xl font-semibold text-accent">
+            <h3 id="research-heading" className="font-serif text-xl font-semibold text-accent">
               Research
-            </h2>
+            </h3>
             <div className="mt-5">
               <CreditedWorkList items={research} />
             </div>
@@ -201,9 +201,9 @@ export default async function TeamMemberPage({ params }: Props) {
 
         {publications.length > 0 && (
           <section id="publications" aria-labelledby="publications-heading">
-            <h2 id="publications-heading" className="font-serif text-xl font-semibold text-accent">
+            <h3 id="publications-heading" className="font-serif text-xl font-semibold text-accent">
               Publications
-            </h2>
+            </h3>
             <div className="mt-5">
               <CreditedWorkList items={publications} />
             </div>

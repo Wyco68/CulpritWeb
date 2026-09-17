@@ -9,8 +9,8 @@ import { NavTabs } from './nav-tabs';
 // Rendered once by the (public) layout. The lab name is the site shell's single <h1>; each tab's
 // own heading below is an <h2>.
 //
-// Note the two accents: `--accent` is unreadable on ink (2.15:1), so anything tinted on this
-// surface uses `--accent-on-band` (5.17:1). See globals.css.
+// Note the two accents: `--accent` is too faint on the band (4.19:1), so anything tinted on
+// this surface uses `--accent-on-band` (5.46:1). See globals.css.
 
 export const DEFAULT_LAB_NAME = 'The Culprit';
 
