@@ -15,7 +15,7 @@ const PURGE_TIMEOUT_MS = 5000;
  * sent) — the database write stays authoritative, and the route's `revalidate` TTL is the fallback
  * bound if a purge silently no-ops.
  */
-export async function purgeCloudflareCache(paths: string[]): Promise<void> {
+export async function purgeCloudflareCache(paths: string[] | 'site'): Promise<void> {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   const zoneId = process.env.CLOUDFLARE_ZONE_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -35,30 +35,34 @@ export async function purgeCloudflareCache(paths: string[]): Promise<void> {
     return;
   }
 
-  const files = paths.map((path) => new URL(path, appUrl).toString());
+  // `'site'` purges every cached URL on the app's own hostname — used when a change reaches every
+  // page, including the per-member profile pages whose URLs aren't known here. By hostname rather
+  // than "purge everything", so other sites sharing the Cloudflare zone keep their cache.
+  const files = paths === 'site' ? [] : paths.map((path) => new URL(path, appUrl).toString());
+  const body = paths === 'site' ? { hosts: [new URL(appUrl!).hostname] } : { files };
   try {
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(PURGE_TIMEOUT_MS),
       },
     );
-    const body: { success?: boolean; errors?: unknown } | null = await response
+    const result: { success?: boolean; errors?: unknown } | null = await response
       .json()
       .catch(() => null);
-    if (!response.ok || !body?.success) {
+    if (!response.ok || !result?.success) {
       logger.error('cloudflare_purge_failed', {
         status: response.status,
-        errors: body?.errors,
-        files,
+        errors: result?.errors,
+        ...body,
       });
     }
   } catch (error) {
     logger.error('cloudflare_purge_failed', {
-      files,
+      ...body,
       causeMessage: error instanceof Error ? error.message : String(error),
     });
   }

@@ -38,7 +38,15 @@ const AREA_PATHS = {
    * route handler does not have, so the per-member API mirror relies on its own 3600s `revalidate`
    * ceiling alone. Accepted gap: the profile PAGE, which is what visitors see, is purged.
    */
-  team: ['/', '/team', '/team/[id]', '/teaching', '/research', '/publications', '/api/team-members'],
+  team: [
+    '/',
+    '/team',
+    '/team/[id]',
+    '/teaching',
+    '/research',
+    '/publications',
+    '/api/team-members',
+  ],
   /** The Events tab — both halves (upcoming and past) come from the same list. */
   events: ['/events', '/api/events'],
   /**
@@ -67,16 +75,6 @@ const AREA_PATHS = {
 
 export type PublicArea = keyof typeof AREA_PATHS;
 
-/**
- * Every public PAGE url (no `/api/*`), derived from the areas above so a new tab can't be
- * forgotten here. Used by the `'profile'` purge, which affects all of them.
- */
-const PUBLIC_PAGE_PATHS: string[] = [
-  ...new Set(
-    Object.values(AREA_PATHS).flatMap((paths) => paths.filter((p) => !p.startsWith('/api/'))),
-  ),
-];
-
 /** A route template such as `/team/[id]`, rather than a real URL. */
 const isTemplate = (path: string) => path.includes('[');
 
@@ -96,17 +94,18 @@ const edgePurgeable = (paths: readonly string[]) => paths.filter((path) => !isTe
  */
 export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
   const purgePaths: string[] = [];
+  let purgeSite = false;
   for (const area of areas) {
     if (area === 'profile') {
       // Next's own invalidation: `('/', 'layout')` drops the root layout and every page nested
       // under it, so all seven public tabs are covered at the origin by this one call.
       revalidatePath('/', 'layout');
       revalidatePath('/api/profile');
-      // Cloudflare purges by explicit file URL, so the subtree semantics above do NOT carry over —
-      // listing only `/` would leave the other tabs served from the edge until their own TTL. The
-      // profile row feeds every tab (the header name/photo on all of them, and since 2026-09-02
-      // the per-tab intro copy on five of them), so every public page URL is named here.
-      purgePaths.push('/api/profile', ...edgePurgeable(PUBLIC_PAGE_PATHS));
+      // The profile row feeds every public page — the header's name and tagline on all of them,
+      // the per-tab intros on five. Listing page URLs could never cover `/team/{id}`, whose ids
+      // aren't known here, so those profile pages kept the old header at the edge. The whole
+      // site hostname is purged instead.
+      purgeSite = true;
     } else {
       // A template needs `type` — without it `revalidatePath` matches nothing and silently no-ops.
       for (const path of AREA_PATHS[area]) {
@@ -124,7 +123,7 @@ export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
   // Guarded: `after` throws when called outside a real request scope (e.g. a unit test invoking
   // this function directly rather than through a route handler).
   try {
-    after(() => purgeCloudflareCache(purgePaths));
+    after(() => purgeCloudflareCache(purgeSite ? 'site' : purgePaths));
   } catch {
     // Outside a request scope — nothing to schedule against. Not worth mocking `after` to avoid
     // this; `purgeCloudflareCache` itself is covered by its own tests.

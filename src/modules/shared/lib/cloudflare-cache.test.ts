@@ -82,6 +82,17 @@ describe('purgeCloudflareCache', () => {
     });
   });
 
+  it("purges the app's whole hostname for a site-wide change", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true }), { status: 200 }),
+    );
+
+    await purgeCloudflareCache('site');
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(JSON.parse(init!.body as string)).toEqual({ hosts: ['culprit.example.com'] });
+  });
+
   it('never throws when Cloudflare returns a non-success body', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ success: false, errors: [{ message: 'nope' }] }), {
