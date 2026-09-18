@@ -8,8 +8,13 @@ import type { Research } from '../research.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
+const replaceMock = vi.fn();
+let searchParams = new URLSearchParams();
+
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: refreshMock }),
+  useRouter: () => ({ refresh: refreshMock, replace: replaceMock }),
+  useSearchParams: () => searchParams,
+  usePathname: () => '/admin',
 }));
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -85,6 +90,15 @@ describe('ResearchTable', () => {
         expect.objectContaining({ method: 'PUT' }),
       ),
     );
+  });
+
+  it('opens the edit dialog for the record named in ?edit= and clears the parameter', async () => {
+    searchParams = new URLSearchParams('edit=r1');
+    renderTable([existing]);
+
+    expect(await screen.findByDisplayValue('Malware analysis at scale')).toBeInTheDocument();
+    expect(replaceMock).toHaveBeenCalledWith('/admin', { scroll: false });
+    searchParams = new URLSearchParams();
   });
 
   it('deletes a research work after confirming the destructive dialog', async () => {

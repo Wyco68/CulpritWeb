@@ -57,7 +57,6 @@ const shortDateFormatter = new Intl.DateTimeFormat('en', {
 type AttentionItem = {
   key: string;
   count: number;
-  label: string;
   icon: LucideIcon;
   href: string;
 };
@@ -109,29 +108,33 @@ export default async function AdminDashboardPage() {
   // Gaps a visitor would actually notice, each computed from rows already loaded: a publication a
   // reader can't open, a member card showing initials instead of a face, an event with no photos
   // or video to show. Zero-count gaps are dropped, so the panel only lists work left to do.
+  // With exactly one record to fix, the link opens that record's edit popup directly; with more,
+  // it goes to the list.
+  const gap = (key: string, icon: LucideIcon, screen: string, rows: readonly { id: string }[]) => ({
+    key,
+    count: rows.length,
+    icon,
+    href: rows.length === 1 ? `${screen}?edit=${rows[0].id}` : screen,
+  });
   const attention: AttentionItem[] = [
-    {
-      key: 'publication-links',
-      count: publicationRows.filter((row) => !row.link).length,
-      label: 'publication',
-      icon: FileText,
-      href: '/admin/publications',
-    },
-    {
-      key: 'member-photos',
-      count: memberRows.filter((row) => !row.photoUrl).length,
-      label: 'team member',
-      icon: Users2,
-      href: '/admin/team',
-    },
-    {
-      key: 'event-media',
-      count: eventRows.filter((row) => row.photoUrls.length === 0 && row.videoUrls.length === 0)
-        .length,
-      label: 'event',
-      icon: ImageOff,
-      href: '/admin/events',
-    },
+    gap(
+      'publication-links',
+      FileText,
+      '/admin/publications',
+      publicationRows.filter((row) => !row.link),
+    ),
+    gap(
+      'member-photos',
+      Users2,
+      '/admin/team',
+      memberRows.filter((row) => !row.photoUrl),
+    ),
+    gap(
+      'event-media',
+      ImageOff,
+      '/admin/events',
+      eventRows.filter((row) => row.photoUrls.length === 0 && row.videoUrls.length === 0),
+    ),
   ].filter((item) => item.count > 0);
   const attentionText: Record<string, (count: number) => string> = {
     'publication-links': (n) => `${n} ${n === 1 ? 'publication has' : 'publications have'} no link`,
@@ -149,7 +152,7 @@ export default async function AdminDashboardPage() {
       title: row.title,
       kind: 'Publication',
       icon: FileText,
-      href: '/admin/publications',
+      href: `/admin/publications?edit=${row.id}`,
       updatedAt: row.updatedAt,
       status: row.link
         ? ({ tone: 'ok', label: 'Linked', icon: Link2 } as const)
@@ -160,7 +163,7 @@ export default async function AdminDashboardPage() {
       title: row.title,
       kind: 'Research',
       icon: FlaskConical,
-      href: '/admin/research',
+      href: `/admin/research?edit=${row.id}`,
       updatedAt: row.updatedAt,
       status: row.link
         ? ({ tone: 'ok', label: 'Linked', icon: Link2 } as const)
@@ -171,7 +174,7 @@ export default async function AdminDashboardPage() {
       title: row.title,
       kind: 'Event',
       icon: CalendarDays,
-      href: '/admin/events',
+      href: `/admin/events?edit=${row.id}`,
       updatedAt: row.updatedAt,
       status:
         row.eventDate.getTime() >= now.getTime()
@@ -183,7 +186,7 @@ export default async function AdminDashboardPage() {
       title: row.name,
       kind: 'Team member',
       icon: Users2,
-      href: `/admin/team/${row.id}`,
+      href: `/admin/team?edit=${row.id}`,
       updatedAt: row.updatedAt,
       status: row.photoUrl
         ? ({ tone: 'ok', label: 'Has photo' } as const)

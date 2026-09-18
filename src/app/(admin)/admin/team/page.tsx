@@ -1,14 +1,16 @@
 import type { Metadata } from 'next';
 import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
-import { getTeamMemberService, TeamMembersTable } from '@/modules/research-groups';
+import { getTeamMemberService } from '@/modules/research-groups';
 import { AdminScreen } from '../_components/admin-screen';
+import { loadMemberProfileData } from './_components/member-profile-data';
+import { TeamMembersAdmin } from './_components/team-members-admin';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Admin — Team' };
 }
 
-// Mirrors the public Team tab: the intro, then the members. Each member's CV and courses are
-// edited on their own page, linked from the row's "Edit profile".
+// Mirrors the public Team tab: the intro, then the members. Each member's CV lists, courses and
+// projects open in a popup from the row's "Edit profile".
 const SECTIONS = [
   { id: 'intro', label: 'Introduction' },
   { id: 'members', label: 'Team members' },
@@ -37,18 +39,24 @@ export default async function AdminTeamPage() {
       return [member.id, result.ok ? result.data : []] as const;
     }),
   );
+  // Every member's profile lists, read up front so the popup opens already filled.
+  // ponytail: three small reads per member — fine for a lab of tens of people; fetch on open if
+  // the team grows past that.
+  const profiles = await Promise.all(
+    members.map(async (member) => [member.id, await loadMemberProfileData(member)] as const),
+  );
 
   return (
-    <AdminScreen
-      title="Team"
-      intro="Everything on the public Team tab."
-      sections={SECTIONS}
-    >
+    <AdminScreen title="Team" intro="Everything on the public Team tab." sections={SECTIONS}>
       <ProfileFieldsForm
         profile={profileResult.ok ? profileResult.data : null}
         sections={PROFILE_SECTIONS}
       />
-      <TeamMembersTable items={members} linksByMember={Object.fromEntries(links)} />
+      <TeamMembersAdmin
+        members={members}
+        linksByMember={Object.fromEntries(links)}
+        profiles={Object.fromEntries(profiles)}
+      />
     </AdminScreen>
   );
 }

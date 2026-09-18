@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FlaskConical, Link2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
+import { useEditFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Button } from '@/modules/shared/ui/button';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
@@ -23,6 +24,11 @@ export function ResearchTable({
   const [editing, setEditing] = useState<Research | undefined>(undefined);
 
   const remove = useDeleteRecord<Research>((id) => `/api/admin/research/${id}`);
+
+  useEditFromQuery(items, (item) => {
+    setEditing(item);
+    setFormOpen(true);
+  });
 
   function openCreate() {
     setEditing(undefined);

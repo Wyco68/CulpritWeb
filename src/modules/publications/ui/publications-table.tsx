@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ExternalLink, FileText, Link2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
+import { useEditFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
@@ -24,6 +25,11 @@ export function PublicationsTable({
   const [editing, setEditing] = useState<Publication | undefined>(undefined);
 
   const remove = useDeleteRecord<Publication>((id) => `/api/admin/publications/${id}`);
+
+  useEditFromQuery(items, (item) => {
+    setEditing(item);
+    setFormOpen(true);
+  });
 
   function openCreate() {
     setEditing(undefined);

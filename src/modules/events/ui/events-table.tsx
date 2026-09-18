@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CalendarClock, CalendarDays, History, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
+import { useEditFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
@@ -11,10 +12,7 @@ import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 // Deep imports, not the barrel — see event-form-dialog.tsx's comment.
 import type { Event } from '../event.types';
 import { EventFormDialog } from './event-form-dialog';
-import {
-  EventParticipantsDialog,
-  type ParticipantPerson,
-} from './event-participants-dialog';
+import { EventParticipantsDialog, type ParticipantPerson } from './event-participants-dialog';
 
 // Admin: Manage Events. Replaced Manage Appointments on 2026-09-01, and is a plainer screen than
 // the one it replaced — an event has no status, no cancel/reschedule actions and no public/private
@@ -57,6 +55,11 @@ export function EventsTable({
     : undefined;
 
   const remove = useDeleteRecord<Event>((id) => `/api/admin/events/${id}`);
+
+  useEditFromQuery(items, (item) => {
+    setEditing(item);
+    setFormOpen(true);
+  });
 
   function openCreate() {
     setEditing(undefined);

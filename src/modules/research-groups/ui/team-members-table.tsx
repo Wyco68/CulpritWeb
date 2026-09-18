@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { IdCard, ImageOff, Pencil, Plus, Trash2, Users2 } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
-import { TEAM_KIND_LABELS } from '@/modules/shared/lib/team-kind';
+import { TEAM_KIND_LABELS, TEAM_KINDS } from '@/modules/shared/lib/team-kind';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
+import { useEditFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Button } from '@/modules/shared/ui/button';
 import { FormSection, FormSectionCount } from '@/modules/shared/ui/form-section';
 import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
@@ -17,6 +18,7 @@ import { memberInitials } from './team-members-view';
 export function TeamMembersTable({
   items,
   linksByMember = {},
+  onEditProfile,
 }: {
   items: TeamMember[];
   /**
@@ -26,11 +28,21 @@ export function TeamMembersTable({
    * form that otherwise opens fully populated.
    */
   linksByMember?: Record<string, MemberLink[]>;
+  /**
+   * Opens the member's profile editor (CV lists, courses, projects) as a popup. Without it the
+   * action links to the full page, /admin/team/[id].
+   */
+  onEditProfile?: (member: TeamMember) => void;
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TeamMember | undefined>(undefined);
 
   const remove = useDeleteRecord<TeamMember>((id) => `/api/admin/team-members/${id}`);
+
+  useEditFromQuery(items, (item) => {
+    setEditing(item);
+    setFormOpen(true);
+  });
 
   function openCreate() {
     setEditing(undefined);
@@ -80,6 +92,11 @@ export function TeamMembersTable({
               : { tone: 'attention', label: 'No photo', icon: ImageOff }
           }
           groupHeader="Team"
+          filter={{
+            label: 'Filter by team',
+            options: TEAM_KINDS.map((kind) => ({ value: kind, label: TEAM_KIND_LABELS[kind] })),
+            valueOf: (item) => item.teamKind,
+          }}
           group={(item) => (item.isDirector ? 'Director' : TEAM_KIND_LABELS[item.teamKind])}
           rowLabel={(item) => `Actions: ${item.name}`}
           actions={(item) => [
@@ -87,7 +104,9 @@ export function TeamMembersTable({
               label: 'Edit profile',
               ariaLabel: `Edit profile: ${item.name}`,
               icon: IdCard,
-              href: `/admin/team/${item.id}`,
+              ...(onEditProfile
+                ? { onSelect: () => onEditProfile(item) }
+                : { href: `/admin/team/${item.id}` }),
             },
             {
               label: 'Edit details',
