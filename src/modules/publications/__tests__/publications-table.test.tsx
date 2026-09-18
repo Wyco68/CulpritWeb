@@ -8,7 +8,14 @@ import type { Publication } from '../publication.types';
 const refreshMock = vi.fn();
 const fetchMock = vi.fn();
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: refreshMock }) }));
+const replaceMock = vi.fn();
+const searchParams = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: refreshMock, replace: replaceMock }),
+  useSearchParams: () => searchParams,
+  usePathname: () => '/admin',
+}));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderTable(items: Publication[]) {
