@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { Plus, Search, type LucideIcon } from 'lucide-react';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
+import { cn } from '@/modules/shared/lib/utils';
 import { Button } from './button';
 import { EmptyState } from './empty-state';
 import { Skeleton } from './page-skeleton';
@@ -41,6 +42,15 @@ export interface RecordTableProps<T extends { id: string; updatedAt: Date }> {
   /** Names the record in the actions button, e.g. "Actions: Jane Jaimunk". */
   rowLabel: (item: T) => string;
   actions: (item: T) => RowAction[];
+  /**
+   * Optional group filter shown under the search bar — one chip per group plus "All", each with
+   * its count. Groups with no rows are left out so every chip leads somewhere.
+   */
+  filter?: {
+    label: string;
+    options: readonly { value: string; label: string }[];
+    valueOf: (item: T) => string;
+  };
   empty: {
     icon: LucideIcon;
     title: string;
@@ -62,9 +72,11 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
   group,
   rowLabel,
   actions,
+  filter,
   empty,
 }: RecordTableProps<T>) {
   const [query, setQuery] = useState('');
+  const [activeGroup, setActiveGroup] = useState<string>('all');
   const searchId = useId();
 
   if (items.length === 0) {
@@ -86,9 +98,19 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
   }
 
   const needle = query.trim().toLowerCase();
+  const inGroup =
+    filter && activeGroup !== 'all' ? items.filter((item) => filter.valueOf(item) === activeGroup) : items;
   const rows = needle
-    ? items.filter((item) => searchText(item).toLowerCase().includes(needle))
-    : items;
+    ? inGroup.filter((item) => searchText(item).toLowerCase().includes(needle))
+    : inGroup;
+  const groupOptions = filter
+    ? filter.options
+        .map((option) => ({
+          ...option,
+          count: items.filter((item) => filter.valueOf(item) === option.value).length,
+        }))
+        .filter((option) => option.count > 0)
+    : [];
 
   // A fragment, not a wrapper: `FormSection` bleeds a table that is its direct child to the panel
   // edges, and the search bar above it keeps the panel's padding.
@@ -114,18 +136,48 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
         />
       </div>
 
+      {filter && groupOptions.length > 1 && (
+        <div role="group" aria-label={filter.label} className="mt-3 flex flex-wrap gap-2">
+          {[{ value: 'all', label: 'All', count: items.length }, ...groupOptions].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={activeGroup === option.value}
+              onClick={() => setActiveGroup(option.value)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-sm transition-[background-color,border-color,color,scale] duration-200 ease-[var(--ease-out-expo)] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                activeGroup === option.value
+                  ? 'border-accent bg-accent text-accent-foreground'
+                  : 'border-border bg-surface text-foreground hover:border-accent/40',
+              )}
+            >
+              {option.label}
+              <span className="tabular text-xs opacity-80">{option.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Announces the result count as the admin types, so a screen-reader user knows the filter
           did something without re-reading the table. */}
       <p aria-live="polite" className="sr-only">
-        {needle ? `${rows.length} of ${items.length} ${noun} shown` : ''}
+        {needle || activeGroup !== 'all' ? `${rows.length} of ${items.length} ${noun} shown` : ''}
       </p>
 
       {rows.length === 0 ? (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border-strong px-5 py-6 text-sm text-muted-foreground">
           <span>
-            No {noun} match “<span className="text-foreground">{query.trim()}</span>”.
+            No {noun} match “<span className="text-foreground">{query.trim()}</span>”
+            {activeGroup !== 'all' ? ' in this group' : ''}.
           </span>
-          <Button variant="outline" size="sm" onClick={() => setQuery('')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setQuery('');
+              setActiveGroup('all');
+            }}
+          >
             Clear search
           </Button>
         </div>
