@@ -69,42 +69,52 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
   /**
    * Assembles the profile, gated by the member's team (see shared/lib/team-kind).
    *
-   * A section the team is not allowed is not read at all — and rows written while the member was on
-   * another team are left exactly where they are. Deleting them on a team change would destroy
-   * hand-typed content on what is meant to be a reversible editorial decision, and refusing the team
-   * change because rows exist would make the admin clear a CV before they could move someone. So
-   * they stay, orphaned and invisible, and come back if the member moves back.
+   * All five reads fire in a single wave — `findById` included — rather than waiting to learn
+   * `teamKind` before deciding what else to ask for. That means `cvEntries`/`courses`/`projects` can
+   * no longer be skipped up front for a team that disallows them; instead every section is read
+   * unconditionally and filtered afterward, the same way `cvEntries` already worked. Rows written
+   * while the member was on another team are left exactly where they are, whether or not this
+   * request happens to read them: deleting them on a team change would destroy hand-typed content on
+   * what is meant to be a reversible editorial decision, and refusing the team change because rows
+   * exist would make the admin clear a CV before they could move someone. So they stay, orphaned and
+   * invisible, and come back if the member moves back — this function just no longer avoids the read
+   * of the section that hides them.
+   *
+   * `known`, when passed, is a row the caller already has in hand (`findDirectorProfile` gets it
+   * from `list()`) — passing it fills the member slot with an already-resolved value instead of
+   * firing a redundant `findById` inside the same wave.
    */
-  async function profileOf(member: TeamMember | null): Promise<TeamMemberProfile | null> {
+  async function profileOf(id: string, known?: TeamMember): Promise<TeamMemberProfile | null> {
+    const [member, links, cvEntries, courses, memberProjects] = await Promise.all([
+      known ? Promise.resolve(known) : repository.findById(id),
+      repository.listLinks(id),
+      cv.cvEntriesFor(id),
+      cv.coursesFor(id),
+      projects.projectsFor(id),
+    ]);
     if (!member) return null;
     const rules = TEAM_KIND_RULES[member.teamKind];
-    const [links, cvEntries, courses, memberProjects] = await Promise.all([
-      repository.listLinks(member.id),
-      rules.cvSections.length > 0 ? cv.cvEntriesFor(member.id) : Promise.resolve([]),
-      rules.courses ? cv.coursesFor(member.id) : Promise.resolve([]),
-      rules.projects ? projects.projectsFor(member.id) : Promise.resolve([]),
-    ]);
     return {
       member,
       links,
       // The team may allow only some sections (a `research` member has research interests and
       // nothing else), so what is read is filtered too, not just switched on and off.
       cvEntries: cvEntries.filter((entry) => rules.cvSections.includes(entry.section)),
-      courses,
-      projects: memberProjects,
+      courses: rules.courses ? courses : [],
+      projects: rules.projects ? memberProjects : [],
     };
   }
 
   return {
     findById: (id) => attempt(() => repository.findById(id)),
 
-    findProfile: (id) => attempt(async () => profileOf(await repository.findById(id))),
+    findProfile: (id) => attempt(() => profileOf(id)),
 
     findDirectorProfile: () =>
       attempt(async () => {
         // The list is already ordered director-first and is a handful of rows.
         const [first] = await repository.list();
-        return profileOf(first?.isDirector ? first : null);
+        return first?.isDirector ? profileOf(first.id, first) : null;
       }),
 
     list: () => attempt(() => repository.list()),

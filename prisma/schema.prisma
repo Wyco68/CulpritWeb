@@ -4,7 +4,11 @@
 // to a `team_member`; `profile` is the lab's own singleton.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Lets Prisma answer an `include`-based query (research/publications/events list pages) with one
+  // LATERAL JOIN instead of the default two-query batch — same result set, one fewer round trip.
+  // Still a Prisma preview feature; PostgreSQL is a supported provider for it.
+  previewFeatures = ["relationJoins"]
 }
 
 // Prisma 7: connection URL lives in prisma.config.ts, not here.
@@ -326,9 +330,12 @@ model EventParticipant {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   /// One row per member per event. Postgres treats NULLs as distinct, so this constrains linked
-  /// members without limiting how many guests an event can have.
+  /// members without limiting how many guests an event can have. No separate `@@index([eventId])`:
+  /// this composite index already serves a plain `eventId` lookup via leftmost-prefix matching.
   @@unique([eventId, teamMemberId])
-  @@index([eventId])
+  /// `onDelete: SetNull` above nulls this column for every participant row when a team member is
+  /// deleted; without an index on it that update is a full table scan of `event_participant`.
+  @@index([teamMemberId])
   @@map("event_participant")
 }
 

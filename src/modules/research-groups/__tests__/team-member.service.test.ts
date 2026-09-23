@@ -207,11 +207,14 @@ describe('team member service', () => {
     expect(cv.cvEntriesFor).toHaveBeenCalledWith('mem_1');
   });
 
-  it('findProfile() returns null for an unknown id without reading CV data', async () => {
+  it('findProfile() returns null for an unknown id', async () => {
     const { service, cv } = build();
     const result = await service.findProfile('missing');
     expect(result.ok && result.data).toBeNull();
-    expect(cv.cvEntriesFor).not.toHaveBeenCalled();
+    // All five reads fire in the same wave as `findById`, so they still happen even though the id
+    // turns out not to exist — the win of one round trip for every real member outweighs the cost
+    // of a few wasted reads on a 404.
+    expect(cv.cvEntriesFor).toHaveBeenCalledWith('missing');
   });
 
   it('findProfile() maps a CV read failure onto the error channel', async () => {
@@ -232,6 +235,17 @@ describe('team member service', () => {
     repository.seed(makeMember({ id: 'mem_1', isDirector: true }));
     const result = await service.findDirectorProfile();
     expect(result.ok && result.data?.member.id).toBe('mem_1');
+  });
+
+  it('findDirectorProfile() reuses the row from list() instead of a second findById', async () => {
+    const { repository, service } = build();
+    repository.seed(makeMember({ id: 'mem_1', isDirector: true, teamKind: 'director' }));
+    const findByIdSpy = vi.spyOn(repository, 'findById');
+
+    const result = await service.findDirectorProfile();
+
+    expect(result.ok && result.data?.member.id).toBe('mem_1');
+    expect(findByIdSpy).not.toHaveBeenCalled();
   });
 
   it('update() on a missing id returns NotFoundError', async () => {
@@ -353,8 +367,9 @@ describe('team member service — profile gating', () => {
     expect(result.ok && result.data?.cvEntries).toEqual([INTEREST]);
     expect(result.ok && result.data?.courses).toEqual([]);
     expect(result.ok && result.data?.projects).toEqual([PROJECT]);
-    // Not merely filtered out — the query is never made.
-    expect(cv.coursesFor).not.toHaveBeenCalled();
+    // Read unconditionally (all five reads share one wave) and filtered out afterward, rather than
+    // skipped before the query fires.
+    expect(cv.coursesFor).toHaveBeenCalledWith('mem_1');
   });
 
   it('gives a development member projects and links only', async () => {
@@ -369,8 +384,9 @@ describe('team member service — profile gating', () => {
     expect(result.ok && result.data?.courses).toEqual([]);
     expect(result.ok && result.data?.projects).toEqual([PROJECT]);
     expect(result.ok && result.data?.links.map((link) => link.label)).toEqual(['GitHub']);
-    expect(cv.cvEntriesFor).not.toHaveBeenCalled();
-    expect(cv.coursesFor).not.toHaveBeenCalled();
+    // Read unconditionally and filtered out afterward — see the research-member case above.
+    expect(cv.cvEntriesFor).toHaveBeenCalledWith('mem_1');
+    expect(cv.coursesFor).toHaveBeenCalledWith('mem_1');
   });
 
   it('keeps the orphaned rows, so moving the member back brings them right back', async () => {
