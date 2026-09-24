@@ -8,6 +8,9 @@ docs/internal/
 NOTES.md
 TODO.md
 docs/deployment/vps-hosting-runbook.md
+# Local-only engineering specifications (SDS + System Document) and their
+# generated PDFs — source of truth on this machine, never committed.
+docs/specifications/
 #
 # NOTE: docs-site/PROJECT_SPEC.html is intentionally NOT ignored.
 #       It is the source for the GitHub Pages "spec" site (deployment #1).
