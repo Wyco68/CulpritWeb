@@ -1,5 +1,6 @@
 'use client';
 
+import { ScrollText } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -7,8 +8,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { Select } from '@/modules/shared/ui/select';
 import { Textarea } from '@/modules/shared/ui/textarea';
@@ -52,7 +52,7 @@ export function CvEntryFormDialog({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<CvEntryFormInput, unknown, CreateCvEntryInput>({
     resolver: zodResolver(createCvEntrySchema),
@@ -83,17 +83,17 @@ export function CvEntryFormDialog({
   });
 
   return (
-    <Dialog
+    <FormDialog
+      icon={ScrollText}
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit entry' : 'Add entry'}
-      closeLabel="Close"
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      submitting={isSubmitting || mutation.isPending}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <FormGroup title="Entry">
         <FormField
           label="List"
           htmlFor="cv-section"
@@ -137,7 +137,9 @@ export function CvEntryFormDialog({
             )}
           </FormField>
         </div>
+      </FormGroup>
 
+      <FormGroup title="Details">
         <FormField
           label="Description"
           htmlFor="cv-description"
@@ -146,7 +148,9 @@ export function CvEntryFormDialog({
         >
           {(fieldProps) => <Textarea {...fieldProps} {...register('description')} rows={3} />}
         </FormField>
+      </FormGroup>
 
+      <FormGroup title="Display">
         <FormField
           label="Sort order"
           htmlFor="cv-sortOrder"
@@ -164,16 +168,7 @@ export function CvEntryFormDialog({
             />
           )}
         </FormField>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }

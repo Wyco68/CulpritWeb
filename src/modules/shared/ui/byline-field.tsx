@@ -4,7 +4,6 @@ import { useId, useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from './button';
 import { IconButton } from './tooltip';
-import { EmptyState } from './empty-state';
 import { Input } from './input';
 
 // A controlled, ordered list of credited names — publication authors and research contributors
@@ -108,7 +107,11 @@ export function BylineField({
       </div>
 
       {value.length === 0 ? (
-        <EmptyState title={emptyHint} className="px-5 py-6" />
+        // A quiet note, not a panel: inside a form an empty list is a normal starting state, and a
+        // large serif empty-state box read as an error.
+        <p className="rounded-md border border-dashed border-border-strong px-4 py-3 text-sm text-muted-foreground">
+          {emptyHint}
+        </p>
       ) : (
         <ol className="flex flex-col">
           {value.map((entry, index) => (

@@ -1,5 +1,6 @@
 'use client';
 
+import { FileText } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -7,8 +8,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { BylineField } from '@/modules/shared/ui/byline-field';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -45,7 +45,7 @@ export function PublicationFormDialog({
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<PublicationFormInput, unknown, CreatePublicationInput>({
     resolver: zodResolver(createPublicationSchema),
@@ -53,8 +53,7 @@ export function PublicationFormDialog({
       title: publication?.title ?? '',
       // Only the two fields that get sent back — id and sortOrder are the repository's business,
       // and sortOrder is re-derived from this array's own order on save.
-      authors:
-        publication?.authors.map(({ name }) => ({ name })) ?? [],
+      authors: publication?.authors.map(({ name }) => ({ name })) ?? [],
       venue: publication?.venue ?? '',
       year: publication?.year ?? new Date().getFullYear(),
       link: publication?.link ?? '',
@@ -76,17 +75,17 @@ export function PublicationFormDialog({
   });
 
   return (
-    <Dialog
+    <FormDialog
+      icon={FileText}
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit publication' : 'Add publication'}
-      closeLabel="Close"
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      submitting={isSubmitting || mutation.isPending}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <FormGroup title="Paper">
         <FormField label="Title" htmlFor="pub-title" required error={errors.title?.message}>
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
@@ -96,25 +95,43 @@ export function PublicationFormDialog({
           render={({ field }) => (
             <BylineField
               label="Authors"
-              description="In citation order. Leave empty for your own solo work — no byline is shown."
+              description="In citation order. Leave empty for the lab's own solo work — no byline is shown."
               error={errors.authors?.message ?? errors.authors?.root?.message}
               value={field.value ?? []}
               onChange={field.onChange}
               suggestions={suggestions}
-              emptyHint="No authors listed — this will show as your own work."
+              emptyHint="No authors listed — this will show as the lab's own work."
             />
           )}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Venue" htmlFor="pub-venue" required error={errors.venue?.message}>
-            {(fieldProps) => <Input {...fieldProps} {...register('venue')} />}
-          </FormField>
-          <FormField label="Year" htmlFor="pub-year" required error={errors.year?.message}>
-            {(fieldProps) => (
-              <Input {...fieldProps} type="number" {...register('year', { valueAsNumber: true })} />
-            )}
-          </FormField>
-        </div>
+      </FormGroup>
+
+      <FormGroup title="Where and when" columns={2}>
+        <FormField label="Venue" htmlFor="pub-venue" required error={errors.venue?.message}>
+          {(fieldProps) => (
+            <Input {...fieldProps} {...register('venue')} placeholder="Conference or journal…" />
+          )}
+        </FormField>
+        <FormField
+          label="Year"
+          htmlFor="pub-year"
+          required
+          description="Publications are grouped by year."
+          error={errors.year?.message}
+        >
+          {(fieldProps) => (
+            <Input
+              {...fieldProps}
+              type="number"
+              inputMode="numeric"
+              className="w-32"
+              {...register('year', { valueAsNumber: true })}
+            />
+          )}
+        </FormField>
+      </FormGroup>
+
+      <FormGroup title="Where to read it">
         <FormField
           label="Link"
           htmlFor="pub-link"
@@ -125,16 +142,7 @@ export function PublicationFormDialog({
             <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />
           )}
         </FormField>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }
