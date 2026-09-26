@@ -22,7 +22,7 @@ npm test          # vitest run
 npm run test:watch
 npm run test:e2e   # playwright test
 npm run typecheck  # tsc --noEmit
-npm run lint       # next lint
+npm run lint       # ESLint CLI (eslint .)
 ```
 
 ## What's actually covered (verified in `src/**/__tests__/`)
