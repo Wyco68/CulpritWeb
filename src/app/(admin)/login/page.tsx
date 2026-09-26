@@ -27,7 +27,7 @@ export default async function LoginPage() {
 
       <Card className="w-full max-w-sm text-foreground shadow-raised [--ring:var(--accent)]">
         <CardHeader className="items-center pb-4 text-center">
-          <div className="mb-1 inline-flex size-12 items-center justify-center rounded-full border-[3px] border-double border-engraving/60 text-accent">
+          <div className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-accent/10 text-accent">
             <ShieldCheck className="size-5" aria-hidden="true" />
           </div>
           {/* The page's only heading. */}

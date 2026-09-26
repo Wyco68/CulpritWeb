@@ -339,11 +339,10 @@ function Figure({
   return (
     // `relative` + the link's `after` overlay make the whole tile the hit target, while keeping
     // exactly one focusable element with one accessible name inside the dl/dt/dd structure.
-    // The figure is set in the display serif, large, like the denomination on a note; the icon
-    // sits in the same engraved double ring as the member portraits.
+    // The figure is set in the display serif, large, like the denomination on a note.
     <div className="group relative overflow-hidden rounded-lg border border-border-strong bg-surface p-5 shadow-hairline transition-[border-color,translate] duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 hover:border-accent/50 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-ring">
       <dt className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
-        <span className="inline-flex size-9 items-center justify-center rounded-full border-[3px] border-double border-engraving/60 text-accent">
+        <span className="inline-flex size-9 items-center justify-center rounded-md bg-accent/10 text-accent">
           <Icon className="size-4" aria-hidden="true" />
         </span>
         {label}
