@@ -13,6 +13,7 @@ import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { BylineField } from '@/modules/shared/ui/byline-field';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { PhotoUpload } from '@/modules/shared/ui/photo-upload';
 // Deep, module-internal imports (not the barrel): `@/modules/research`'s index also re-exports
 // `getResearchService`, whose composition root imports the Prisma repository (`pg`/`fs`, Node-only).
 // A Client Component importing that barrel — even a type-only import, confirmed empirically —
@@ -68,6 +69,9 @@ export function ResearchFormDialog({
       summary: research?.summary ?? '',
       area: research?.area ?? '',
       link: research?.link ?? '',
+      // `null` (not `''`) when there is none: an empty string would fail the URL check, and null
+      // is also what a removal sends so the column is actually cleared.
+      photoUrl: research?.photoUrl ?? null,
       sortOrder: research?.sortOrder ?? 0,
     },
   });
@@ -126,6 +130,19 @@ export function ResearchFormDialog({
         >
           {(fieldProps) => <Textarea {...fieldProps} {...register('summary')} rows={4} />}
         </FormField>
+        <Controller
+          control={control}
+          name="photoUrl"
+          render={({ field }) => (
+            <PhotoUpload
+              variant="landscape"
+              label="Card photo"
+              value={field.value}
+              onChange={field.onChange}
+              endpoint="/api/admin/research/photo"
+            />
+          )}
+        />
         <FormField
           label="Project link"
           htmlFor="research-link"

@@ -37,7 +37,16 @@ export interface PhotoUploadProps {
   label?: string;
   /** `sm:col-span-2` in the two-column profile form; the dialog uses the default single column. */
   className?: string;
+  /**
+   * `portrait` (default): a 512px square, previewed as an avatar. `landscape`: a 1200×800 crop for
+   * card imagery, previewed at that shape.
+   */
+  variant?: 'portrait' | 'landscape';
 }
+
+/** Width ÷ height and output width of the landscape (card) crop. */
+const LANDSCAPE_ASPECT = 3 / 2;
+const LANDSCAPE_WIDTH = 1200;
 
 export function PhotoUpload({
   value,
@@ -46,7 +55,9 @@ export function PhotoUpload({
   personName = '',
   label = 'Photo',
   className,
+  variant = 'portrait',
 }: PhotoUploadProps) {
+  const landscape = variant === 'landscape';
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [pending, setPending] = useState<File | null>(null);
@@ -87,7 +98,8 @@ export function PhotoUpload({
     return (
       <PhotoFramer
         file={pending}
-        outputSize={OUTPUT_SIZE}
+        outputSize={landscape ? LANDSCAPE_WIDTH : OUTPUT_SIZE}
+        aspect={landscape ? LANDSCAPE_ASPECT : 1}
         onConfirm={upload}
         onCancel={() => setPending(null)}
         className={className}
@@ -99,13 +111,17 @@ export function PhotoUpload({
     <div className={className}>
       <div className="flex flex-col gap-2">
         <Label htmlFor={inputId}>{label}</Label>
-        <div className="flex items-center gap-4">
-          <Avatar
-            src={value}
-            alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
-            fallback={initials || '?'}
-            size="lg"
-          />
+        <div className="flex flex-wrap items-center gap-4">
+          {landscape ? (
+            <LandscapePreview src={value} />
+          ) : (
+            <Avatar
+              src={value}
+              alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
+              fallback={initials || '?'}
+              size="lg"
+            />
+          )}
           <div className="flex flex-col gap-2">
             <div className="flex gap-2">
               <Button
@@ -150,6 +166,23 @@ export function PhotoUpload({
           onChange={handleFileChange}
         />
       </div>
+    </div>
+  );
+}
+
+/** The card-shaped preview: the uploaded photo at its 3:2 crop, or an empty frame. */
+function LandscapePreview({ src }: { src: string | null | undefined }) {
+  return (
+    <div className="relative aspect-[3/2] w-44 shrink-0 overflow-hidden rounded-lg border border-border-strong bg-muted">
+      {src ? (
+        /* eslint-disable-next-line @next/next/no-img-element -- an admin-side preview of a URL
+           that was uploaded seconds ago; next/image optimisation buys nothing here. */
+        <img src={src} alt="Photo preview" className="size-full object-cover" />
+      ) : (
+        <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+          No photo
+        </span>
+      )}
     </div>
   );
 }

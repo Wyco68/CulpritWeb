@@ -34,6 +34,7 @@ const existing: Research = {
   summary: 'Existing summary',
   area: 'malware analysis',
   link: null,
+  photoUrl: null,
   contributors: [],
   sortOrder: 0,
   createdAt: new Date(),
