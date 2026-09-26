@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Plus, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { apiDelete, apiSend } from '@/modules/shared/lib/api-client';
@@ -103,6 +103,7 @@ export function EventParticipantsDialog({
 
   return (
     <Dialog
+      icon={Users}
       open={open}
       onOpenChange={onOpenChange}
       title={event ? `Participants — ${event.title}` : 'Participants'}

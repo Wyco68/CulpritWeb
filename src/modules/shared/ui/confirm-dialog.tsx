@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import { CircleHelp, TriangleAlert } from 'lucide-react';
 import { Dialog, DialogFooter } from './dialog';
 import { Button } from './button';
 import { Input } from './input';
@@ -46,7 +47,15 @@ export function ConfirmDialog({
   const confirmed = !confirmationText || typed.trim() === confirmationText.trim();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={title} description={description}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      size="sm"
+      icon={variant === 'destructive' ? TriangleAlert : CircleHelp}
+      tone={variant === 'destructive' ? 'destructive' : 'default'}
+    >
       {confirmationText && (
         <div className="mb-4 space-y-2">
           <label htmlFor={inputId} className="block text-sm text-foreground">
