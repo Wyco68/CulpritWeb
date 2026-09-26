@@ -3,6 +3,7 @@
 import { useId } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/modules/shared/ui/button';
+import { IconButton } from '@/modules/shared/ui/tooltip';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { Input } from '@/modules/shared/ui/input';
 
@@ -125,37 +126,34 @@ export function MemberLinksField({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button
+                  <IconButton
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    aria-label={`Move ${rowName} up`}
+                    label={`Move ${rowName} up`}
                     disabled={disabled || index === 0}
                     onClick={() => moveBy(index, -1)}
                   >
                     <ChevronUp className="size-4" aria-hidden="true" />
-                  </Button>
-                  <Button
+                  </IconButton>
+                  <IconButton
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    aria-label={`Move ${rowName} down`}
+                    label={`Move ${rowName} down`}
                     disabled={disabled || index === value.length - 1}
                     onClick={() => moveBy(index, 1)}
                   >
                     <ChevronDown className="size-4" aria-hidden="true" />
-                  </Button>
-                  <Button
+                  </IconButton>
+                  <IconButton
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    aria-label={`Remove ${rowName}`}
+                    label={`Remove ${rowName}`}
                     className="text-destructive hover:bg-destructive/10"
                     disabled={disabled}
                     onClick={() => removeAt(index)}
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
+                  </IconButton>
                 </div>
               </li>
             );

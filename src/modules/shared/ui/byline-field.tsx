@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from './button';
+import { IconButton } from './tooltip';
 import { EmptyState } from './empty-state';
 import { Input } from './input';
 
@@ -124,37 +125,34 @@ export function BylineField({
               <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                 {entry.name}
               </p>
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Move ${entry.name} up`}
+                label={`Move ${entry.name} up`}
                 disabled={disabled || index === 0}
                 onClick={() => moveBy(index, -1)}
               >
                 <ChevronUp className="size-4" aria-hidden="true" />
-              </Button>
-              <Button
+              </IconButton>
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Move ${entry.name} down`}
+                label={`Move ${entry.name} down`}
                 disabled={disabled || index === value.length - 1}
                 onClick={() => moveBy(index, 1)}
               >
                 <ChevronDown className="size-4" aria-hidden="true" />
-              </Button>
-              <Button
+              </IconButton>
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Remove ${entry.name}`}
+                label={`Remove ${entry.name}`}
                 className="text-destructive hover:bg-destructive/10"
                 disabled={disabled}
                 onClick={() => removeAt(index)}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              </IconButton>
             </li>
           ))}
         </ol>

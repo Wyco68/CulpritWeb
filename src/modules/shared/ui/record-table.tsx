@@ -5,6 +5,7 @@ import { Plus, Search, type LucideIcon } from 'lucide-react';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import { cn } from '@/modules/shared/lib/utils';
 import { Button } from './button';
+import { fieldClassName } from './input';
 import { EmptyState } from './empty-state';
 import { Skeleton } from './page-skeleton';
 import { RowActionsMenu, type RowAction } from './row-actions-menu';
@@ -132,7 +133,7 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
           placeholder={`Search ${noun}…`}
           autoComplete="off"
           spellCheck={false}
-          className="h-11 w-full rounded-md border border-input-border bg-input pl-10 pr-3 text-sm text-foreground transition-[background-color,border-color,box-shadow] duration-200 ease-[var(--ease-out-expo)] placeholder:text-muted-foreground outline-none focus-visible:border-accent focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+          className={cn(fieldClassName, 'h-11 pl-10 pr-3')}
         />
       </div>
 
@@ -145,10 +146,10 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
               aria-pressed={activeGroup === option.value}
               onClick={() => setActiveGroup(option.value)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-sm transition-[background-color,border-color,color,scale] duration-200 ease-[var(--ease-out-expo)] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                'focus-ring inline-flex min-h-10 items-center gap-1.5 rounded-pill border px-3.5 text-sm transition-[background-color,border-color,color,scale] duration-200 ease-[var(--ease-out-expo)] active:scale-[0.97]',
                 activeGroup === option.value
                   ? 'border-accent bg-accent text-accent-foreground'
-                  : 'border-border bg-surface text-foreground hover:border-accent/40',
+                  : 'border-input-border bg-surface text-foreground hover:border-accent',
               )}
             >
               {option.label}
@@ -182,34 +183,59 @@ export function RecordTable<T extends { id: string; updatedAt: Date }>({
           </Button>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{identityHeader}</TableHead>
-              <TableHead>{statusHeader}</TableHead>
-              <TableHead>Last updated</TableHead>
-              <TableHead>{groupHeader}</TableHead>
-              <TableHead className="text-right">
+        // Below `sm` the same markup reflows into one card per row: the name and the actions menu
+        // on the first line, status, date and group wrapping beneath. One DOM for both layouts, so
+        // nothing is rendered twice. Changing a table part's `display` makes some browsers drop its
+        // implicit role, so the roles are stated explicitly and the table stays a table to
+        // assistive tech at every width.
+        <Table role="table" className="max-sm:block">
+          <TableHeader role="rowgroup" className="max-sm:sr-only">
+            <TableRow role="row">
+              <TableHead role="columnheader">{identityHeader}</TableHead>
+              <TableHead role="columnheader">{statusHeader}</TableHead>
+              <TableHead role="columnheader">Last updated</TableHead>
+              <TableHead role="columnheader">{groupHeader}</TableHead>
+              <TableHead role="columnheader" className="text-right">
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody role="rowgroup" className="max-sm:block">
             {rows.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="min-w-0 font-medium text-foreground">
+              <TableRow
+                key={item.id}
+                role="row"
+                className="max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-2 max-sm:px-4 max-sm:py-4"
+              >
+                <TableCell
+                  role="cell"
+                  className="min-w-0 font-medium text-foreground max-sm:order-1 max-sm:w-[calc(100%-3.5rem)] max-sm:p-0"
+                >
                   {identity(item)}
                 </TableCell>
-                <TableCell>
+                <TableCell role="cell" className="max-sm:order-3 max-sm:p-0">
                   <StatusPill status={status(item)} />
                 </TableCell>
-                <TableCell className="tabular whitespace-nowrap text-muted-foreground">
+                <TableCell
+                  role="cell"
+                  className="tabular whitespace-nowrap text-muted-foreground max-sm:order-3 max-sm:p-0 max-sm:text-xs"
+                >
+                  {/* The column header is hidden in the card layout, so the date names itself. */}
+                  <span className="sm:hidden">Updated </span>
                   <time dateTime={item.updatedAt.toISOString()}>
                     {updatedFormatter.format(item.updatedAt)}
                   </time>
                 </TableCell>
-                <TableCell className="min-w-0 text-muted-foreground">{group(item)}</TableCell>
-                <TableCell className="w-12 text-right">
+                <TableCell
+                  role="cell"
+                  className="min-w-0 text-muted-foreground max-sm:order-3 max-sm:w-full max-sm:p-0 max-sm:text-xs"
+                >
+                  {group(item)}
+                </TableCell>
+                <TableCell
+                  role="cell"
+                  className="w-12 text-right max-sm:order-2 max-sm:w-11 max-sm:p-0"
+                >
                   <RowActionsMenu label={rowLabel(item)} actions={actions(item)} />
                 </TableCell>
               </TableRow>

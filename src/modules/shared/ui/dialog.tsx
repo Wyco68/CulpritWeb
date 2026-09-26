@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
+import { Tooltip } from './tooltip';
 
 // Accessible modal built on the native <dialog> element instead of a Radix Dialog dependency
 // (none is installed in this project). `showModal()` gives us, for free, per the HTML spec: a
@@ -19,18 +20,13 @@ export interface DialogProps {
   closeLabel?: string;
 }
 
-export function Dialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  children,
-  className,
-  closeLabel = 'Close',
-}: DialogProps) {
+/**
+ * Syncs a native <dialog> with React's `open` state. Shared by `Dialog` and `Sheet`, which differ
+ * only in placement: the returned props give both backdrop-click and Escape handling, and the
+ * element's own `close` event stays the single source of truth for "closed".
+ */
+export function useNativeDialog(open: boolean, onOpenChange: (open: boolean) => void) {
   const ref = React.useRef<HTMLDialogElement>(null);
-  const titleId = React.useId();
-  const descriptionId = React.useId();
 
   React.useEffect(() => {
     const node = ref.current;
@@ -48,27 +44,47 @@ export function Dialog({
     return () => node.removeEventListener('close', handleClose);
   }, [onOpenChange]);
 
+  const dialogProps = {
+    ref,
+    onClick: (event: React.MouseEvent<HTMLDialogElement>) => {
+      // Native dialog backdrop clicks land on the <dialog> element itself, not a child.
+      if (event.target === ref.current) onOpenChange(false);
+    },
+    onCancel: (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      // Let the `close` listener above own state sync; just avoid duplicate default handling.
+      event.preventDefault();
+      ref.current?.close();
+    },
+  };
+
+  return { ref, dialogProps };
+}
+
+export function Dialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  className,
+  closeLabel = 'Close',
+}: DialogProps) {
+  const { ref, dialogProps } = useNativeDialog(open, onOpenChange);
+  const titleId = React.useId();
+  const descriptionId = React.useId();
+
   return (
     <dialog
-      ref={ref}
+      {...dialogProps}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      onClick={(event) => {
-        // Native dialog backdrop clicks land on the <dialog> element itself, not a child.
-        if (event.target === ref.current) onOpenChange(false);
-      }}
-      onCancel={(event) => {
-        // Let the `close` listener above own state sync; just avoid duplicate default handling.
-        event.preventDefault();
-        ref.current?.close();
-      }}
       className={cn(
         'w-full max-w-xl rounded-lg border border-border bg-background p-0 text-foreground shadow-raised backdrop:bg-foreground/40 backdrop:backdrop-blur-[1px]',
         // `overscroll-contain`: the dialog is capped at 85vh and scrolls internally, so without
         // it a flick past the end of a long form keeps going and scrolls the page underneath —
         // the modal stays put while its backdrop content slides, which reads as a broken overlay
         // and loses the place the user had on the page behind it.
-        'm-auto max-h-[85vh] overflow-y-auto overscroll-contain',
+        'm-auto max-h-[85dvh] overflow-y-auto overscroll-contain',
         className,
       )}
     >
@@ -85,14 +101,16 @@ export function Dialog({
             </p>
           )}
         </div>
-        <button
-          type="button"
-          aria-label={closeLabel}
-          onClick={() => ref.current?.close()}
-          className="-mr-1.5 -mt-1 shrink-0 rounded-md p-2 text-muted-foreground transition-colors duration-200 ease-[var(--ease-out-expo)] hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <X className="size-4" aria-hidden="true" />
-        </button>
+        <Tooltip content={closeLabel} side="left">
+          <button
+            type="button"
+            aria-label={closeLabel}
+            onClick={() => ref.current?.close()}
+            className="focus-ring -mr-1.5 -mt-1 shrink-0 rounded-md p-2.5 text-muted-foreground transition-colors duration-200 ease-[var(--ease-out-expo)] hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </Tooltip>
       </div>
       <div className="px-6 py-6">{children}</div>
     </dialog>

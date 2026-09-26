@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { apiDelete, apiSend } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
+import { IconButton } from '@/modules/shared/ui/tooltip';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -209,16 +210,15 @@ export function EventParticipantsDialog({
                       {participant.role ?? (participant.teamMemberId ? 'Team member' : 'Guest')}
                     </p>
                   </div>
-                  <Button
+                  <IconButton
                     variant="ghost"
-                    size="icon"
-                    aria-label={`Remove ${participant.name}`}
+                    label={`Remove ${participant.name}`}
                     className="text-destructive hover:bg-destructive/10"
                     disabled={busy}
                     onClick={() => remove.mutate(participant.id)}
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
+                  </IconButton>
                 </li>
               ))}
             </ul>

@@ -29,9 +29,7 @@ export function PageHeading({ title, intro, as: Tag = 'h2', action, className }:
   return (
     <header className={cn('rise flex items-start justify-between gap-6', className)}>
       <div className="min-w-0">
-        <Tag className="text-balance font-serif text-3xl font-normal leading-[1.15] tracking-[-0.015em] sm:text-4xl">
-          {title}
-        </Tag>
+        <Tag className="text-balance font-serif text-title font-normal">{title}</Tag>
         {intro && (
           // ~62 characters. Past roughly 65 the eye loses the line it is returning to.
           <p className="mt-4 max-w-[62ch] text-pretty text-base leading-[1.7] text-muted-foreground">

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
-import { Button } from './button';
+import { IconButton } from './tooltip';
 
 // The one per-row action control for every admin table: a single "more" button opening a menu.
 // Everyday actions sit at the top; destructive ones are separated below a rule, so Delete is never
@@ -145,11 +145,11 @@ export function RowActionsMenu({ label, actions }: { label: string; actions: Row
 
   return (
     <div className="flex justify-end">
-      <Button
+      <IconButton
         ref={triggerRef}
-        variant="ghost"
-        size="icon"
-        aria-label={label}
+        label={label}
+        tooltip="Actions"
+        tooltipSide="left"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -162,7 +162,7 @@ export function RowActionsMenu({ label, actions }: { label: string; actions: Row
         }}
       >
         <MoreHorizontal className="size-4" aria-hidden="true" />
-      </Button>
+      </IconButton>
 
       {open &&
         createPortal(

@@ -6,6 +6,7 @@ import { Plus, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Button } from '@/modules/shared/ui/button';
+import { IconButton } from '@/modules/shared/ui/tooltip';
 import { Input } from '@/modules/shared/ui/input';
 import { Label } from '@/modules/shared/ui/label';
 import { FRAMER_ACCEPTED_TYPES, PhotoFramer } from '@/modules/shared/ui/photo-framer';
@@ -130,17 +131,16 @@ export function PhotoUploadList({
                   className="object-cover"
                 />
               </div>
-              <Button
+              <IconButton
                 type="button"
                 variant="outline"
-                size="icon"
-                aria-label={`Remove photo ${index + 1}`}
+                label={`Remove photo ${index + 1}`}
                 disabled={disabled}
                 className="absolute -right-2 -top-2 size-7 rounded-full bg-background"
                 onClick={() => onChange(urls.filter((candidate) => candidate !== url))}
               >
                 <X className="size-3.5" aria-hidden="true" />
-              </Button>
+              </IconButton>
             </li>
           ))}
         </ul>
@@ -231,17 +231,16 @@ export function VideoLinkList({
                 {id}
                 <span className="sr-only"> (opens on YouTube in a new tab)</span>
               </a>
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Remove video ${index + 1}`}
+                label={`Remove video ${index + 1}`}
                 disabled={disabled}
                 className="size-7 shrink-0"
                 onClick={() => onChange(ids.filter((candidate) => candidate !== id))}
               >
                 <X className="size-3.5" aria-hidden="true" />
-              </Button>
+              </IconButton>
             </li>
           ))}
         </ul>
