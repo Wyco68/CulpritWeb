@@ -28,8 +28,10 @@ related_decisions: [ADR-006]
 - Toasts: `sonner` (`<Toaster/>` rendered once in `src/app/providers.tsx`).
 - Module-specific composite components (`event-form-dialog.tsx`, `events-table.tsx`,
   etc.) live under each module's `ui/` folder, built from the shared primitives.
-- Design tokens (navy/accent CSS variables) live in `src/app/globals.css` — Tailwind v4's
-  CSS-first `@theme`, not a `tailwind.config.js`.
+- Design tokens live in `src/app/globals.css` — Tailwind v4's CSS-first `@theme`, not a
+  `tailwind.config.js`. Visual direction: **Intaglio** (pale green masthead with a generated
+  guilloché rosette, light pages, status tokens) — see
+  [ADR-018](../decisions/ADR-018-intaglio-visual-direction.md).
 
 ## Provider tree
 
@@ -42,9 +44,8 @@ related_decisions: [ADR-006]
 </QueryClientProvider>
 ```
 
-Deliberately **no** i18n provider (removed) and **no** theme provider (one fixed visual look —
-navy chrome + light content — matching the Figma prototype; light/dark switching is explicitly
-out of scope). `getQueryClient()` (`src/modules/shared/lib/query-client.ts`) returns a fresh
+Deliberately **no** i18n provider (removed) and **no** theme provider (one light theme, permanently
+— no dark mode, no switching; ADR-018). `getQueryClient()` (`src/modules/shared/lib/query-client.ts`) returns a fresh
 client on the server and a cached singleton in the browser.
 
 ## State / data fetching
