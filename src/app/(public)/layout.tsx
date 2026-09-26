@@ -1,9 +1,8 @@
 import { getProfileCached } from '@/modules/profile';
-import { SiteFooter } from './_components/site-footer';
-import { DEFAULT_LAB_NAME, SiteHeader } from './_components/site-header';
+import { PublicShell } from './_components/public-shell';
 
 // Shared shell for every public tab (About, Research, Publications, Team, Events,
-// Make Appointment): the masthead band + tab bar render once here, so each page below
+// Make Appointment): the sidebar / top bar render once here, so each page below
 // only supplies its own tab content. Server Component — reads the profile directly through the
 // service layer (no internal HTTP round-trip) per the "public read pages fetch through services"
 // architecture rule.
@@ -25,22 +24,5 @@ export default async function PublicLayout({ children }: { children: React.React
   const result = await getProfileCached();
   const profile = result.ok ? result.data : null;
 
-  return (
-    // White page body, as in the prototype. `--background` is re-pointed at `--surface` for this
-    // subtree only, so everything that paints the ground (the sticky section nav, dialogs) turns
-    // white with it while the admin keeps its tinted ground.
-    <div className="flex min-h-[100dvh] flex-col bg-background [--background:var(--surface)]">
-      <SiteHeader profile={profile} />
-      {/* `id` is the target of the skip-link in the root layout (WCAG 2.4.1). The measure is
-          capped at 68ch on the prose column rather than the full 5xl shell — long-form CV copy
-          set edge-to-edge across 900px is unreadable no matter how good the type is. */}
-      <main
-        id="main"
-        className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-12 sm:px-8 sm:pb-32 sm:pt-20"
-      >
-        {children}
-      </main>
-      <SiteFooter labName={profile?.labName || DEFAULT_LAB_NAME} />
-    </div>
-  );
+  return <PublicShell profile={profile}>{children}</PublicShell>;
 }

@@ -1,26 +1,62 @@
+import Link from 'next/link';
 import { LogoutButton } from '@/modules/auth';
-import { AdminNav } from './admin-nav';
+import { Guilloche } from '@/modules/shared/ui/guilloche';
+import { MobileMenu, SidebarNav, type NavItem } from '@/modules/shared/ui/site-nav';
 
-// The admin masthead: the same band and tab bar as the public site header, headed by a fixed
-// "Admin Panel" label. Static text on purpose — no photo, no icon, and no profile read, so the
-// header never waits on the database and never changes when the lab profile is edited.
+// The admin's chrome, matching the public site (ADR-018): a compact header band across the top,
+// with a navigation sidebar beneath it from `lg` up — both pinned, so only the screen scrolls. Below `lg` the header's Menu button opens the
+// same links in a sheet.
+//
+// Static text on purpose — no profile read — so the chrome never waits on the database. The
+// rosette is here for continuity but does not animate: a working screen should not move on its
+// own.
+
+// Each entry mirrors one public tab, so the admin edits a page by going to the screen of the same
+// name.
+const TABS: readonly NavItem[] = [
+  { href: '/admin', label: 'Dashboard', exact: true },
+  { href: '/admin/about', label: 'About' },
+  { href: '/admin/research', label: 'Research' },
+  { href: '/admin/publications', label: 'Publications' },
+  { href: '/admin/team', label: 'Team' },
+  { href: '/admin/events', label: 'Events' },
+  { href: '/admin/appointment', label: 'Appointment' },
+];
+
 export function AdminHeader() {
   return (
-    <header className="bg-masthead text-masthead-foreground">
-      <div className="mx-auto max-w-6xl px-6 pt-14 sm:px-8 sm:pt-20">
-        <p className="font-serif text-[2.125rem] font-normal leading-[1.05] tracking-[-0.02em] sm:text-6xl">
-          Admin Panel
-        </p>
+    <header
+      data-sticky-header
+      className="masthead-ground relative isolate z-30 overflow-hidden border-b border-masthead-foreground/10 text-masthead-foreground [--ring:var(--accent-on-band)] lg:sticky lg:top-0 lg:h-[var(--header-h)]"
+    >
+      <Guilloche className="absolute -right-24 -top-40 -z-10 size-[22rem] text-engraving/25" />
 
-        <div className="mt-10 flex items-end justify-between gap-4 border-t border-masthead-foreground/12 sm:mt-14">
-          <div className="min-w-0 flex-1">
-            <AdminNav />
-          </div>
-          <div className="shrink-0 pb-2">
-            <LogoutButton />
-          </div>
+      <div className="flex items-center justify-between gap-4 px-6 py-4 sm:px-8 lg:h-full lg:py-0">
+        <Link href="/admin" className="focus-ring flex min-w-0 items-baseline gap-3 rounded-sm">
+          <span className="truncate font-serif text-2xl">The Culprit</span>
+          <span className="shrink-0 rounded-pill border border-masthead-foreground/30 px-2.5 py-0.5 text-xs font-medium text-accent-on-band">
+            Admin
+          </span>
+        </Link>
+
+        <div className="hidden lg:block">
+          <LogoutButton surface="band" />
+        </div>
+        <div className="lg:hidden">
+          <MobileMenu items={TABS} label="Admin" footer={<LogoutButton surface="sheet" />} />
         </div>
       </div>
     </header>
+  );
+}
+
+/** The navigation column under the header, from `lg` up. Same treatment as the public sidebar. */
+export function AdminSidebar() {
+  return (
+    <aside className="hidden border-r border-masthead-foreground/10 bg-[color-mix(in_srgb,var(--masthead)_45%,var(--surface))] [--ring:var(--accent-on-band)] lg:block">
+      <div className="sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h))] overflow-y-auto px-4 py-8">
+        <SidebarNav items={TABS} label="Admin" />
+      </div>
+    </aside>
   );
 }

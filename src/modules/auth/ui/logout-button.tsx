@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/modules/shared/ui/button';
 import { signOut } from '../auth-client';
 
-export function LogoutButton() {
+/** `band` sits on the masthead band; `sheet` is the full-width action in the mobile menu. */
+export function LogoutButton({ surface = 'band' }: { surface?: 'band' | 'sheet' }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -28,11 +29,11 @@ export function LogoutButton() {
 
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      variant={surface === 'band' ? 'onBand' : 'outline'}
+      size={surface === 'band' ? 'sm' : 'lg'}
       loading={loading}
       onClick={handleLogout}
-      className="font-semibold text-masthead-foreground hover:bg-masthead-foreground/10 hover:text-accent-on-band"
+      className={surface === 'sheet' ? 'w-full' : undefined}
     >
       <LogOut className="size-4" aria-hidden="true" />
       Log out
