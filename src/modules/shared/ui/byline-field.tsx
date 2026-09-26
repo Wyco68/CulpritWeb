@@ -118,7 +118,7 @@ export function BylineField({
             >
               <span
                 aria-hidden="true"
-                className="tabular w-6 shrink-0 font-mono text-xs text-muted-foreground"
+                className="tabular w-6 shrink-0 text-xs text-muted-foreground"
               >
                 {index + 1}
               </span>

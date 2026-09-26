@@ -55,7 +55,7 @@ export function EventDetailDialog({
 
         {participants.length > 0 && (
           <aside aria-label="Participants" className="lg:border-l lg:border-border lg:pl-6">
-            <h3 className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               Participants
               <span className="tabular ml-2">{participants.length}</span>
             </h3>

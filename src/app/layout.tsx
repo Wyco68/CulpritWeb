@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Newsreader, Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google';
+import { Newsreader, Schibsted_Grotesk } from 'next/font/google';
 import { SITE_URL } from '@/modules/shared/lib/site-url';
 import { Providers } from './providers';
 import './globals.css';
@@ -8,7 +8,7 @@ import './globals.css';
 // strings — no next-intl, no message catalogue, no locale routing. The site will never support a
 // second language, so the translation-lookup indirection had no payoff.
 
-// Three families, each with one job — see the --font-* tokens in globals.css. Self-hosted by
+// Two families, each with one job — see the --font-* tokens in globals.css. Self-hosted by
 // next/font at build time (no runtime request to Google, no layout shift, no privacy leak), and
 // `display: swap` keeps text readable while a face is still loading.
 //
@@ -28,15 +28,6 @@ const schibsted = Schibsted_Grotesk({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-schibsted',
-});
-
-// Retiring (ADR-018): kept only until the remaining `font-mono` labels are migrated to the sans
-// with tabular figures, then removed.
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-plex-mono',
-  weight: ['400', '500'],
 });
 
 const SITE_DESCRIPTION =
@@ -74,7 +65,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${schibsted.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${newsreader.variable} ${schibsted.variable}`}>
       {/* `100dvh`, not `100vh`: the dynamic unit tracks mobile Safari's collapsing URL bar, so the
           page doesn't jump as the toolbar hides. */}
       <body className="grain min-h-[100dvh] antialiased">

@@ -179,7 +179,7 @@ export function TeamMemberFormDialog({
           {(fieldProps) => (
             <select
               {...fieldProps}
-              className="h-10 w-full rounded-sm border border-border bg-background px-3 text-sm text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="h-10 w-full rounded-sm border border-border bg-background px-3 text-sm text-foreground focus-ring"
               {...register('teamKind')}
             >
               {TEAM_KINDS.map((kind) => (

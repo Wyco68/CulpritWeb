@@ -226,7 +226,7 @@ export function VideoLinkList({
                 href={`https://www.youtube.com/watch?v=${id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="truncate rounded-xs font-mono text-xs text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="truncate rounded-xs font-mono text-xs text-accent underline-offset-4 hover:underline focus-ring"
               >
                 {id}
                 <span className="sr-only"> (opens on YouTube in a new tab)</span>

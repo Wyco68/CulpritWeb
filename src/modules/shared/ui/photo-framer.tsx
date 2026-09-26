@@ -207,7 +207,7 @@ export function PhotoFramer({
           onPointerCancel={endDrag}
           onKeyDown={nudge}
           style={{ width: frameWidth, height: frameHeight }}
-          className="relative cursor-grab touch-none overflow-hidden rounded-lg border border-border-strong bg-muted active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="relative cursor-grab touch-none overflow-hidden rounded-lg border border-border-strong bg-muted active:cursor-grabbing focus-ring"
         >
           {source && (
             /* eslint-disable-next-line @next/next/no-img-element -- a local object URL being
@@ -244,7 +244,7 @@ export function PhotoFramer({
               setZoom(next);
               setOffset((current) => clamp(current, next));
             }}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-pill bg-muted accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-pill bg-muted accent-accent focus-ring"
           />
         </div>
 

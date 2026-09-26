@@ -183,7 +183,7 @@ export function EventParticipantsDialog({
         <section aria-labelledby="current-heading" className="flex flex-col gap-3">
           <h3 id="current-heading" className="text-sm font-semibold text-foreground">
             On this event
-            <span className="tabular ml-2 font-mono text-xs font-normal text-muted-foreground">
+            <span className="tabular ml-2 text-xs font-normal text-muted-foreground">
               {participants.length}
             </span>
           </h3>

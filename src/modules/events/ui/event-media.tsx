@@ -54,7 +54,7 @@ function PhotoGallery({ urls, eventTitle }: { urls: string[]; eventTitle: string
                 aria-hidden="true"
                 className="absolute inset-0 flex items-center justify-center bg-foreground/55"
               >
-                <span className="font-mono text-xl font-medium text-background">+{remaining}</span>
+                <span className="tabular text-xl font-semibold text-background">+{remaining}</span>
               </div>
             )}
           </li>

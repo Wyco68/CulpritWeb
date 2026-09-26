@@ -83,7 +83,7 @@ export function MemberLinksField({
               >
                 <span
                   aria-hidden="true"
-                  className="tabular w-6 shrink-0 pt-2.5 font-mono text-xs text-muted-foreground"
+                  className="tabular w-6 shrink-0 pt-2.5 text-xs text-muted-foreground"
                 >
                   {index + 1}
                 </span>

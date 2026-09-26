@@ -36,8 +36,8 @@ pale-green band since 2026-09.
 - **Light only, permanently.** There is no dark theme, no theme switch and no OS-preference
   variant. `color-scheme: light` stays on `:root` so native controls render light.
 - **No logo.** The lab's name, set in type, is the mark. It stays admin-editable.
-- **Type:** Newsreader for headings and prose; Schibsted Grotesk for interface text. IBM Plex Mono
-  is being retired page by page and will be removed once nothing uses it.
+- **Type:** Newsreader for headings and prose; Schibsted Grotesk for interface text and figures
+  (tabular numerals). IBM Plex Mono and the all-caps mono labels were removed.
 - **One ornament.** The guilloché appears on the masthead only. Operational screens (admin tables,
   forms, dialogs) stay calm: white panels, status tokens, no pattern.
 - **Motion:** CSS only. The rosette draws once on first load; everything else is feedback on a

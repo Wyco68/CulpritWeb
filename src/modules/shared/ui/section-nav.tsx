@@ -143,7 +143,7 @@ export function SectionNav({ items, label = 'On this page', className }: Section
                   // `aria-current="page"` is the site tab bar's, and belongs to one link only.
                   aria-current={active ? 'location' : undefined}
                   className={cn(
-                    'inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-1.5 text-sm tracking-tight transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                    'inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-1.5 text-sm tracking-tight transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-ring',
                     // Weight as well as colour: the current entry must not be signalled by hue
                     // alone (WCAG 2.1 AA §1.4.1).
                     active ? 'font-medium text-accent' : 'text-muted-foreground',

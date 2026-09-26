@@ -31,7 +31,7 @@ export default async function NotFound() {
       <p className="mt-10">
         <Link
           href="/"
-          className="group inline-flex h-11 items-center gap-2.5 rounded-sm bg-accent px-6 text-sm font-medium tracking-tight text-accent-foreground transition-[background-color,scale] duration-300 ease-[var(--ease-out-expo)] hover:bg-accent/90 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="group inline-flex h-11 items-center gap-2.5 rounded-sm bg-accent px-6 text-sm font-medium tracking-tight text-accent-foreground transition-[background-color,scale] duration-300 ease-[var(--ease-out-expo)] hover:bg-accent/90 active:scale-[0.98] focus-ring"
         >
           Back to About
           <span

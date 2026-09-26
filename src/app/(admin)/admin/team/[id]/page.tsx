@@ -31,7 +31,7 @@ export default async function AdminTeamMemberPage({ params }: Props) {
     <div className="flex flex-col gap-6">
       <Link
         href="/admin/team"
-        className="inline-flex w-fit items-center gap-1 rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="inline-flex w-fit items-center gap-1 rounded-xs text-sm text-muted-foreground transition-colors hover:text-foreground focus-ring"
       >
         <ChevronLeft className="size-4" aria-hidden="true" />
         Back to team

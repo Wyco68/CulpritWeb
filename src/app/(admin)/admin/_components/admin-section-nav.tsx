@@ -76,7 +76,7 @@ export function AdminSectionNav({ sections, className }: AdminSectionNavProps) {
         className,
       )}
     >
-      <p className="hidden px-3 pb-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground xl:block">
+      <p className="hidden px-3 pb-2 text-xs font-medium text-muted-foreground xl:block">
         On this page
       </p>
       <ul className="scroll-fade -mx-1 flex gap-1 overflow-x-auto scrollbar-hidden px-1 xl:mx-0 xl:flex-col xl:gap-1 xl:overflow-visible xl:px-0">
@@ -93,7 +93,7 @@ export function AdminSectionNav({ sections, className }: AdminSectionNavProps) {
                   // the muted surface and takes an accent left marker, the resting sidebar pattern.
                   // On narrow screens the same items are chips in a row, where a fill and an edge
                   // marker would read as clutter, so both are gated behind `xl`.
-                  'block whitespace-nowrap rounded-sm px-3 py-1.5 text-sm tracking-tight transition-[color,background-color,border-color] duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring xl:whitespace-normal xl:rounded-md xl:border-l-2',
+                  'block whitespace-nowrap rounded-sm px-3 py-1.5 text-sm tracking-tight transition-[color,background-color,border-color] duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-ring xl:whitespace-normal xl:rounded-md xl:border-l-2',
                   active
                     ? 'font-medium text-foreground xl:border-accent xl:bg-muted'
                     : 'text-muted-foreground xl:border-transparent xl:hover:bg-muted/50',

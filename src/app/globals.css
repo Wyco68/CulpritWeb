@@ -180,13 +180,14 @@
   --text-standfirst: clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem); /* the serif intro paragraph */
   --text-standfirst--line-height: 1.75;
 
-  /* Three families with distinct jobs, loaded via next/font in app/layout.tsx:
-     sans  — interface: navigation, labels, controls, tables (Schibsted Grotesk)
-     serif — prose and headings: the reading voice of the site
-     mono  — retiring (ADR-018): data now uses the sans with tabular figures */
+  /* Two families with distinct jobs, loaded via next/font in app/layout.tsx:
+     sans  — interface: navigation, labels, controls, tables, figures (Schibsted Grotesk, with
+             tabular numerals via `.tabular` wherever numbers line up)
+     serif — prose and headings: the reading voice of the site (Newsreader)
+     Mono is the system's, kept only for literal identifiers such as a YouTube video ID. */
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @media (min-width: 64rem) {
