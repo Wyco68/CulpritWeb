@@ -3,9 +3,8 @@ import { YouTubeVideo } from '@/modules/integrations/youtube/youtube-video';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 import type { Event } from '../event.types';
 
-// Shared, server-safe pieces used by both EventList (Upcoming, a Server Component) and
-// PastEventList (a client island — see past-event-list.tsx for why). Nothing here needs
-// interactivity, so it stays out of the client bundle for the Upcoming path.
+// Shared, server-safe pieces used by EventList (the card grid for both Upcoming and Past) and the
+// event detail dialog. Nothing here needs interactivity of its own.
 
 // Without an explicit `timeZone`, `Intl.DateTimeFormat` resolves to the rendering server's ambient
 // zone (UTC in the Docker container), not the visitor's and not the zone the admin actually

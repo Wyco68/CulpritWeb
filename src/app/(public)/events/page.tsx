@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { EventList, getEventService, PastEventList, splitByTiming } from '@/modules/events';
+import { EventList, getEventService, splitByTiming } from '@/modules/events';
 import { getProfileCached } from '@/modules/profile';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
@@ -77,7 +77,7 @@ export default async function EventsPage() {
                   Past
                 </h3>
                 <div className="mt-5">
-                  <PastEventList events={past} />
+                  <EventList events={past} />
                 </div>
               </section>
             )}

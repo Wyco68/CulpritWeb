@@ -29,7 +29,7 @@ export function EventList({ events }: { events: Event[] }) {
 
   return (
     <>
-      <ul className="grid gap-5 sm:grid-cols-2">
+      <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
         {events.map((event, index) => {
           const extras = [
             count(event.photoUrls.length, 'photo'),
