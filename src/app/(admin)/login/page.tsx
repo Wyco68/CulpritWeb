@@ -22,7 +22,7 @@ export default async function LoginPage() {
   return (
     // The masthead ground and its rosette, full page: the one place the ornament gets room to be
     // the focal point, behind a plain card. `[--ring]` keeps focus visible on the band's links.
-    <div className="masthead-ground relative isolate flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 py-12 text-masthead-foreground [--ring:var(--accent-on-band)]">
+    <main className="masthead-ground relative isolate flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 py-12 text-masthead-foreground [--ring:var(--accent-on-band)]">
       <Guilloche className="engrave absolute left-1/2 top-1/2 -z-10 size-[44rem] -translate-x-1/2 -translate-y-1/2 text-engraving/30 sm:size-[56rem]" />
 
       <Card className="w-full max-w-sm text-foreground shadow-raised [--ring:var(--accent)]">
@@ -46,6 +46,6 @@ export default async function LoginPage() {
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to the site
       </Link>
-    </div>
+    </main>
   );
 }
