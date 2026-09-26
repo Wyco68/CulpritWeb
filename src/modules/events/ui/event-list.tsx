@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { ArrowRight, Images, PlayCircle, Users, type LucideIcon } from 'lucide-react';
+import { cn } from '@/modules/shared/lib/utils';
 import { Button } from '@/modules/shared/ui/button';
+import { contentCardClassName } from '@/modules/shared/ui/card';
 import { CardPhoto } from '@/modules/shared/ui/card-photo';
 import { dateFormatter, timeFormatter } from './event-media';
 import { EventDetailDialog } from './event-detail-dialog';
@@ -41,7 +43,7 @@ export function EventList({ events }: { events: Event[] }) {
             <li
               key={event.id}
               style={{ '--i': index } as React.CSSProperties}
-              className="rise flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline"
+              className={cn('rise h-full', contentCardClassName)}
             >
               <CardPhoto src={event.photoUrls[0]} />
 

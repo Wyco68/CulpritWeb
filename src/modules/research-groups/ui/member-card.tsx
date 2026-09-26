@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, GraduationCap } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
+import { linkPillClassName } from '@/modules/shared/ui/card';
 import { memberInitials } from './team-members-view';
 import type { MemberLink, TeamMember } from '../team-member.types';
 
@@ -9,8 +10,7 @@ import type { MemberLink, TeamMember } from '../team-member.types';
 // of every member profile — so the two never drift into separate designs. Every value comes from
 // the member row and its `member_link` rows; nothing here is hardcoded.
 
-const pillClassName =
-  'inline-flex items-center gap-1.5 focus-ring rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-[background-color,color,scale] duration-200 ease-[var(--ease-out-expo)] hover:bg-accent hover:text-accent-foreground active:scale-[0.97]';
+const pillClassName = linkPillClassName;
 
 export function MemberCard({
   member,
@@ -43,7 +43,7 @@ export function MemberCard({
         shape="circle"
       />
       <div className="min-w-0">
-        <p className="break-words font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+        <p className="break-words text-xs font-semibold uppercase tracking-[0.12em] text-accent">
           {eyebrow ?? member.role}
         </p>
         <Name

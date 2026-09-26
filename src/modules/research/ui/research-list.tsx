@@ -1,6 +1,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import { BylineNames, type BylineMember } from '@/modules/research-groups';
 import type { Research } from '@/modules/research';
+import { contentCardClassName, linkPillClassName } from '@/modules/shared/ui/card';
 import { CardPhoto } from '@/modules/shared/ui/card-photo';
 import { SectionHeading } from '@/modules/shared/ui/prose';
 
@@ -52,10 +53,7 @@ export function ResearchList({
               the links line up across the row. */}
           <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
             {group.items.map((item) => (
-              <li
-                key={item.id}
-                className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline"
-              >
+              <li key={item.id} className={contentCardClassName}>
                 <CardPhoto src={item.photoUrl} />
 
                 <div className="flex flex-1 flex-col p-6">
@@ -82,7 +80,7 @@ export function ResearchList({
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-[background-color,color,scale] duration-200 ease-[var(--ease-out-expo)] hover:bg-accent hover:text-accent-foreground active:scale-[0.97]"
+                        className={linkPillClassName}
                       >
                         <ArrowUpRight className="size-3.5" aria-hidden="true" />
                         View Project
