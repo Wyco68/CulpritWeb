@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { getProfileCached } from '@/modules/profile';
 import { getTeamMemberService, MemberCard } from '@/modules/research-groups';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { LoadErrorState } from '@/modules/shared/ui/error-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { Standfirst } from '@/modules/shared/ui/prose';
 import { toMetaDescription } from './_lib/page-meta';
 
 const FALLBACK_DESCRIPTION = 'About the lab, its work, and its director.';
@@ -34,15 +36,13 @@ export default async function AboutPage() {
     <div>
       <PageHeading title="About" />
 
-      {!overview && !directorProfile ? (
+      {!profileResult.ok && !directorResult.ok ? (
+        <LoadErrorState what="This page" className="mt-10" />
+      ) : !overview && !directorProfile ? (
         <EmptyState title="Nothing here yet" className="mt-10" />
       ) : (
         <div className="mt-12 space-y-12">
-          {overview && (
-            <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-              {overview}
-            </p>
-          )}
+          {overview && <Standfirst preserveLines>{overview}</Standfirst>}
 
           {directorProfile && (
             <MemberCard

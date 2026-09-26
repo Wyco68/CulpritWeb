@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { EventList, getEventService, splitByTiming } from '@/modules/events';
 import { getProfileCached } from '@/modules/profile';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { LoadErrorState } from '@/modules/shared/ui/error-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { SectionHeading, Standfirst } from '@/modules/shared/ui/prose';
 import { toMetaDescription } from '../_lib/page-meta';
 
 // Tighter than the public layout's 3600s safety net, matching `/api/events`: the upcoming/past
@@ -39,13 +41,11 @@ export default async function EventsPage() {
       <PageHeading title="Events" />
 
       <div className="mt-12 space-y-14">
-        {intro && (
-          <p className="max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-            {intro}
-          </p>
-        )}
+        {intro && <Standfirst>{intro}</Standfirst>}
 
-        {isEmpty ? (
+        {!result.ok ? (
+          <LoadErrorState what="Events" />
+        ) : isEmpty ? (
           <EmptyState title="Nothing listed yet" />
         ) : (
           <>
@@ -53,12 +53,7 @@ export default async function EventsPage() {
               under it is a real answer to the question a visitor came with, and silently showing
               only past events would read as if those were the next ones. */}
             <section aria-labelledby="events-upcoming-heading">
-              <h3
-                id="events-upcoming-heading"
-                className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-accent"
-              >
-                Upcoming
-              </h3>
+              <SectionHeading id="events-upcoming-heading">Upcoming</SectionHeading>
               {upcoming.length === 0 ? (
                 <EmptyState title="Nothing scheduled" className="mt-5" />
               ) : (
@@ -70,12 +65,9 @@ export default async function EventsPage() {
 
             {past.length > 0 && (
               <section aria-labelledby="events-past-heading">
-                <h3
-                  id="events-past-heading"
-                  className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground"
-                >
+                <SectionHeading id="events-past-heading" className="text-muted-foreground">
                   Past
-                </h3>
+                </SectionHeading>
                 <div className="mt-5">
                   <EventList events={past} />
                 </div>

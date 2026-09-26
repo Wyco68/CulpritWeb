@@ -25,6 +25,7 @@ import {
 import { cvSectionAnchorId } from '@/modules/teaching/ui/cv-entry-list';
 import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
 import { toMetaDescription } from '../../_lib/page-meta';
+import { SectionHeading, Standfirst } from '@/modules/shared/ui/prose';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -121,27 +122,20 @@ export default async function TeamMemberPage({ params }: Props) {
     <div>
       <Link
         href="/team"
-        className="mb-8 inline-flex items-center gap-2 rounded-sm text-sm tracking-tight text-muted-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="mb-8 inline-flex items-center gap-2 rounded-sm text-sm tracking-tight text-muted-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-ring"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Back to Team
       </Link>
 
-      <MemberCard
-        member={member}
-        links={links}
-        eyebrow={member.isDirector ? `Lab Director · ${member.role}` : undefined}
-        as="h2"
-      />
+      <MemberCard member={member} links={links} eyebrow={member.isDirector ? `Lab Director · ${member.role}` : undefined} as="h2" />
 
       <div className="mt-12 space-y-10">
         <SectionNav items={sections} />
 
         {member.bio && (
           <section id="biography" aria-label="Biography">
-            <p className="max-w-[62ch] whitespace-pre-line text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-              {member.bio}
-            </p>
+            <Standfirst preserveLines>{member.bio}</Standfirst>
           </section>
         )}
 
@@ -157,9 +151,7 @@ export default async function TeamMemberPage({ params }: Props) {
             one sequence of sections rather than two families of them. */}
         {projects.length > 0 && (
           <section id="projects" aria-labelledby="projects-heading">
-            <h3 id="projects-heading" className="font-serif text-xl font-semibold text-accent">
-              Projects
-            </h3>
+            <SectionHeading id="projects-heading">Projects</SectionHeading>
             <div className="mt-5">
               <ProjectList projects={projects} />
             </div>
@@ -168,9 +160,7 @@ export default async function TeamMemberPage({ params }: Props) {
 
         {research.length > 0 && (
           <section id="research" aria-labelledby="research-heading">
-            <h3 id="research-heading" className="font-serif text-xl font-semibold text-accent">
-              Research
-            </h3>
+            <SectionHeading id="research-heading">Research</SectionHeading>
             <div className="mt-5">
               <CreditedWorkList items={research} />
             </div>
@@ -179,9 +169,7 @@ export default async function TeamMemberPage({ params }: Props) {
 
         {publications.length > 0 && (
           <section id="publications" aria-labelledby="publications-heading">
-            <h3 id="publications-heading" className="font-serif text-xl font-semibold text-accent">
-              Publications
-            </h3>
+            <SectionHeading id="publications-heading">Publications</SectionHeading>
             <div className="mt-5">
               <CreditedWorkList items={publications} />
             </div>

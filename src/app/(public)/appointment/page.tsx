@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getProfileCached } from '@/modules/profile';
 import { publicEnv } from '@/modules/shared/lib/env';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { Standfirst } from '@/modules/shared/ui/prose';
 import { toMetaDescription } from '../_lib/page-meta';
 import { GatedCalendlyEmbed } from './_components/gated-calendly-embed';
 
@@ -43,11 +44,7 @@ export default async function AppointmentPage() {
     <div>
       <PageHeading title="Make Appointment" />
 
-      {intro && (
-        <p className="mt-12 max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-          {intro}
-        </p>
-      )}
+      {intro && <Standfirst className="mt-12">{intro}</Standfirst>}
 
       {/* Widen past the article column: Calendly's calendar grid is cramped in a narrow column. */}
       <div className="-mx-6 mt-12 sm:mx-0">

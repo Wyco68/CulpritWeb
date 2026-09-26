@@ -37,3 +37,18 @@ export function ErrorState({ title, description, action, className }: ErrorState
     </div>
   );
 }
+
+/**
+ * The standard failed-read state for a public list: the data could not be read, which is not the
+ * same as there being none. Server-rendered, so it offers no retry button — a reload re-runs the
+ * read.
+ */
+export function LoadErrorState({ what, className }: { what: string; className?: string }) {
+  return (
+    <ErrorState
+      title={`${what} didn't load`}
+      description="Something failed while reading this from the database. Reload the page, or come back in a few minutes."
+      className={className}
+    />
+  );
+}
