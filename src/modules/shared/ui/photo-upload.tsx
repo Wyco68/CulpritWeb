@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
+import { DropZone } from '@/modules/shared/ui/drop-zone';
 import { Label } from '@/modules/shared/ui/label';
 import { FRAMER_ACCEPTED_TYPES, PhotoFramer } from '@/modules/shared/ui/photo-framer';
 
@@ -111,52 +112,56 @@ export function PhotoUpload({
     <div className={className}>
       <div className="flex flex-col gap-2">
         <Label htmlFor={inputId}>{label}</Label>
-        <div className="flex flex-wrap items-center gap-4">
-          {landscape ? (
-            <LandscapePreview src={value} />
-          ) : (
-            <Avatar
-              src={value}
-              alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
-              fallback={initials || '?'}
-              size="lg"
-            />
-          )}
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploading}
-                onClick={() => inputRef.current?.click()}
-              >
-                {uploading ? (
-                  <Loader2
-                    className="size-4 animate-spin motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Upload className="size-4" aria-hidden="true" />
-                )}
-                {value ? 'Change photo' : 'Upload photo'}
-              </Button>
-              {value && (
+        <DropZone onFiles={([file]) => setPending(file)} disabled={uploading}>
+          <div className="flex flex-wrap items-center gap-4">
+            {landscape ? (
+              <LandscapePreview src={value} />
+            ) : (
+              <Avatar
+                src={value}
+                alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
+                fallback={initials || '?'}
+                size="lg"
+              />
+            )}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={uploading}
-                  onClick={() => onChange(null)}
+                  onClick={() => inputRef.current?.click()}
                 >
-                  <X className="size-4" aria-hidden="true" />
-                  Remove
+                  {uploading ? (
+                    <Loader2
+                      className="size-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Upload className="size-4" aria-hidden="true" />
+                  )}
+                  {value ? 'Change photo' : 'Upload photo'}
                 </Button>
-              )}
+                {value && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => onChange(null)}
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Drag a photo here, or use the button. JPEG, PNG, WebP or GIF, 4 MB max.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or GIF. 4 MB max.</p>
           </div>
-        </div>
+        </DropZone>
         <input
           ref={inputRef}
           id={inputId}
