@@ -10,9 +10,20 @@ import { publicEnv } from '@/modules/shared/lib/env';
 // it only hands the client to Better Auth's adapter (which owns the user/session/account tables);
 // no domain query runs here.
 
-const trustedOrigins = [env.BETTER_AUTH_URL, publicEnv.appUrl].filter((value): value is string =>
-  Boolean(value),
-);
+// Origins a sign-in may come from. Besides the configured URLs of this deployment:
+//  - the production domain, so the one shared Doppler config (whose URLs point at staging) still
+//    lets the production site sign in;
+//  - the local dev server, outside production builds only — a deployed site never trusts a
+//    localhost origin.
+const PRODUCTION_ORIGIN = 'https://culprits-mystery.party';
+const LOCAL_DEV_ORIGIN = 'http://localhost:3000';
+
+const trustedOrigins = [
+  env.BETTER_AUTH_URL,
+  publicEnv.appUrl,
+  PRODUCTION_ORIGIN,
+  process.env.NODE_ENV !== 'production' ? LOCAL_DEV_ORIGIN : undefined,
+].filter((value): value is string => Boolean(value));
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
