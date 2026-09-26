@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { BylineNames, type BylineMember } from '@/modules/research-groups';
 import type { Research } from '@/modules/research';
+import { CardPhoto } from '@/modules/shared/ui/card-photo';
+import { SectionHeading } from '@/modules/shared/ui/prose';
 
 // Grouped by area. Every well-structured faculty and lab site organises research thematically
 // rather than as one undifferentiated list — the area is what a visitor is actually scanning for
@@ -41,12 +42,9 @@ export function ResearchList({
           style={{ '--i': groupIndex } as React.CSSProperties}
           className="rise"
         >
-          <h3
-            id={`research-${groupIndex}`}
-            className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-accent"
-          >
+          <SectionHeading id={`research-${groupIndex}`} className="mb-5">
             {group.area}
-          </h3>
+          </SectionHeading>
 
           {/* Three cards to a row when the content column is wide, two when it is medium, one on a
               phone — sized by the column (`main` is a container), not the viewport. Each card
@@ -58,7 +56,7 @@ export function ResearchList({
                 key={item.id}
                 className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline"
               >
-                <ResearchPhoto src={item.photoUrl} />
+                <CardPhoto src={item.photoUrl} />
 
                 <div className="flex flex-1 flex-col p-6">
                   <h4 className="text-balance break-words font-serif text-xl leading-snug text-foreground">
@@ -98,33 +96,6 @@ export function ResearchList({
           </ul>
         </section>
       ))}
-    </div>
-  );
-}
-
-/**
- * The card's 3:2 photo, uploaded by the admin. The title right beneath it names the work, so the
- * image is decorative to assistive tech (`alt=""`). Without a photo the frame shows engraved rings
- * on the masthead green — the site's own ornament, drawn by one CSS gradient rather than a
- * per-card SVG.
- */
-function ResearchPhoto({ src }: { src: string | null }) {
-  return (
-    <div className="relative aspect-[3/2] overflow-hidden border-b border-border bg-masthead">
-      {src ? (
-        <Image
-          src={src}
-          alt=""
-          fill
-          sizes="(min-width: 1280px) 340px, (min-width: 640px) 50vw, 100vw"
-          className="object-cover"
-        />
-      ) : (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[repeating-radial-gradient(circle_at_72%_38%,transparent_0_7px,color-mix(in_srgb,var(--engraving)_28%,transparent)_7px_8px)]"
-        />
-      )}
     </div>
   );
 }
