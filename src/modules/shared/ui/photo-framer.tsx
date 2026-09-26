@@ -20,8 +20,10 @@ import { Label } from '@/modules/shared/ui/label';
 
 export const FRAMER_ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 
-/** Edge of the on-screen framing viewport, in px. */
+/** Edge of the on-screen framing viewport for a square frame, in px. */
 const VIEWPORT = 224;
+/** Width of the viewport for a landscape frame — still fits a 320px phone inside the dialog. */
+const WIDE_VIEWPORT = 272;
 const MAX_ZOOM = 3;
 
 type Source = { src: string; width: number; height: number };
@@ -29,8 +31,10 @@ type Source = { src: string; width: number; height: number };
 export interface PhotoFramerProps {
   /** The picked file. Decoded here; an undecodable one is reported and cancelled. */
   file: File;
-  /** Edge of the uploaded square, in px. */
+  /** Width of the uploaded image, in px. Its height follows from `aspect`. */
   outputSize: number;
+  /** Width ÷ height of the frame and the upload. Defaults to 1 — the square portrait crop. */
+  aspect?: number;
   /** Called with the cropped JPEG. May be async — the buttons stay disabled while it settles. */
   onConfirm: (blob: Blob) => void | Promise<void>;
   onCancel: () => void;
@@ -42,11 +46,16 @@ export interface PhotoFramerProps {
 export function PhotoFramer({
   file,
   outputSize,
+  aspect = 1,
   onConfirm,
   onCancel,
   caption,
   className,
 }: PhotoFramerProps) {
+  // The on-screen frame. Square frames keep their original 224px; landscape ones widen instead of
+  // shrinking in height, so the preview stays large enough to judge.
+  const frameWidth = aspect > 1 ? WIDE_VIEWPORT : VIEWPORT * aspect;
+  const frameHeight = frameWidth / aspect;
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [source, setSource] = useState<Source | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,8 +91,10 @@ export function PhotoFramer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
 
-  /** Display px per source px at zoom 1: the scale that just covers the square viewport. */
-  const baseScale = source ? VIEWPORT / Math.min(source.width, source.height) : 1;
+  /** Display px per source px at zoom 1: the scale that just covers the frame. */
+  const baseScale = source
+    ? Math.max(frameWidth / source.width, frameHeight / source.height)
+    : 1;
 
   /**
    * Keep the image covering the viewport. Without this the photo can be dragged away from the
@@ -93,14 +104,14 @@ export function PhotoFramer({
     (next: { x: number; y: number }, atZoom: number) => {
       if (!source) return next;
       const scale = baseScale * atZoom;
-      const limitX = Math.max(0, (source.width * scale - VIEWPORT) / 2);
-      const limitY = Math.max(0, (source.height * scale - VIEWPORT) / 2);
+      const limitX = Math.max(0, (source.width * scale - frameWidth) / 2);
+      const limitY = Math.max(0, (source.height * scale - frameHeight) / 2);
       return {
         x: Math.min(limitX, Math.max(-limitX, next.x)),
         y: Math.min(limitY, Math.max(-limitY, next.y)),
       };
     },
-    [source, baseScale],
+    [source, baseScale, frameWidth, frameHeight],
   );
 
   async function confirm() {
@@ -112,28 +123,29 @@ export function PhotoFramer({
       // The visible frame, converted back to source-pixel coordinates. `left`/`top` are where the
       // scaled image sits relative to the viewport's origin, so negating them gives the crop box.
       const scale = baseScale * zoom;
-      const left = VIEWPORT / 2 - (source.width * scale) / 2 + offset.x;
-      const top = VIEWPORT / 2 - (source.height * scale) / 2 + offset.y;
+      const left = frameWidth / 2 - (source.width * scale) / 2 + offset.x;
+      const top = frameHeight / 2 - (source.height * scale) / 2 + offset.y;
+      const outputHeight = Math.round(outputSize / aspect);
 
       const canvas = document.createElement('canvas');
       canvas.width = outputSize;
-      canvas.height = outputSize;
+      canvas.height = outputHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('canvas unavailable');
       ctx.drawImage(
         image,
         -left / scale,
         -top / scale,
-        VIEWPORT / scale,
-        VIEWPORT / scale,
+        frameWidth / scale,
+        frameHeight / scale,
         0,
         0,
         outputSize,
-        outputSize,
+        outputHeight,
       );
 
       const blob = await new Promise<Blob | null>((resolve) =>
-        // JPEG at 0.9: the output is a square crop, and re-encoding PNG screenshots as PNG was
+        // JPEG at 0.9: the output is a photographic crop, and re-encoding PNG screenshots as PNG was
         // producing multi-megabyte uploads that hit the route's 4 MB cap.
         canvas.toBlob(resolve, 'image/jpeg', 0.9),
       );
@@ -194,8 +206,8 @@ export function PhotoFramer({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           onKeyDown={nudge}
-          style={{ width: VIEWPORT, height: VIEWPORT }}
-          className="relative cursor-grab touch-none overflow-hidden rounded-lg border border-border-strong bg-muted active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          style={{ width: frameWidth, height: frameHeight }}
+          className="relative cursor-grab touch-none overflow-hidden rounded-lg border border-border-strong bg-muted active:cursor-grabbing focus-ring"
         >
           {source && (
             /* eslint-disable-next-line @next/next/no-img-element -- a local object URL being
@@ -207,8 +219,8 @@ export function PhotoFramer({
               draggable={false}
               style={{
                 position: 'absolute',
-                left: VIEWPORT / 2 - (source.width * scale) / 2 + offset.x,
-                top: VIEWPORT / 2 - (source.height * scale) / 2 + offset.y,
+                left: frameWidth / 2 - (source.width * scale) / 2 + offset.x,
+                top: frameHeight / 2 - (source.height * scale) / 2 + offset.y,
                 width: source.width * scale,
                 height: source.height * scale,
                 maxWidth: 'none',
@@ -217,7 +229,7 @@ export function PhotoFramer({
           )}
         </div>
 
-        <div className="flex items-center gap-3" style={{ width: VIEWPORT }}>
+        <div className="flex items-center gap-3" style={{ width: frameWidth }}>
           <ZoomIn className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input
             type="range"
@@ -232,7 +244,7 @@ export function PhotoFramer({
               setZoom(next);
               setOffset((current) => clamp(current, next));
             }}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-pill bg-muted accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-pill bg-muted accent-accent focus-ring"
           />
         </div>
 

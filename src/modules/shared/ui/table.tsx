@@ -13,7 +13,7 @@ export function Table({ className, ...props }: React.ComponentProps<'table'>) {
     // a second border inside the first.
     <div
       data-slot="table-container"
-      className="w-full overflow-x-auto scrollbar-hidden rounded-lg border border-border-strong"
+      className="w-full overflow-x-auto rounded-lg border border-border-strong bg-surface"
     >
       <table
         data-slot="table"

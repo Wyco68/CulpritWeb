@@ -16,6 +16,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../_components/admin-header', () => ({
   AdminHeader: () => null,
+  AdminSidebar: () => null,
 }));
 
 describe('AdminLayout (server guard)', () => {

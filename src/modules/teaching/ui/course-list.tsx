@@ -21,7 +21,7 @@ export function CourseList({ groups }: { groups: { level: string; courses: Cours
         >
           <h3
             id={`course-level-${groupIndex}`}
-            className="mb-4 font-mono text-xs uppercase leading-5 tracking-[0.12em] text-accent sm:mb-0 sm:pt-1.5"
+            className="mb-4 font-serif text-lg leading-snug text-accent sm:mb-0 sm:pt-1"
           >
             {group.level}
           </h3>
@@ -34,17 +34,17 @@ export function CourseList({ groups }: { groups: { level: string; courses: Cours
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <h4 className="text-balance font-serif text-xl leading-snug text-foreground sm:text-2xl">
-                    {/* The code is metadata about the course, not part of its name, so it sits in
-                        the mono voice the rest of the site uses for reference numbers. */}
+                    {/* The code is metadata about the course, not part of its name, so it sits
+                        smaller and quieter, in the interface face with tabular figures. */}
                     {course.code && (
-                      <span className="mr-2.5 font-mono text-sm tracking-tight text-muted-foreground">
+                      <span className="tabular mr-2.5 font-sans text-sm font-medium text-muted-foreground">
                         {course.code}
                       </span>
                     )}
                     {course.title}
                   </h4>
                   {course.term && (
-                    <span className="tabular shrink-0 font-mono text-xs text-muted-foreground">
+                    <span className="tabular shrink-0 text-sm text-muted-foreground">
                       {course.term}
                     </span>
                   )}
@@ -61,7 +61,7 @@ export function CourseList({ groups }: { groups: { level: string; courses: Cours
                     href={course.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-ring"
                   >
                     Course page
                     <ArrowUpRight

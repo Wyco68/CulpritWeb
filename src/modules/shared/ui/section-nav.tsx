@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { stickyHeaderHeight } from '@/modules/shared/lib/sticky-header';
 import { cn } from '@/modules/shared/lib/utils';
 
 // In-page jump list for the public tabs that stack several sections (Research, Teaching, Team
@@ -71,9 +72,11 @@ export function SectionNav({ items, label = 'On this page', className }: Section
     // the line would leave the last entry permanently unreachable.
     const measure = () => {
       frame = 0;
+      // Measured from the bottom of the pinned header, which covers the top of the viewport.
+      const line = stickyHeaderHeight() + ACTIVE_LINE_PX;
       let current = elements[0];
       for (const element of elements) {
-        if (element.getBoundingClientRect().top <= ACTIVE_LINE_PX) current = element;
+        if (element.getBoundingClientRect().top <= line) current = element;
       }
       // At the very bottom of the document the remaining sections can no longer scroll up to the
       // line, so the last one wins — otherwise scrolling to the end never highlights the end.
@@ -120,7 +123,8 @@ export function SectionNav({ items, label = 'On this page', className }: Section
       className={cn(
         // Full width of the content column's padding box, so the rule underneath reads as a
         // divider across the page rather than a floating pill.
-        'sticky top-0 z-20 -mx-6 border-b border-border bg-background/90 px-6 backdrop-blur-sm',
+        // Sticks beneath the pinned header (`--header-h` is 0 where the header scrolls away).
+        'sticky top-[var(--header-h)] z-20 -mx-6 border-b border-border bg-background/90 px-6 backdrop-blur-sm transition-[top] duration-300 ease-[var(--ease-out-expo)]',
         className,
       )}
     >
@@ -139,7 +143,7 @@ export function SectionNav({ items, label = 'On this page', className }: Section
                   // `aria-current="page"` is the site tab bar's, and belongs to one link only.
                   aria-current={active ? 'location' : undefined}
                   className={cn(
-                    'inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-1.5 text-sm tracking-tight transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                    'inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-1.5 text-sm tracking-tight transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-foreground focus-ring',
                     // Weight as well as colour: the current entry must not be signalled by hue
                     // alone (WCAG 2.1 AA §1.4.1).
                     active ? 'font-medium text-accent' : 'text-muted-foreground',

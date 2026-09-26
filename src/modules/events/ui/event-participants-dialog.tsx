@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Plus, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { apiDelete, apiSend } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
+import { IconButton } from '@/modules/shared/ui/tooltip';
 import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -102,6 +103,7 @@ export function EventParticipantsDialog({
 
   return (
     <Dialog
+      icon={Users}
       open={open}
       onOpenChange={onOpenChange}
       title={event ? `Participants — ${event.title}` : 'Participants'}
@@ -182,7 +184,7 @@ export function EventParticipantsDialog({
         <section aria-labelledby="current-heading" className="flex flex-col gap-3">
           <h3 id="current-heading" className="text-sm font-semibold text-foreground">
             On this event
-            <span className="tabular ml-2 font-mono text-xs font-normal text-muted-foreground">
+            <span className="tabular ml-2 text-xs font-normal text-muted-foreground">
               {participants.length}
             </span>
           </h3>
@@ -209,16 +211,15 @@ export function EventParticipantsDialog({
                       {participant.role ?? (participant.teamMemberId ? 'Team member' : 'Guest')}
                     </p>
                   </div>
-                  <Button
+                  <IconButton
                     variant="ghost"
-                    size="icon"
-                    aria-label={`Remove ${participant.name}`}
+                    label={`Remove ${participant.name}`}
                     className="text-destructive hover:bg-destructive/10"
                     disabled={busy}
                     onClick={() => remove.mutate(participant.id)}
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
+                  </IconButton>
                 </li>
               ))}
             </ul>

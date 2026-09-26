@@ -6,7 +6,9 @@ import { Plus, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Button } from '@/modules/shared/ui/button';
+import { IconButton } from '@/modules/shared/ui/tooltip';
 import { Input } from '@/modules/shared/ui/input';
+import { DropZone } from '@/modules/shared/ui/drop-zone';
 import { Label } from '@/modules/shared/ui/label';
 import { FRAMER_ACCEPTED_TYPES, PhotoFramer } from '@/modules/shared/ui/photo-framer';
 import { parseYouTubeVideoId } from '@/modules/integrations/youtube/youtube-utils';
@@ -56,6 +58,11 @@ export function PhotoUploadList({
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = ''; // allow re-selecting the same file later
+    acceptFiles(files);
+  }
+
+  /** Files picked with the button or dropped on the zone: capped, then framed one at a time. */
+  function acceptFiles(files: File[]) {
     if (files.length === 0) return;
 
     const room = MAX_PHOTOS - urls.length;
@@ -112,52 +119,61 @@ export function PhotoUploadList({
       <Label htmlFor={inputId}>Photos</Label>
       <p className="-mt-0.5 text-xs leading-relaxed text-muted-foreground">
         Optional. JPEG, PNG, WebP or GIF, up to {MAX_PHOTOS} per event. Each one is framed as a
-        square before it uploads. They appear as a gallery under the event on the public tab.
+        square before it uploads.
       </p>
 
-      {urls.length > 0 && (
-        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-          {urls.map((url, index) => (
-            <li key={url} className="relative">
-              {/* Square, like the framing step and the public gallery tile — what the admin
+      <DropZone
+        multiple
+        onFiles={acceptFiles}
+        disabled={disabled || urls.length >= MAX_PHOTOS}
+        className="flex flex-col gap-4"
+      >
+        {urls.length > 0 && (
+          <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {urls.map((url, index) => (
+              <li key={url} className="relative">
+                {/* Square, like the framing step and the public gallery tile — what the admin
                   framed is what this thumbnail and the public tab both show. */}
-              <div className="relative aspect-square overflow-hidden rounded-md bg-muted ring-1 ring-border">
-                <Image
-                  src={url}
-                  alt={`Photo ${index + 1}`}
-                  fill
-                  sizes="120px"
-                  className="object-cover"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label={`Remove photo ${index + 1}`}
-                disabled={disabled}
-                className="absolute -right-2 -top-2 size-7 rounded-full bg-background"
-                onClick={() => onChange(urls.filter((candidate) => candidate !== url))}
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+                <div className="relative aspect-square overflow-hidden rounded-md bg-muted ring-1 ring-border">
+                  <Image
+                    src={url}
+                    alt={`Photo ${index + 1}`}
+                    fill
+                    sizes="120px"
+                    className="object-cover"
+                  />
+                </div>
+                <IconButton
+                  type="button"
+                  variant="outline"
+                  label={`Remove photo ${index + 1}`}
+                  disabled={disabled}
+                  className="absolute -right-2 -top-2 size-7 rounded-full bg-background"
+                  onClick={() => onChange(urls.filter((candidate) => candidate !== url))}
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </IconButton>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled || urls.length >= MAX_PHOTOS}
-          onClick={() => inputRef.current?.click()}
-        >
-          <Upload className="size-4" aria-hidden="true" />
-          {urls.length > 0 ? 'Add more photos' : 'Upload photos'}
-        </Button>
-      </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled || urls.length >= MAX_PHOTOS}
+            onClick={() => inputRef.current?.click()}
+          >
+            <Upload className="size-4" aria-hidden="true" />
+            {urls.length > 0 ? 'Add more photos' : 'Upload photos'}
+          </Button>
+          <span className="ml-3 text-xs text-muted-foreground max-sm:hidden">
+            or drag photos here
+          </span>
+        </div>
+      </DropZone>
 
       <input
         ref={inputRef}
@@ -226,22 +242,21 @@ export function VideoLinkList({
                 href={`https://www.youtube.com/watch?v=${id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="truncate rounded-xs font-mono text-xs text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="truncate rounded-xs font-mono text-xs text-accent underline-offset-4 hover:underline focus-ring"
               >
                 {id}
                 <span className="sr-only"> (opens on YouTube in a new tab)</span>
               </a>
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Remove video ${index + 1}`}
+                label={`Remove video ${index + 1}`}
                 disabled={disabled}
                 className="size-7 shrink-0"
                 onClick={() => onChange(ids.filter((candidate) => candidate !== id))}
               >
                 <X className="size-3.5" aria-hidden="true" />
-              </Button>
+              </IconButton>
             </li>
           ))}
         </ul>

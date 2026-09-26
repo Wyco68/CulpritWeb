@@ -1,5 +1,6 @@
 'use client';
 
+import { UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,8 +9,8 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
+import { Select } from '@/modules/shared/ui/select';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -70,7 +71,7 @@ export function TeamMemberFormDialog({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitted, isSubmitting },
+    formState: { errors, isSubmitted, isSubmitting, isDirty },
     reset,
   } = useForm<TeamMemberFormInput, unknown, CreateTeamMemberInput>({
     resolver: (values, context, options) =>
@@ -119,77 +120,73 @@ export function TeamMemberFormDialog({
   });
 
   return (
-    <Dialog
+    <FormDialog
+      icon={UserRound}
+      size="lg"
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit team member' : 'Add team member'}
-      closeLabel="Close"
+      onSubmit={handleSubmit(({ links: editedLinks, ...values }) =>
+        // An edit that never went near the link editor sends no `links` key at all, which the
+        // update route reads as "leave them alone". Creating always sends the list.
+        mutation.mutate({
+          ...values,
+          links: isEdit && !linksTouched ? undefined : editedLinks,
+        }),
+      )}
+      submitting={isSubmitting || mutation.isPending}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit(({ links: editedLinks, ...values }) =>
-          // An edit that never went near the link editor sends no `links` key at all, which the
-          // update route reads as "leave them alone". Creating always sends the list.
-          mutation.mutate({
-            ...values,
-            links: isEdit && !linksTouched ? undefined : editedLinks,
-          }),
-        )}
-        noValidate
-        className="flex flex-col gap-4"
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Name" htmlFor="member-name" required error={errors.name?.message}>
-            {(fieldProps) => <Input {...fieldProps} autoComplete="off" {...register('name')} />}
-          </FormField>
-          <FormField
-            label="Name on papers"
-            htmlFor="member-citationName"
-            description="How they are credited on a byline, e.g. “J. Jaimunk”. Bylines matching this or the name link to their profile."
-            error={errors.citationName?.message}
-          >
-            {(fieldProps) => (
-              <Input {...fieldProps} autoComplete="off" {...register('citationName')} />
-            )}
-          </FormField>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Role" htmlFor="member-role" required error={errors.role?.message}>
-            {(fieldProps) => <Input {...fieldProps} autoComplete="off" {...register('role')} />}
-          </FormField>
-          <FormField
-            label="Affiliation"
-            htmlFor="member-affiliation"
-            description="Optional. Institution or department."
-            error={errors.affiliation?.message}
-          >
-            {(fieldProps) => (
-              <Input {...fieldProps} autoComplete="off" {...register('affiliation')} />
-            )}
-          </FormField>
-        </div>
-        {/* A plain select rather than a shared component: a Select abstraction with one caller would
-            be scaffolding. Choosing "Director" moves the title from whoever holds it now. */}
+      <FormGroup title="Identity" columns={2}>
+        <FormField label="Name" htmlFor="member-name" required error={errors.name?.message}>
+          {(fieldProps) => <Input {...fieldProps} autoComplete="off" {...register('name')} />}
+        </FormField>
+        <FormField
+          label="Name on papers"
+          htmlFor="member-citationName"
+          description="How they are credited on a byline, e.g. “J. Jaimunk”. Matching bylines link to their profile."
+          error={errors.citationName?.message}
+        >
+          {(fieldProps) => (
+            <Input {...fieldProps} autoComplete="off" {...register('citationName')} />
+          )}
+        </FormField>
+        <FormField label="Role" htmlFor="member-role" required error={errors.role?.message}>
+          {(fieldProps) => <Input {...fieldProps} autoComplete="off" {...register('role')} />}
+        </FormField>
+        <FormField
+          label="Affiliation"
+          htmlFor="member-affiliation"
+          description="Optional. Institution or department."
+          error={errors.affiliation?.message}
+        >
+          {(fieldProps) => (
+            <Input {...fieldProps} autoComplete="off" {...register('affiliation')} />
+          )}
+        </FormField>
+        {/* Choosing "Director" moves the title from whoever holds it now. */}
         <FormField
           label="Team"
           htmlFor="member-teamKind"
           required
-          description="Decides which sections this member's profile page can have. Existing entries for a section the new team cannot have are kept, but stop showing."
+          description="Decides which sections their profile page can have. Entries a new team cannot have are kept, but stop showing."
           error={errors.teamKind?.message}
+          className="sm:col-span-2"
         >
           {(fieldProps) => (
-            <select
-              {...fieldProps}
-              className="h-10 w-full rounded-sm border border-border bg-background px-3 text-sm text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              {...register('teamKind')}
-            >
+            <Select {...fieldProps} {...register('teamKind')}>
               {TEAM_KINDS.map((kind) => (
                 <option key={kind} value={kind}>
                   {TEAM_KIND_LABELS[kind]}
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </FormField>
+      </FormGroup>
+
+      <FormGroup title="Photo and bio">
         {/* The admin picks a file; it uploads to object storage on selection and only the
             resulting URL is held in the form, so this dialog's own save stays a plain JSON PUT. */}
         <PhotoUpload
@@ -198,9 +195,20 @@ export function TeamMemberFormDialog({
           endpoint="/api/admin/team-members/photo"
           personName={watch('name') || ''}
         />
-        <FormField label="Bio" htmlFor="member-bio" error={errors.bio?.message}>
-          {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={3} />}
+        <FormField
+          label="Bio"
+          htmlFor="member-bio"
+          description="Optional. Shown at the top of their profile page."
+          error={errors.bio?.message}
+        >
+          {(fieldProps) => <Textarea {...fieldProps} {...register('bio')} rows={5} />}
         </FormField>
+      </FormGroup>
+
+      <FormGroup
+        title="Profile links"
+        description="Scholar, LinkedIn, GitHub, a personal site — whatever they have, in the order to show."
+      >
         {/* Free-form `member_link` rows (ADR-017), edited as a repeatable list and saved with the
             rest of the member in one request. */}
         <MemberLinksField
@@ -217,6 +225,9 @@ export function TeamMemberFormDialog({
             setValue('links', next, { shouldDirty: true, shouldValidate: isSubmitted });
           }}
         />
+      </FormGroup>
+
+      <FormGroup title="Display">
         <FormField
           label="Sort order"
           htmlFor="member-sortOrder"
@@ -228,20 +239,13 @@ export function TeamMemberFormDialog({
               {...fieldProps}
               type="number"
               min={0}
+              inputMode="numeric"
+              className="w-28"
               {...register('sortOrder', { valueAsNumber: true })}
             />
           )}
         </FormField>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }

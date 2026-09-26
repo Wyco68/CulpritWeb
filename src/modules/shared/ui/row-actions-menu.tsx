@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';
-import { Button } from './button';
+import { IconButton } from './tooltip';
 
 // The one per-row action control for every admin table: a single "more" button opening a menu.
 // Everyday actions sit at the top; destructive ones are separated below a rule, so Delete is never
@@ -67,14 +67,23 @@ export function RowActionsMenu({ label, actions }: { label: string; actions: Row
       if (menuRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
       close(false);
     };
-    const onScroll = () => close(false);
+    // Close only when the button has really moved. A scroll event can arrive just after opening
+    // without anything having moved — a smooth scroll settling, or the browser bringing the button
+    // into view as it was clicked — and closing on that shut the menu the moment it appeared.
+    const anchorTop = triggerRef.current?.getBoundingClientRect().top ?? 0;
+    const onScroll = () => {
+      const top = triggerRef.current?.getBoundingClientRect().top ?? anchorTop;
+      if (Math.abs(top - anchorTop) > 2) close(false);
+    };
+    // A resize invalidates the computed position outright.
+    const onResize = () => close(false);
     document.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onResize);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
     };
   }, [open]);
 
@@ -145,11 +154,11 @@ export function RowActionsMenu({ label, actions }: { label: string; actions: Row
 
   return (
     <div className="flex justify-end">
-      <Button
+      <IconButton
         ref={triggerRef}
-        variant="ghost"
-        size="icon"
-        aria-label={label}
+        label={label}
+        tooltip="Actions"
+        tooltipSide="left"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -162,7 +171,7 @@ export function RowActionsMenu({ label, actions }: { label: string; actions: Row
         }}
       >
         <MoreHorizontal className="size-4" aria-hidden="true" />
-      </Button>
+      </IconButton>
 
       {open &&
         createPortal(

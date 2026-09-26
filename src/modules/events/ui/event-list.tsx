@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Images, PlayCircle, Users, type LucideIcon } from 'lucide-react';
+import { cn } from '@/modules/shared/lib/utils';
 import { Button } from '@/modules/shared/ui/button';
-import { panelClassName } from '@/modules/shared/ui/card';
+import { contentCardClassName } from '@/modules/shared/ui/card';
+import { CardPhoto } from '@/modules/shared/ui/card-photo';
 import { dateFormatter, timeFormatter } from './event-media';
 import { EventDetailDialog } from './event-detail-dialog';
 import type { Event } from '../event.types';
@@ -16,10 +18,8 @@ import type { Event } from '../event.types';
 // rendering them inline made every card as tall as its own content and turned the list into a
 // ragged column. `h-full` on the card plus a fixed summary clamp keeps them uniform.
 
-/** "1 photo", "3 photos", or nothing for zero. */
-function count(n: number, noun: string): string | false {
-  return n > 0 && `${n} ${noun}${n === 1 ? '' : 's'}`;
-}
+/** One media count on a card: an icon, the number, and the noun for assistive tech. */
+type Extra = { icon: LucideIcon; count: number; noun: string };
 
 export function EventList({ events }: { events: Event[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -29,57 +29,74 @@ export function EventList({ events }: { events: Event[] }) {
 
   return (
     <>
-      <ul className="grid gap-5 sm:grid-cols-2">
+      <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
         {events.map((event, index) => {
-          const extras = [
-            count(event.photoUrls.length, 'photo'),
-            count(event.videoUrls.length, 'video'),
-            count(event.participants.length, 'participant'),
-          ].filter(Boolean) as string[];
+          // Counts shown as icon + number (the noun is read out, not printed), in place of a
+          // "2 photos · 1 video · 6 participants" string. Zero counts are left out.
+          const extras: Extra[] = [
+            { icon: Images, count: event.photoUrls.length, noun: 'photo' },
+            { icon: PlayCircle, count: event.videoUrls.length, noun: 'video' },
+            { icon: Users, count: event.participants.length, noun: 'participant' },
+          ].filter((extra) => extra.count > 0);
 
           return (
             <li
               key={event.id}
               style={{ '--i': index } as React.CSSProperties}
-              className={`rise flex h-full flex-col ${panelClassName}`}
+              className={cn('rise h-full', contentCardClassName)}
             >
-              <p className="tabular font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
-                <time dateTime={event.eventDate.toISOString()}>
-                  {dateFormatter.format(event.eventDate)}
-                  <span className="sr-only"> at </span>
-                  <span className="ml-2 text-foreground">
-                    {timeFormatter.format(event.eventDate)}
-                  </span>
-                </time>
-              </p>
+              <CardPhoto src={event.photoUrls[0]} />
 
-              <h3 className="mt-3 text-balance font-serif text-xl leading-snug text-foreground sm:text-2xl">
-                {event.title}
-              </h3>
+              <div className="flex flex-1 flex-col p-6">
+                <p className="tabular text-sm text-muted-foreground">
+                  <time dateTime={event.eventDate.toISOString()}>
+                    {dateFormatter.format(event.eventDate)} at{' '}
+                    <span className="font-medium text-foreground">
+                      {timeFormatter.format(event.eventDate)}
+                    </span>
+                  </time>
+                </p>
 
-              {/* Clamped to three lines so a long summary cannot stretch one card past its
-                  neighbours. The full text is a click away. */}
-              <p className="mt-2 line-clamp-3 text-pretty leading-[1.7] text-muted-foreground">
-                {event.description}
-              </p>
+                <h3 className="mt-2 text-balance break-words font-serif text-xl leading-snug text-foreground">
+                  {event.title}
+                </h3>
 
-              {/* `mt-auto` pins the footer to the bottom of whichever card is tallest, so the
-                  buttons line up across the row instead of floating under their own text. */}
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
-                {extras.length > 0 ? (
-                  <p className="font-mono text-xs text-muted-foreground">{extras.join(' · ')}</p>
-                ) : (
-                  <span />
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Show Details: ${event.title}`}
-                  onClick={() => setOpenId(event.id)}
-                >
-                  Show Details
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Button>
+                {/* Clamped to three lines so a long summary cannot stretch one card past its
+                    neighbours. The full text is a click away. */}
+                <p className="mt-2 line-clamp-3 text-pretty leading-[1.7] text-muted-foreground">
+                  {event.description}
+                </p>
+
+                {/* `mt-auto` pins the footer to the bottom of whichever card is tallest, so the
+                    buttons line up across the row instead of floating under their own text. */}
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+                  {extras.length > 0 ? (
+                    <ul className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      {extras.map(({ icon: Icon, count, noun }) => (
+                        <li key={noun} className="inline-flex items-center gap-1">
+                          <Icon className="size-4" aria-hidden="true" />
+                          <span className="tabular">{count}</span>
+                          <span className="sr-only">
+                            {' '}
+                            {noun}
+                            {count === 1 ? '' : 's'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span />
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Show Details: ${event.title}`}
+                    onClick={() => setOpenId(event.id)}
+                  >
+                    Show Details
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
               </div>
             </li>
           );

@@ -95,9 +95,9 @@
     <strong>Updated 2026-08-13 (ADR-010):</strong> admin can also <strong>hard-delete</strong> any
     appointment (audited, any status) — see §5.4 FR-22.</li>
   </ul>
-  <p><strong>Design language:</strong> professional, minimalist, information-security aesthetic. See
-  §9 for the current (2026-08-05) Figma-derived visual system: fixed dark-navy header, mono numbered
-  indices, colored-dot status badges.</p>
+  <p><strong>Design language (2026-09-26, ADR-018):</strong> <strong>Intaglio</strong> — premium and
+  expressive, built on the lab's green. The pale green masthead, now engraved with a guilloché
+  rosette above light content pages; one light theme only. See §9.</p>
   <blockquote><strong>Elevator pitch:</strong> A clean public presence for a security researcher, plus a
   lightweight, admin-only appointment log. Visitor booking runs entirely on Calendly's free embed —
   no server-side sync, because Calendly's Free plan doesn't support one.</blockquote>
@@ -108,7 +108,7 @@
   <h2><span class="n">02</span> Goals &amp; Non-Goals</h2>
   <h3>Goals</h3>
   <ul>
-    <li><strong>G1</strong> — Professional, minimalist public presence (bio, research, publications, team members).</li>
+    <li><strong>G1</strong> — Professional, visually distinctive public presence (about, research, publications, team members, events). <em>(Reworded 2026-09-26, ADR-018: "minimalist" dropped.)</em></li>
     <li><strong>G2</strong> — <s>Visitors book directly (30-min default) or request a meeting, no account (name + email only).</s> <strong>Descoped (2026-08-08):</strong> a visitor can still book via the embedded Calendly widget, but that's Calendly's own flow, entirely outside this app — see NG6. No in-app request form exists.</li>
     <li><strong>G3</strong> — <s>Admin fully controls: approve, decline, cancel requests; edit all content.</s> <strong>Reworded (2026-08-08):</strong> admin directly declares and cancels appointments (no review queue) and edits all public content.</li>
     <li><strong>G4</strong> — Durable record of every admin-declared appointment + status change (cancellations soft, retained). <em>Updated 2026-08-13:</em> admin may also hard-delete a record outright (audited) — see FR-22, ADR-010.</li>
@@ -282,6 +282,7 @@
     <tr><td>summary</td><td><code>text</code></td><td></td></tr>
     <tr><td>area</td><td><code>string</code></td><td>e.g. "malware analysis"</td></tr>
     <tr><td>link</td><td><code>string</code></td><td>nullable — optional external link: project page, tool listing, artefact repo <em>(added 2026-08-08)</em></td></tr>
+    <tr><td>photo_url</td><td><code>string</code></td><td>nullable — card photo, a public R2 URL under the <code>research/</code> prefix, uploaded as a 3:2 crop <em>(added 2026-09-26)</em>. No photo renders a generated placeholder.</td></tr>
     <tr><td>sort_order</td><td><code>int</code></td><td>display order</td></tr>
   </table></div>
   <blockquote><strong>Note (2026-09-06, ADR-015):</strong> contributors are
@@ -573,13 +574,16 @@
 <!-- 9 -->
 <section id="s9">
   <h2><span class="n">09</span> UI Overview</h2>
-  <p><strong>Design language (2026-08-05, supersedes prior generic description):</strong> built from a
-  client-supplied Figma prototype — a fixed dark-navy header/hero band (circular profile photo, tab
-  bar with an accent-color underline on the active tab) above a light content area, monospaced
-  numbered indices for list content (e.g. publications), colored-dot status badges. One fixed visual
-  treatment; no light/dark theme switching (explicit client instruction; no OS-preference toggle
-  either). See <code>src/app/globals.css</code> for the actual design tokens rather than re-derived
-  hex values here.</p>
+  <p><strong>Design language (2026-09-26, ADR-018 — supersedes the 2026-08-05 Figma-derived
+  description):</strong> <strong>Intaglio.</strong> Green is the brand (action colour unchanged). A
+  pale green masthead band (unchanged colour) carries the lab's name set in type (no logo) and a generated guilloché
+  rosette above light content pages. The public header has a visible "Make appointment" action;
+  navigation stands in a sidebar beneath the header from <code>lg</code> up and in a menu sheet
+  below that. The admin uses the same header-plus-sidebar frame. Status is always
+  icon + label. <strong>One light theme only — no dark mode, no theme switching, no OS-preference
+  variant.</strong> The earlier "dark-navy header" wording was stale. See
+  <code>src/app/globals.css</code> for the actual design tokens rather than re-derived hex values
+  here.</p>
   <h3>9.1 Public side — 6 tabs</h3>
   <blockquote>Overrides the original 4-tab layout (2026-08-05). Publications is now its own tab
   (previously bundled into "Researches"); Team Members is new (replaces a standalone "Research

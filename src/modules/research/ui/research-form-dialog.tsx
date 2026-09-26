@@ -1,5 +1,6 @@
 'use client';
 
+import { FlaskConical } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -7,12 +8,12 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { BylineField } from '@/modules/shared/ui/byline-field';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { PhotoUpload } from '@/modules/shared/ui/photo-upload';
 // Deep, module-internal imports (not the barrel): `@/modules/research`'s index also re-exports
 // `getResearchService`, whose composition root imports the Prisma repository (`pg`/`fs`, Node-only).
 // A Client Component importing that barrel — even a type-only import, confirmed empirically —
@@ -53,7 +54,7 @@ export function ResearchFormDialog({
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<ResearchFormInput, unknown, CreateResearchInput>({
     // The form always submits a fully-populated payload (controlled fields, not a partial patch),
@@ -63,11 +64,13 @@ export function ResearchFormDialog({
     values: {
       title: research?.title ?? '',
       // Only the two fields that get sent back — sortOrder is re-derived from this array's order.
-      contributors:
-        research?.contributors.map(({ name }) => ({ name })) ?? [],
+      contributors: research?.contributors.map(({ name }) => ({ name })) ?? [],
       summary: research?.summary ?? '',
       area: research?.area ?? '',
       link: research?.link ?? '',
+      // `null` (not `''`) when there is none: an empty string would fail the URL check, and null
+      // is also what a removal sends so the column is actually cleared.
+      photoUrl: research?.photoUrl ?? null,
       sortOrder: research?.sortOrder ?? 0,
     },
   });
@@ -88,22 +91,23 @@ export function ResearchFormDialog({
   });
 
   return (
-    <Dialog
+    <FormDialog
+      icon={FlaskConical}
+      size="lg"
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit research work' : 'Add research work'}
-      closeLabel="Close"
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      submitting={isSubmitting || mutation.isPending}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <FormGroup title="Basics" columns={2}>
         <FormField
           label="Title"
           htmlFor="research-title"
           required
-          description="The project name as it should appear on the public Research tab."
+          description="As it should appear on the public Research tab."
           error={errors.title?.message}
         >
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
@@ -112,11 +116,14 @@ export function ResearchFormDialog({
           label="Area"
           htmlFor="research-area"
           required
-          description="The field this sits in, shown as the running head beside the entry — for example “Access Control”."
+          description="Works are grouped under their area, e.g. “Access Control”."
           error={errors.area?.message}
         >
           {(fieldProps) => <Input {...fieldProps} {...register('area')} />}
         </FormField>
+      </FormGroup>
+
+      <FormGroup title="Description">
         <FormField
           label="Summary"
           htmlFor="research-summary"
@@ -124,8 +131,42 @@ export function ResearchFormDialog({
           description="A short paragraph describing the work. Plain text, no formatting."
           error={errors.summary?.message}
         >
-          {(fieldProps) => <Textarea {...fieldProps} {...register('summary')} rows={4} />}
+          {(fieldProps) => <Textarea {...fieldProps} {...register('summary')} rows={5} />}
         </FormField>
+      </FormGroup>
+
+      <FormGroup title="Card photo" description="Shown at the top of the work's card. Optional.">
+        <Controller
+          control={control}
+          name="photoUrl"
+          render={({ field }) => (
+            <PhotoUpload
+              variant="landscape"
+              label="Photo"
+              value={field.value}
+              onChange={field.onChange}
+              endpoint="/api/admin/research/photo"
+            />
+          )}
+        />
+      </FormGroup>
+
+      <FormGroup title="Credit and link">
+        <Controller
+          control={control}
+          name="contributors"
+          render={({ field }) => (
+            <BylineField
+              label="Contributors"
+              description="Who worked on this. Leave empty for the lab's own work — no names are shown."
+              error={errors.contributors?.message ?? errors.contributors?.root?.message}
+              value={field.value ?? []}
+              onChange={field.onChange}
+              suggestions={suggestions}
+              emptyHint="No contributors listed — this will show as the lab's own work."
+            />
+          )}
+        />
         <FormField
           label="Project link"
           htmlFor="research-link"
@@ -136,29 +177,15 @@ export function ResearchFormDialog({
             <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />
           )}
         </FormField>
-        <Controller
-          control={control}
-          name="contributors"
-          render={({ field }) => (
-            <BylineField
-              label="Contributors"
-              description="Who worked on this. Leave empty for your own work — no names are shown."
-              error={errors.contributors?.message ?? errors.contributors?.root?.message}
-              value={field.value ?? []}
-              onChange={field.onChange}
-              suggestions={suggestions}
-              emptyHint="No contributors listed — this will show as your own work."
-            />
-          )}
-        />
+      </FormGroup>
+
+      <FormGroup title="Display">
         <FormField
           label="Sort order"
           htmlFor="research-sortOrder"
           description="Lower numbers appear first on the public tab."
           error={errors.sortOrder?.message}
         >
-          {/* Sized to its content rather than stretched to the dialog width: a two-digit number in
-              a full-width box reads as a text field and invites a sentence. */}
           {(fieldProps) => (
             <Input
               {...fieldProps}
@@ -170,16 +197,7 @@ export function ResearchFormDialog({
             />
           )}
         </FormField>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }

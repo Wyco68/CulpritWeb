@@ -33,7 +33,7 @@ export function ProjectList({ projects }: { projects: readonly Project[] }) {
               href={project.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-ring"
             >
               View Project
               <ArrowUpRight

@@ -1,5 +1,6 @@
 'use client';
 
+import { BookOpen } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -7,8 +8,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -54,7 +54,7 @@ export function CourseFormDialog({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<CourseFormInput, unknown, CreateCourseInput>({
     resolver: zodResolver(createCourseSchema),
@@ -86,17 +86,17 @@ export function CourseFormDialog({
   });
 
   return (
-    <Dialog
+    <FormDialog
+      icon={BookOpen}
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit course' : 'Add course'}
-      closeLabel="Close"
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      submitting={isSubmitting || mutation.isPending}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <FormGroup title="Course">
         <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
           <FormField
             label="Code"
@@ -130,7 +130,9 @@ export function CourseFormDialog({
             {(fieldProps) => <Input {...fieldProps} {...register('term')} />}
           </FormField>
         </div>
+      </FormGroup>
 
+      <FormGroup title="Details">
         <FormField
           label="Description"
           htmlFor="course-description"
@@ -150,7 +152,9 @@ export function CourseFormDialog({
             <Input {...fieldProps} type="url" {...register('link')} placeholder="https://…" />
           )}
         </FormField>
+      </FormGroup>
 
+      <FormGroup title="Display">
         <FormField
           label="Sort order"
           htmlFor="course-sortOrder"
@@ -168,16 +172,7 @@ export function CourseFormDialog({
             />
           )}
         </FormField>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting || mutation.isPending}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }

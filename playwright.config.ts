@@ -27,6 +27,12 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Phone width (Chromium engine, so no extra browser download). Runs the public specs; the
+    // authenticated admin spec skips itself here.
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
   webServer: {
     command: 'npm run dev',

@@ -13,6 +13,8 @@ export type Research = {
   summary: string;
   area: string;
   link: string | null;
+  /** Public R2 URL of the card photo, or null — the card then shows a generated placeholder. */
+  photoUrl: string | null;
   /** In display order. Empty renders no byline. */
   contributors: ResearchContributor[];
   sortOrder: number;

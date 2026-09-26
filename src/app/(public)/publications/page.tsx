@@ -3,7 +3,9 @@ import { getProfileCached } from '@/modules/profile';
 import { getPublicationService, PublicationsList } from '@/modules/publications';
 import { getTeamMemberService } from '@/modules/research-groups';
 import { EmptyState } from '@/modules/shared/ui/empty-state';
+import { LoadErrorState } from '@/modules/shared/ui/error-state';
 import { PageHeading } from '@/modules/shared/ui/page-heading';
+import { Standfirst } from '@/modules/shared/ui/prose';
 import { toMetaDescription } from '../_lib/page-meta';
 
 // The description a search result carries when the admin has written no intro of their own.
@@ -43,13 +45,13 @@ export default async function PublicationsPage() {
             paragraph of the professor's own framing, or nothing at all. No placeholder, no empty
             node: an unfilled intro leaves the list sitting directly under the heading exactly as
             it did before the column existed. */}
-        {intro && (
-          <p className="max-w-[62ch] text-pretty break-words font-serif text-lg leading-[1.75] text-foreground sm:text-xl">
-            {intro}
-          </p>
-        )}
+        {intro && <Standfirst>{intro}</Standfirst>}
 
-        {!result.ok || result.data.length === 0 ? (
+        {/* A failed read is reported as such — "none listed" would tell a visitor something
+            false about the lab. */}
+        {!result.ok ? (
+          <LoadErrorState what="Publications" />
+        ) : result.data.length === 0 ? (
           <EmptyState title="No publications listed yet" />
         ) : (
           <PublicationsList items={result.data} members={members} />

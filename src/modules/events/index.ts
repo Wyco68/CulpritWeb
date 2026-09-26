@@ -30,5 +30,4 @@ export type { EventRepository } from './event.repository';
 export { getEventService } from './container';
 
 export { EventList } from './ui/event-list';
-export { PastEventList } from './ui/past-event-list';
 export { EventsTable } from './ui/events-table';

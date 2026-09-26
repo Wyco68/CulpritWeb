@@ -77,7 +77,7 @@ export function CoursesAdmin({
               title={
                 <>
                   {course.code && (
-                    <span className="mr-2 font-mono text-xs text-muted-foreground">
+                    <span className="tabular mr-2 text-xs font-medium text-muted-foreground">
                       {course.code}
                     </span>
                   )}

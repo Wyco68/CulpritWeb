@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarDays } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -7,8 +8,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
-import { Dialog, DialogFooter } from '@/modules/shared/ui/dialog';
-import { Button } from '@/modules/shared/ui/button';
+import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
@@ -52,7 +52,7 @@ export function EventFormDialog({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<EventFormInput, unknown, CreateEventInput>({
     // The form always submits a fully-populated payload (controlled fields, not a partial patch),
@@ -95,46 +95,46 @@ export function EventFormDialog({
   const busy = isSubmitting || mutation.isPending;
 
   return (
-    <Dialog
+    <FormDialog
+      icon={CalendarDays}
+      size="lg"
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit event' : 'Add event'}
-      closeLabel="Close"
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      submitting={busy}
+      dirty={isDirty}
+      errorCount={Object.keys(errors).length}
     >
-      <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
-        noValidate
-        className="flex flex-col gap-4"
-      >
+      <FormGroup title="Basics" columns={2}>
         <FormField
           label="Title"
           htmlFor="event-title"
           required
-          description="The event name as it should appear on the public Events tab."
+          description="As it should appear on the public Events tab."
           error={errors.title?.message}
         >
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
-
         <FormField
           label="Date and time"
           htmlFor="event-eventDate"
           required
-          // Spelling out the zone matters: the field is a bare datetime-local with no zone picker,
-          // and the admin may well not be sitting in Bangkok when they type into it.
-          description="Local time at the institution (Asia/Bangkok). A date in the future files the event under Upcoming; once it passes, it moves to Past on its own."
+          description="Institution time (Asia/Bangkok). Future dates list under Upcoming, past ones under Past."
           error={errors.eventDate?.message}
         >
           {(fieldProps) => (
             <Input {...fieldProps} type="datetime-local" {...register('eventDate')} />
           )}
         </FormField>
+      </FormGroup>
 
+      <FormGroup title="Text">
         <FormField
-          label="Description"
+          label="Card summary"
           htmlFor="event-description"
           required
-          description="A short summary for the event card. Keep it to a line or two — the full write-up goes below."
+          description="A line or two for the event card."
           error={errors.description?.message}
         >
           {(fieldProps) => <Textarea {...fieldProps} {...register('description')} rows={3} />}
@@ -142,7 +142,7 @@ export function EventFormDialog({
         <FormField
           label="Full write-up"
           htmlFor="event-content"
-          description="Optional. Shown only inside Show Details on the public tab, so the card itself stays one fixed size however long this gets."
+          description="Optional. Shown only in Show Details, so the card stays one size however long this gets."
           error={errors.content?.message}
         >
           {(fieldProps) => (
@@ -155,7 +155,12 @@ export function EventFormDialog({
             />
           )}
         </FormField>
+      </FormGroup>
 
+      <FormGroup
+        title="Gallery"
+        description="The first photo leads the event card. Drag photos in, or upload them."
+      >
         <PhotoUploadList
           urls={photoUrls}
           disabled={busy}
@@ -168,7 +173,12 @@ export function EventFormDialog({
             {errors.photoUrls.message}
           </p>
         )}
+      </FormGroup>
 
+      <FormGroup
+        title="YouTube"
+        description="Links to YouTube videos; they play inside Show Details."
+      >
         <VideoLinkList
           ids={videoUrls}
           disabled={busy}
@@ -181,16 +191,7 @@ export function EventFormDialog({
             {errors.videoUrls.message}
           </p>
         )}
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={busy}>
-            Save changes
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
+      </FormGroup>
+    </FormDialog>
   );
 }

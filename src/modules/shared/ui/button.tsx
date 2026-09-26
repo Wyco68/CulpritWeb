@@ -16,16 +16,23 @@ import { cn } from '@/modules/shared/lib/utils';
 // standalone `scale` property (verified in the built stylesheet — `.active\:scale-\[0\.98\]`
 // emits `scale: 0.98`), so a `transform` entry would match nothing and the press would snap.
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium tracking-tight transition-[background-color,border-color,color,scale] duration-300 ease-[var(--ease-out-expo)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+  'focus-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium tracking-tight transition-[background-color,border-color,color,scale] duration-300 ease-[var(--ease-out-expo)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-accent text-accent-foreground hover:bg-accent/90',
-        outline: 'border border-border bg-background text-foreground hover:bg-muted',
+        // A faint top highlight gives the solid button an engraved, pressed-metal edge.
+        default:
+          'bg-accent text-accent-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] hover:bg-accent/90',
+        // Border at --input-border (3.4:1 on white), so an outline button reads as a control as
+        // clearly as a text field does. It used to sit at 1.2:1.
+        outline: 'border border-input-border bg-surface text-foreground hover:bg-muted',
         secondary: 'bg-muted text-foreground hover:bg-muted/70',
         ghost: 'text-foreground hover:bg-muted',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         link: 'text-accent underline-offset-4 hover:underline active:scale-100',
+        // Quiet secondary for the masthead band (Log out). The band's primary action uses the
+        // ordinary solid button.
+        onBand: 'text-masthead-foreground hover:bg-masthead-foreground/10',
       },
       size: {
         default: 'h-10 px-4 py-2',

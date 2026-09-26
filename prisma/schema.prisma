@@ -65,6 +65,8 @@ model Research {
   area         String
   /// Optional external link — a project page, tool listing, or artefact repository.
   link         String?
+  /// Optional card photo — a public R2 URL under the `research/` prefix (2026-09-26).
+  photoUrl     String?               @map("photo_url")
   /// Who worked on this, in display order. Empty renders no byline — see `ResearchContributor`.
   contributors ResearchContributor[]
   sortOrder    Int                   @default(0) @map("sort_order")

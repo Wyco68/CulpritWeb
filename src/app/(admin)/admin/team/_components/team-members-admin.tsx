@@ -1,5 +1,6 @@
 'use client';
 
+import { IdCard } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { TeamMembersTable } from '@/modules/research-groups/ui/team-members-table';
 import type { MemberLink, TeamMember } from '@/modules/research-groups/team-member.types';
@@ -35,13 +36,14 @@ export function TeamMembersAdmin({
     <>
       <TeamMembersTable items={members} linksByMember={linksByMember} onEditProfile={openProfile} />
       <Dialog
+        icon={IdCard}
         open={Boolean(member)}
         onOpenChange={(open) => {
           if (!open) setProfileId(null);
         }}
         title={member ? `Edit profile: ${member.name}` : 'Edit profile'}
         description={member ? `${member.role} · ${TEAM_KIND_LABELS[member.teamKind]}` : undefined}
-        className="dialog-enter max-w-4xl"
+        size="lg"
       >
         {member && (
           <div className="flex flex-col gap-8">

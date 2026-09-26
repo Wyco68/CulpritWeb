@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/modules/auth';
-import { AdminHeader } from './_components/admin-header';
+import { AdminHeader, AdminSidebar } from './_components/admin-header';
 
 // The authoritative admin gate. Every page under `/admin/*` is a child of this layout, so a
 // single server-side `requireAdmin()` check here guards the whole section — re-checked on every
@@ -17,13 +17,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    // White body under the masthead, the same treatment as the public layout: `--background` is
-    // re-pointed at `--surface` for this subtree, so dialogs and sticky bars turn white with it.
-    <div className="flex min-h-screen flex-col bg-background [--background:var(--surface)]">
+    // White body, the same treatment as the public site: `--background` is re-pointed at
+    // `--surface` for this subtree, so dialogs and sticky bars turn white with it.
+    // `data-shell` sets the admin's shorter pinned-header height (`--header-h`, globals.css).
+    <div
+      data-shell="admin"
+      className="flex min-h-screen flex-col bg-background [--background:var(--surface)]"
+    >
       <AdminHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 sm:px-8 sm:py-16">
-        {children}
-      </main>
+      <div className="flex-1 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <AdminSidebar />
+        <main className="mx-auto w-full min-w-0 max-w-6xl px-6 py-10 sm:px-10 sm:py-14">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

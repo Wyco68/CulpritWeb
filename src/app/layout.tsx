@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Newsreader, Plus_Jakarta_Sans, IBM_Plex_Mono } from 'next/font/google';
+import { Newsreader, Schibsted_Grotesk } from 'next/font/google';
 import { SITE_URL } from '@/modules/shared/lib/site-url';
 import { Providers } from './providers';
 import './globals.css';
@@ -8,7 +8,7 @@ import './globals.css';
 // strings — no next-intl, no message catalogue, no locale routing. The site will never support a
 // second language, so the translation-lookup indirection had no payoff.
 
-// Three families, each with one job — see the --font-* tokens in globals.css. Self-hosted by
+// Two families, each with one job — see the --font-* tokens in globals.css. Self-hosted by
 // next/font at build time (no runtime request to Google, no layout shift, no privacy leak), and
 // `display: swap` keeps text readable while a face is still loading.
 //
@@ -22,19 +22,12 @@ const newsreader = Newsreader({
   axes: ['opsz'],
 });
 
-// Interface chrome only — navigation, labels, controls, table headers.
-const jakarta = Plus_Jakarta_Sans({
+// Interface chrome — navigation, labels, controls, tables. An editorial grotesk that holds its own
+// beside Newsreader instead of disappearing into it (ADR-018).
+const schibsted = Schibsted_Grotesk({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-jakarta',
-});
-
-// Data: years, indices, timestamps, identifiers.
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-plex-mono',
-  weight: ['400', '500'],
+  variable: '--font-schibsted',
 });
 
 const SITE_DESCRIPTION =
@@ -62,22 +55,17 @@ export const metadata: Metadata = {
 };
 
 // Paints the browser's own chrome — Chrome/Edge on Android, and Safari's toolbars on iOS 15+ — in
-// the masthead's green, so the band at the top of every page runs straight into the URL bar instead
-// of stopping at a strip of the browser's default grey. The literal is the resolved value of
-// `--masthead` (hsl(150 35% 91%)) in globals.css: this is emitted into <head> at build time, where
-// a CSS custom property has not been resolved yet and cannot be read. Keep the two in step.
-// Single unconditional value, no `media` variants — the site has one fixed light look.
+// the masthead's pale green, so the band at the top of every page runs straight into the URL bar.
+// The literal is the resolved value of `--masthead` (hsl(150 35% 91%)) in globals.css: this is
+// emitted into <head> at build time, where a CSS custom property cannot be read. Keep the two in
+// step. Single unconditional value, no `media` variants — one light theme, no dark mode (ADR-018).
 export const viewport: Viewport = {
   themeColor: '#e0f0e8',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${newsreader.variable} ${jakarta.variable} ${plexMono.variable}`}
-    >
+    <html lang="en" className={`${newsreader.variable} ${schibsted.variable}`}>
       {/* `100dvh`, not `100vh`: the dynamic unit tracks mobile Safari's collapsing URL bar, so the
           page doesn't jump as the toolbar hides. */}
       <body className="grain min-h-[100dvh] antialiased">
@@ -93,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             does not cover — with that class the reveal jumped instead of sliding. */}
         <a
           href="#main"
-          className="fixed left-4 top-4 z-50 -translate-y-20 rounded-sm bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-raised transition-[translate] duration-300 ease-[var(--ease-out-expo)] focus:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="fixed left-4 top-4 z-50 -translate-y-20 rounded-sm bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-raised transition-[translate] duration-300 ease-[var(--ease-out-expo)] focus-ring focus:translate-y-0"
         >
           Skip to content
         </a>

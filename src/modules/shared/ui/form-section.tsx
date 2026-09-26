@@ -70,7 +70,7 @@ export function FormSection({
 /** The entry count shown beside a list section's title. */
 export function FormSectionCount({ count }: { count: number }) {
   return (
-    <span className="tabular shrink-0 rounded-pill border border-border bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+    <span className="tabular shrink-0 rounded-pill border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
       {count} {count === 1 ? 'entry' : 'entries'}
     </span>
   );

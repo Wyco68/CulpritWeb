@@ -1,12 +1,13 @@
 @import 'tailwindcss';
 
 /* Tailwind v4 CSS-first config. Design tokens live here — retune the palette in one place.
-   Aesthetic: professional, minimalist, information-security — restrained neutrals + one accent.
-   One fixed look, matching the Figma prototype exactly — no light/dark theme switching.
 
-   The palette is the customer's own choice and is deliberately left as specified; the only
-   addition is --accent-on-band below, which fixes a measured contrast failure without altering
-   the chosen hue. Retuning any pair here means re-checking it against WCAG 2.1 AA. */
+   Visual direction: Intaglio (docs/decisions/ADR-018). The pale green masthead engraved with a
+   guilloché rosette — the security-printing device — above light, quiet content pages. Green is
+   the brand; there is one light theme and no dark mode, permanently.
+
+   Every text/background pair below is annotated with its measured contrast. Retuning any pair
+   means re-checking it against WCAG 2.1 AA. */
 
 :root {
   /* One fixed light look — there is no dark theme and no theme switching (see the header comment).
@@ -24,32 +25,40 @@
      The separation is deliberately small — rgb(245 249 247) against 255, roughly 6-10 points — and
      is carried as much by --border-strong as by the fill. Widening it turns the ground grey, which
      is the look this palette was chosen to avoid. */
-  --background: hsl(150 25% 97%);
-  --surface: hsl(0 0% 100%); /* cards, panels, tables, dialogs, form sections */
-  --foreground: hsl(150 15% 12%); /* 15.18:1 on background, 16.08:1 on surface */
-  --muted: hsl(145 15% 95%);
-  --muted-foreground: hsl(150 8% 42%); /* 4.70:1 on background, 4.98:1 on surface */
-  /* Recessive rule between rows inside a panel. --border-strong is the panel's own edge: it has to
-     hold a shape against the ground, which a hairline at 91% lightness could not do. */
+  --background: #f7faf8; /* "paper": cool, faintly green, never cream */
+  --surface: #ffffff; /* cards, panels, tables, dialogs, form sections */
+  --foreground: #13241d; /* "ink" — 16.2:1 on surface */
+  --muted: hsl(145 18% 95%);
+  --muted-foreground: hsl(150 8% 40%); /* 5.3:1 on surface */
+  /* Recessive rule between rows inside a panel. --border-strong is the panel's own edge. */
   --border: hsl(145 15% 88%);
   --border-strong: hsl(145 15% 80%);
-  --accent: hsl(158 55% 32%); /* 4.67:1 on background, 4.95:1 on surface */
-  --accent-foreground: hsl(0 0% 100%); /* 4.95:1 on accent */
-  /* Fixed brand band (site header/hero + active-tab underline surface) — a constant light-green
-     identity element distinct from the light page background used everywhere else. Every other
-     token takes its hue from this green family (150–158). */
+  /* The brand's action colour, unchanged since the pale-band era (ADR-018 keeps it). */
+  --accent: #247e5d; /* 4.9:1 on surface */
+  --accent-foreground: #ffffff; /* 4.9:1 on accent */
+
+  /* --- Masthead ------------------------------------------------------------------------- */
+  /* The pale green band — the customer's own colour, kept (ADR-018) — and the only place the
+     ornament appears. */
   --masthead: hsl(150 35% 91%);
-  --masthead-foreground: hsl(150 30% 15%); /* 11.67:1 on the band */
-
-  /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.19:1
-     against the green band — below the 4.5:1 AA threshold for normal-size text, which the
-     tagline on the masthead is. This sibling measures 5.46:1 there. Text sitting
-     ON the band uses this; everything on the white page keeps --accent. */
+  --masthead-raised: hsl(150 40% 95%); /* the soft radial lift behind the rosette */
+  --masthead-foreground: hsl(150 30% 15%); /* 11.67:1 on the band; at 75% alpha still 5.6:1 */
+  /* Same hue and saturation as --accent, four points darker. --accent itself measures 4.19:1 on
+     the band — below AA for the tagline — so text, markers and the focus ring ON the band use this
+     sibling, which measures 5.46:1. */
   --accent-on-band: hsl(158 55% 27%);
+  /* Guilloché linework on the band. Decorative only, always used at low alpha. */
+  --engraving: hsl(155 35% 42%);
 
-  /* The mount for a framed image on the band, five points darker than the band and the same hue.
-     The header no longer shows one; kept so the token set stays whole. */
-  --masthead-mount: hsl(150 35% 86%);
+  /* --- Status --------------------------------------------------------------------------- */
+  /* Always paired with an icon and a label — colour is never the only signal (WCAG 1.4.1).
+     Foreground ratios are measured on both white and the matching tint. */
+  --success: #1f6f52; /* 6.1:1 on white, 5.3:1 on tint */
+  --success-tint: hsl(150 40% 94%);
+  --warning: #8a5b00; /* 5.9:1 on white, 5.4:1 on tint */
+  --warning-tint: hsl(40 85% 94%);
+  --info: #2d5f86; /* 6.8:1 on white, 6.1:1 on tint */
+  --info-tint: hsl(205 50% 95%);
 
   /* --- Form controls --------------------------------------------------------------------- */
   /* Inputs used to be white-on-white with a 91%-light border, measuring 1.24:1 against the page.
@@ -66,14 +75,24 @@
 
   --destructive: hsl(3 72% 42%); /* 5.84:1 on background, 6.30:1 on surface */
   --destructive-foreground: hsl(0 0% 100%);
-  --ring: hsl(158 55% 32%); /* same as --accent: 4.67:1 on background */
+  --destructive-tint: hsl(3 80% 96%);
+  /* The focus ring. Re-pointed at --accent-on-band inside the masthead (4.19:1 would be too faint
+     there), so the one `focus-ring` utility works on both surfaces. */
+  --ring: #247e5d;
+
+  /* --- Scrollbars ---------------------------------------------------------------------- */
+  /* A thin, rounded thumb in the palette's own green-grey instead of the platform's default grey
+     bar. Re-pointed on the masthead ground, where the page's thumb would be too heavy. */
+  --scrollbar-thumb: hsl(150 12% 74%);
+  --scrollbar-thumb-hover: hsl(150 12% 58%);
 
   /* --- Radii ---------------------------------------------------------------------------- */
   /* Deliberately not one uniform value. Containers are softer than the controls inside them.
      The whole scale moved up one step so controls read as current rather than as 2019-era 4px
      chips; the *relationship* between the three is unchanged. */
+  /* The rule: controls 6px, containers 12px, filter chips full pill. */
   --radius-xs: 4px;
-  --radius: 8px;
+  --radius: 6px;
   --radius-container: 12px;
   --radius-pill: 999px;
 
@@ -89,13 +108,23 @@
   /* No linear, no ease-in-out. Weighted curves that decelerate like something with mass. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Three durations. Feedback is fast; entrances are base; the one ornamental moment is slow. */
+  --duration-fast: 150ms;
+  --duration-base: 240ms;
+  --duration-slow: 500ms;
 
-  /* --- Anchor offset -------------------------------------------------------------------- */
-  /* How far below the top of the viewport an anchor target comes to rest. The in-page section
-     nav (modules/shared/ui/section-nav.tsx) is `sticky top-0`, so without this a heading jumped
-     to via `/research#works` lands underneath the bar that just took you there. Sized as the
-     bar's own height (~2.75rem) plus a line of breathing room. */
-  --anchor-offset: 4.5rem;
+  /* --- Pinned header and anchor offset ------------------------------------------------- */
+  /* From `lg` up the header band is sticky at the top of the viewport (the sidebar and the in-page
+     section nav stick beneath it), so the page scrolls under a fixed frame. `--header-h` is that
+     band's exact height — 0 below `lg`, where the header scrolls away with the page. The admin's
+     compact band is shorter; see the `:has()` rule below.
+
+     `--anchor-offset` is how far below the top of the viewport an anchor target (or a newly
+     focused control) comes to rest: the header, plus the section nav's own height and a line of
+     breathing room, so a heading jumped to via `/research#works` does not land underneath either
+     bar — and a focused control is never hidden behind them (WCAG 2.4.11). */
+  --header-h: 0px;
+  --anchor-offset: calc(var(--header-h) + 4.5rem);
 }
 
 @theme inline {
@@ -111,7 +140,15 @@
   --color-accent-on-band: var(--accent-on-band);
   --color-masthead: var(--masthead);
   --color-masthead-foreground: var(--masthead-foreground);
-  --color-masthead-mount: var(--masthead-mount);
+  --color-masthead-raised: var(--masthead-raised);
+  --color-engraving: var(--engraving);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-info: var(--info);
+  --color-info-tint: var(--info-tint);
+  --color-destructive-tint: var(--destructive-tint);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
@@ -130,13 +167,53 @@
   --ease-out-expo: var(--ease-out-expo);
   --ease-spring: var(--ease-spring);
 
-  /* Three families with distinct jobs, loaded via next/font in app/layout.tsx:
-     sans  — interface: navigation, labels, controls, tables
-     serif — prose and headings: the reading voice of the site
-     mono  — data: years, indices, identifiers, timestamps */
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Type scale. Fluid only where a size spans phone to desktop; interface text stays on Tailwind's
+     fixed steps (xs/sm/base) so tables and forms never shift between breakpoints. */
+  --text-display: clamp(1.75rem, 1.2rem + 2.6vw, 3.5rem); /* the lab name on the masthead */
+  --text-display--line-height: 1.06;
+  --text-display--letter-spacing: -0.02em;
+  --text-title: clamp(1.875rem, 1.6rem + 1.1vw, 2.5rem); /* page headings */
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.015em;
+  --text-heading: 1.25rem; /* section headings inside a page */
+  --text-heading--line-height: 1.35;
+  --text-standfirst: clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem); /* the serif intro paragraph */
+  --text-standfirst--line-height: 1.75;
+
+  /* Two families with distinct jobs, loaded via next/font in app/layout.tsx:
+     sans  — interface: navigation, labels, controls, tables, figures (Schibsted Grotesk, with
+             tabular numerals via `.tabular` wherever numbers line up)
+     serif — prose and headings: the reading voice of the site (Newsreader)
+     Mono is the system's, kept only for literal identifiers such as a YouTube video ID. */
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --header-h: 11.5rem;
+    /* The band's full height, which a spacer holds in the page flow (the band itself is fixed). */
+    --header-h-full: 11.5rem;
+  }
+  /* Scrolled away from the top (HeaderCondenser): the band shrinks to the name and its action.
+     Nothing here changes the page's layout — the band is `position: fixed` over a spacer of
+     constant height — and the name shrinks by `scale`, not `font-size`, so the text is never
+     re-wrapped mid-animation. The tagline and affiliation fade and are clipped by the shrinking
+     band rather than removed, so nothing inside the band jumps either. */
+  :root[data-header-condensed] {
+    --header-h: 5rem;
+  }
+  :root[data-header-condensed] .header-extra {
+    opacity: 0;
+  }
+  :root[data-header-condensed] .header-name {
+    scale: 0.58;
+    translate: 0 -0.7rem;
+  }
+  :root:has([data-shell='admin']) {
+    --header-h: 4.5rem;
+  }
 }
 
 html {
@@ -164,7 +241,37 @@ html {
      of the accent at low alpha says "this responded" in the palette's own voice. Not `transparent`:
      removing it entirely leaves a touch user with no press feedback at all, since hover and
      focus-visible styling never fires for them. */
-  -webkit-tap-highlight-color: hsl(158 55% 32% / 0.14);
+  -webkit-tap-highlight-color: rgb(36 126 93 / 0.14);
+}
+
+/* Scrollbars. `scrollbar-color` is set per element rather than inherited from the root, so a
+   region that re-points --scrollbar-thumb (the masthead sidebar) gets its own colour. Chrome 121+
+   and Firefox use the standard properties; Safari only understands the ::-webkit-scrollbar
+   pseudo-elements below, which the standard ones take precedence over where both are supported. */
+:where(*) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* The transparent border plus `padding-box` clip insets the thumb from the edge, so it reads as a
+   slim pill floating in the gutter rather than a slab against the window edge. */
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--scrollbar-thumb) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover) padding-box;
 }
 
 /* Anchor targets clear the sticky section nav. Scoped to `[id]` rather than a bespoke class so a
@@ -346,4 +453,89 @@ video {
 }
 .scrollbar-hidden::-webkit-scrollbar {
   display: none; /* Chrome, Safari, modern Edge */
+}
+
+/* --- Intaglio utilities (ADR-018) ------------------------------------------------------- */
+
+/* The one keyboard-focus treatment. Replaces the long `focus-visible:outline …` string that was
+   repeated in two dozen components. Colour comes from --ring, which the masthead re-points at
+   --accent-on-band, so the same class meets contrast on the band and on the page. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* The same ring drawn inside the element, for controls that live in a scrolling strip: an overflow
+   container clips anything outside its box, which left a focused tab showing one sliver of ring. */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+}
+
+/* A certificate-style double rule: two hairlines with a gap, drawn by the browser's own `double`
+   border. Used for section and footer edges — structure borrowed from engraved documents. */
+@utility rule-double {
+  border-top: 3px double var(--border-strong);
+}
+
+/* The masthead band: a soft radial lift where the rosette sits, so the ground has depth rather than
+   reading as a flat fill. */
+@utility masthead-ground {
+  --scrollbar-thumb: color-mix(in srgb, var(--masthead-foreground) 22%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--masthead-foreground) 40%, transparent);
+  background:
+    radial-gradient(ellipse 60% 90% at 88% 20%, var(--masthead-raised), transparent 70%),
+    var(--masthead);
+}
+
+/* The rosette engraves itself once: a conic mask sweeps round the centre, like a lathe cutting the
+   pattern. The registered property is what lets the mask angle interpolate; browsers without
+   `@property` simply show the finished rosette. Under reduced motion the global rule collapses the
+   duration and `both` lands it on the finished frame. */
+@property --sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 360deg;
+}
+
+@keyframes engrave {
+  from {
+    --sweep: 0deg;
+  }
+  to {
+    --sweep: 360deg;
+  }
+}
+
+.engrave {
+  mask-image: conic-gradient(from -90deg, #000 var(--sweep), transparent 0);
+  animation: engrave 1.4s var(--ease-out-expo) 120ms both;
+}
+
+/* Tooltip bubble: a short fade and lift toward its trigger. Enter only. */
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 2px, 0);
+  }
+}
+
+/* Side sheet (mobile navigation). Enters from the right edge; closing stays instant, as with the
+   dialog. */
+@keyframes sheet-enter {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+.sheet-enter[open] {
+  animation: sheet-enter var(--duration-base) var(--ease-out-expo);
+}
+
+.sheet-enter[open]::backdrop {
+  animation: backdrop-enter var(--duration-base) var(--ease-out-expo);
 }

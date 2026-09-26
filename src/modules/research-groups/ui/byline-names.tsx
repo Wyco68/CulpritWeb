@@ -21,7 +21,7 @@ export function BylineNames({
         {member ? (
           <Link
             href={`/team/${member.id}`}
-            className="rounded-xs font-medium text-accent underline-offset-4 hover:underline focus-visible:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="rounded-xs font-medium text-accent underline-offset-4 hover:underline focus-visible:underline focus-ring"
           >
             {name}
           </Link>

@@ -46,7 +46,7 @@ export function PublicationsList({
               group instead, where the grid collapses to one column. */}
           <h3
             id={`publications-${group.year}`}
-            className="tabular mb-3 font-mono text-sm text-accent sm:mb-0 sm:pt-1"
+            className="tabular mb-3 font-serif text-2xl leading-none text-accent sm:mb-0 sm:pt-0.5"
           >
             {group.year}
           </h3>
@@ -77,7 +77,7 @@ export function PublicationsList({
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-xs text-sm font-medium text-accent underline-offset-4 hover:underline focus-ring"
                   >
                     View Publication
                     <ArrowUpRight

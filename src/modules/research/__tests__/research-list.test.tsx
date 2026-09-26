@@ -17,6 +17,7 @@ const research = (overrides: Partial<Research>): Research => ({
   summary: 'Detecting evasive samples.',
   area: 'malware analysis',
   link: null,
+  photoUrl: null,
   contributors: [],
   sortOrder: 0,
   createdAt: new Date('2024-01-01'),

@@ -255,7 +255,7 @@ export default async function AdminDashboardPage() {
       >
         {attention.length === 0 ? (
           <p className="flex items-center gap-2.5 text-sm text-foreground">
-            <CheckCircle2 className="size-4 text-accent" aria-hidden="true" />
+            <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
             Every publication has a link, every member a photo, every event some media.
           </p>
         ) : (
@@ -264,9 +264,9 @@ export default async function AdminDashboardPage() {
               <li key={item.key}>
                 <Link
                   href={item.href}
-                  className="group flex items-center gap-3 px-6 py-3.5 text-sm text-foreground transition-colors duration-200 hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  className="group flex items-center gap-3 px-6 py-3.5 text-sm text-foreground transition-colors duration-200 hover:bg-muted focus-ring-inset"
                 >
-                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-surface">
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-warning/30 bg-warning-tint text-warning">
                     <item.icon className="size-4" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">{attentionText[item.key](item.count)}</span>
@@ -298,7 +298,7 @@ export default async function AdminDashboardPage() {
               >
                 <Link
                   href={change.href}
-                  className="flex min-w-0 items-center gap-3 rounded-xs text-sm font-medium text-foreground hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex min-w-0 items-center gap-3 rounded-xs text-sm font-medium text-foreground hover:text-accent focus-ring"
                 >
                   <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                     <change.icon className="size-4" aria-hidden="true" />
@@ -339,18 +339,19 @@ function Figure({
   return (
     // `relative` + the link's `after` overlay make the whole tile the hit target, while keeping
     // exactly one focusable element with one accessible name inside the dl/dt/dd structure.
-    <div className="group relative rounded-lg border border-border-strong bg-surface p-5 shadow-hairline transition-colors duration-300 ease-[var(--ease-out-expo)] hover:border-accent/40 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-ring">
-      <dt className="flex items-center gap-2.5 text-sm text-muted-foreground">
-        <span className="inline-flex size-8 items-center justify-center rounded-md bg-accent/10 text-accent">
+    // The figure is set in the display serif, large, like the denomination on a note.
+    <div className="group relative overflow-hidden rounded-lg border border-border-strong bg-surface p-5 shadow-hairline transition-[border-color,translate] duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 hover:border-accent/50 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-ring">
+      <dt className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+        <span className="inline-flex size-9 items-center justify-center rounded-md bg-accent/10 text-accent">
           <Icon className="size-4" aria-hidden="true" />
         </span>
         {label}
       </dt>
-      <dd className="mt-4">
+      <dd className="mt-5">
         <Link
           href={href}
           aria-label={`${label}: ${value}`}
-          className="tabular inline-block rounded-xs text-3xl font-bold leading-none tracking-[-0.02em] text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] after:absolute after:inset-0 after:content-[''] group-hover:text-accent focus-visible:outline-none"
+          className="tabular inline-block rounded-xs font-serif text-5xl font-normal leading-none tracking-[-0.02em] text-foreground transition-colors duration-300 ease-[var(--ease-out-expo)] after:absolute after:inset-0 after:content-[''] group-hover:text-accent focus-visible:outline-none"
         >
           {value}
         </Link>
@@ -376,8 +377,8 @@ function Panel({
   return (
     <section className="overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline">
       <div className="flex items-baseline justify-between gap-4 border-b border-border px-6 py-4">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {note && <span className="font-mono text-xs text-muted-foreground">{note}</span>}
+        <h2 className="font-serif text-lg text-foreground">{title}</h2>
+        {note && <span className="tabular text-xs text-muted-foreground">{note}</span>}
       </div>
       <div className="px-6 py-6">{children}</div>
     </section>

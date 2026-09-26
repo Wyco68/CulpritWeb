@@ -30,7 +30,7 @@ export function CreditedWorkList({ items }: { items: readonly CreditedWork[] }) 
         >
           <Link
             href={item.href}
-            className="rounded-xs text-pretty break-words font-medium leading-snug text-foreground underline-offset-4 transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="rounded-xs text-pretty break-words font-medium leading-snug text-foreground underline-offset-4 transition-colors duration-300 ease-[var(--ease-out-expo)] hover:text-accent hover:underline focus-ring"
           >
             {item.title}
           </Link>

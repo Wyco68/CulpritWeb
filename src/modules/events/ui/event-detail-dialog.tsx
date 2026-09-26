@@ -39,7 +39,7 @@ export function EventDetailDialog({
       description={`${dateFormatter.format(event.eventDate)} at ${timeFormatter.format(event.eventDate)}`}
       closeLabel="Close"
       // Wider than the default dialog: this one holds a reading column and a sidebar side by side.
-      className="dialog-enter max-w-4xl"
+      size="lg"
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_14rem]">
         <div className="min-w-0">
@@ -55,7 +55,7 @@ export function EventDetailDialog({
 
         {participants.length > 0 && (
           <aside aria-label="Participants" className="lg:border-l lg:border-border lg:pl-6">
-            <h3 className="font-mono text-xs uppercase leading-5 tracking-[0.12em] text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               Participants
               <span className="tabular ml-2">{participants.length}</span>
             </h3>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalUrl, safeText, sortOrder } from '@/modules/shared/lib/schema-fields';
+import { httpUrl, optionalUrl, safeText, sortOrder } from '@/modules/shared/lib/schema-fields';
 
 /**
  * One credited contributor: a plain typed name. Same shape and reasoning as a publication author —
@@ -20,6 +20,8 @@ export const createResearchSchema = z.object({
   area: safeText(200),
   /** Optional external artefact — a tool listing, project page or dataset. */
   link: optionalUrl,
+  /** Card photo: the URL returned by the admin photo upload. `null` clears it. */
+  photoUrl: httpUrl.nullable().optional(),
   contributors: contributorList.default([]),
   sortOrder,
 });

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { apiRequest } from '@/modules/shared/lib/api-client';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { Button } from '@/modules/shared/ui/button';
+import { DropZone } from '@/modules/shared/ui/drop-zone';
 import { Label } from '@/modules/shared/ui/label';
 import { FRAMER_ACCEPTED_TYPES, PhotoFramer } from '@/modules/shared/ui/photo-framer';
 
@@ -37,7 +38,16 @@ export interface PhotoUploadProps {
   label?: string;
   /** `sm:col-span-2` in the two-column profile form; the dialog uses the default single column. */
   className?: string;
+  /**
+   * `portrait` (default): a 512px square, previewed as an avatar. `landscape`: a 1200×800 crop for
+   * card imagery, previewed at that shape.
+   */
+  variant?: 'portrait' | 'landscape';
 }
+
+/** Width ÷ height and output width of the landscape (card) crop. */
+const LANDSCAPE_ASPECT = 3 / 2;
+const LANDSCAPE_WIDTH = 1200;
 
 export function PhotoUpload({
   value,
@@ -46,7 +56,9 @@ export function PhotoUpload({
   personName = '',
   label = 'Photo',
   className,
+  variant = 'portrait',
 }: PhotoUploadProps) {
+  const landscape = variant === 'landscape';
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [pending, setPending] = useState<File | null>(null);
@@ -87,7 +99,8 @@ export function PhotoUpload({
     return (
       <PhotoFramer
         file={pending}
-        outputSize={OUTPUT_SIZE}
+        outputSize={landscape ? LANDSCAPE_WIDTH : OUTPUT_SIZE}
+        aspect={landscape ? LANDSCAPE_ASPECT : 1}
         onConfirm={upload}
         onCancel={() => setPending(null)}
         className={className}
@@ -99,48 +112,56 @@ export function PhotoUpload({
     <div className={className}>
       <div className="flex flex-col gap-2">
         <Label htmlFor={inputId}>{label}</Label>
-        <div className="flex items-center gap-4">
-          <Avatar
-            src={value}
-            alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
-            fallback={initials || '?'}
-            size="lg"
-          />
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploading}
-                onClick={() => inputRef.current?.click()}
-              >
-                {uploading ? (
-                  <Loader2
-                    className="size-4 animate-spin motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Upload className="size-4" aria-hidden="true" />
-                )}
-                {value ? 'Change photo' : 'Upload photo'}
-              </Button>
-              {value && (
+        <DropZone onFiles={([file]) => setPending(file)} disabled={uploading}>
+          <div className="flex flex-wrap items-center gap-4">
+            {landscape ? (
+              <LandscapePreview src={value} />
+            ) : (
+              <Avatar
+                src={value}
+                alt={personName ? `Portrait of ${personName}` : 'Photo preview'}
+                fallback={initials || '?'}
+                size="lg"
+              />
+            )}
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={uploading}
-                  onClick={() => onChange(null)}
+                  onClick={() => inputRef.current?.click()}
                 >
-                  <X className="size-4" aria-hidden="true" />
-                  Remove
+                  {uploading ? (
+                    <Loader2
+                      className="size-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Upload className="size-4" aria-hidden="true" />
+                  )}
+                  {value ? 'Change photo' : 'Upload photo'}
                 </Button>
-              )}
+                {value && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => onChange(null)}
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Drag a photo here, or use the button. JPEG, PNG, WebP or GIF, 4 MB max.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or GIF. 4 MB max.</p>
           </div>
-        </div>
+        </DropZone>
         <input
           ref={inputRef}
           id={inputId}
@@ -150,6 +171,23 @@ export function PhotoUpload({
           onChange={handleFileChange}
         />
       </div>
+    </div>
+  );
+}
+
+/** The card-shaped preview: the uploaded photo at its 3:2 crop, or an empty frame. */
+function LandscapePreview({ src }: { src: string | null | undefined }) {
+  return (
+    <div className="relative aspect-[3/2] w-44 shrink-0 overflow-hidden rounded-lg border border-border-strong bg-muted">
+      {src ? (
+        /* eslint-disable-next-line @next/next/no-img-element -- an admin-side preview of a URL
+           that was uploaded seconds ago; next/image optimisation buys nothing here. */
+        <img src={src} alt="Photo preview" className="size-full object-cover" />
+      ) : (
+        <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+          No photo
+        </span>
+      )}
     </div>
   );
 }

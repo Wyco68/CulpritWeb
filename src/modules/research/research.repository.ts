@@ -57,6 +57,7 @@ function toDomain(row: PrismaResearchRow): Research {
     summary: row.summary,
     area: row.area,
     link: row.link,
+    photoUrl: row.photoUrl,
     contributors: row.contributors.map(toContributor),
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
@@ -108,6 +109,7 @@ export class PrismaResearchRepository implements ResearchRepository {
           summary: input.data.summary,
           area: input.data.area,
           link: input.data.link ?? null,
+          photoUrl: input.data.photoUrl ?? null,
           contributors: { create: toContributorRows(input.data.contributors) },
           sortOrder: input.data.sortOrder ?? 0,
         },
@@ -134,6 +136,7 @@ export class PrismaResearchRepository implements ResearchRepository {
           summary: input.data.summary,
           area: input.data.area,
           link: input.data.link,
+          photoUrl: input.data.photoUrl,
           sortOrder: input.data.sortOrder,
         },
       });

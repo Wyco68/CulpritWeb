@@ -20,6 +20,17 @@ import { cn } from '@/modules/shared/lib/utils';
 export const panelClassName =
   'rounded-lg border border-border-strong bg-surface p-6 shadow-hairline sm:p-8';
 
+/**
+ * A content card in a grid (a research work, an event): white panel, clipped so a photo at its
+ * head follows the corner radius, laid out as a column so a footer can be pinned with `mt-auto`.
+ */
+export const contentCardClassName =
+  'flex min-w-0 flex-col overflow-hidden rounded-lg border border-border-strong bg-surface shadow-hairline';
+
+/** A link styled as a pill on the masthead green: member links, "Profile", "View Project". */
+export const linkPillClassName =
+  'focus-ring inline-flex items-center gap-1.5 rounded-full border border-border bg-masthead px-3 py-1.5 text-sm font-medium text-accent-on-band transition-[background-color,color,scale] duration-200 ease-[var(--ease-out-expo)] hover:bg-accent hover:text-accent-foreground active:scale-[0.97]';
+
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div

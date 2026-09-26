@@ -3,7 +3,7 @@
 import { useId, useState } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from './button';
-import { EmptyState } from './empty-state';
+import { IconButton } from './tooltip';
 import { Input } from './input';
 
 // A controlled, ordered list of credited names — publication authors and research contributors
@@ -107,7 +107,11 @@ export function BylineField({
       </div>
 
       {value.length === 0 ? (
-        <EmptyState title={emptyHint} className="px-5 py-6" />
+        // A quiet note, not a panel: inside a form an empty list is a normal starting state, and a
+        // large serif empty-state box read as an error.
+        <p className="rounded-md border border-dashed border-border-strong px-4 py-3 text-sm text-muted-foreground">
+          {emptyHint}
+        </p>
       ) : (
         <ol className="flex flex-col">
           {value.map((entry, index) => (
@@ -117,44 +121,41 @@ export function BylineField({
             >
               <span
                 aria-hidden="true"
-                className="tabular w-6 shrink-0 font-mono text-xs text-muted-foreground"
+                className="tabular w-6 shrink-0 text-xs text-muted-foreground"
               >
                 {index + 1}
               </span>
               <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                 {entry.name}
               </p>
-              <Button
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Move ${entry.name} up`}
+                label={`Move ${entry.name} up`}
                 disabled={disabled || index === 0}
                 onClick={() => moveBy(index, -1)}
               >
                 <ChevronUp className="size-4" aria-hidden="true" />
-              </Button>
-              <Button
+              </IconButton>
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Move ${entry.name} down`}
+                label={`Move ${entry.name} down`}
                 disabled={disabled || index === value.length - 1}
                 onClick={() => moveBy(index, 1)}
               >
                 <ChevronDown className="size-4" aria-hidden="true" />
-              </Button>
-              <Button
+              </IconButton>
+              <IconButton
                 type="button"
                 variant="ghost"
-                size="icon"
-                aria-label={`Remove ${entry.name}`}
+                label={`Remove ${entry.name}`}
                 className="text-destructive hover:bg-destructive/10"
                 disabled={disabled}
                 onClick={() => removeAt(index)}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              </IconButton>
             </li>
           ))}
         </ol>

@@ -8,7 +8,8 @@ import { AdminSectionNav } from './admin-section-nav';
 // It exists so the eight screens can't drift apart the way the old entity-shaped ones did (six
 // hand-rolled headings, three different gap scales). Screens with three or more sections get the
 // jump list; the short ones (Publications, Events, Appointment) don't, because a table of contents
-// for two headings is furniture.
+// for two headings is furniture. The rail stands beside the content only from `xl`: at `lg` the
+// site sidebar already takes the left edge, and two rails would leave the forms too narrow.
 
 export interface AdminScreenSection {
   /** Must match the anchor id rendered by the corresponding section component. */
@@ -35,7 +36,7 @@ export function AdminScreen({ title, intro, sections, children }: AdminScreenPro
       <PageHeading as="h1" title={title} intro={intro} />
 
       {showNav && sections ? (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] lg:gap-14">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] xl:gap-14">
           <AdminSectionNav sections={sections} />
           {/* `min-w-0` so a wide table scrolls inside its own box instead of widening the grid
               track and pushing the rail off screen. */}
