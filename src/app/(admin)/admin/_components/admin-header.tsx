@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LogoutButton } from '@/modules/auth';
 import { Guilloche } from '@/modules/shared/ui/guilloche';
-import { MobileMenu, SidebarNav, type NavItem } from '@/modules/shared/ui/site-nav';
+import { MobileMenu, NavSidebar, type NavItem } from '@/modules/shared/ui/site-nav';
 
 // The admin's chrome, matching the public site (ADR-018): a compact header band across the top,
 // with a navigation sidebar beneath it from `lg` up — both pinned, so only the screen scrolls. Below `lg` the header's Menu button opens the
@@ -50,13 +50,7 @@ export function AdminHeader() {
   );
 }
 
-/** The navigation column under the header, from `lg` up. Same treatment as the public sidebar. */
+/** The navigation sidebar beneath the header, from `lg` up. */
 export function AdminSidebar() {
-  return (
-    <aside className="hidden border-r border-masthead-foreground/10 bg-[color-mix(in_srgb,var(--masthead)_45%,var(--surface))] [--ring:var(--accent-on-band)] lg:block">
-      <div className="sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h))] overflow-y-auto px-4 py-8">
-        <SidebarNav items={TABS} label="Admin" />
-      </div>
-    </aside>
-  );
+  return <NavSidebar items={TABS} label="Admin" />;
 }

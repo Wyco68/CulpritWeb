@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Profile } from '@/modules/profile';
+import { HeaderCondenser } from './header-condenser';
 import { SiteFooter } from './site-footer';
 import { DEFAULT_LAB_NAME, SiteHeader, SiteSidebar } from './site-header';
 
@@ -20,8 +21,12 @@ export function PublicShell({
   return (
     // White page body. `--background` is re-pointed at `--surface` for this subtree, so everything
     // that paints the ground (the sticky section nav, dialogs) turns white with it.
-    <div className="flex min-h-[100dvh] flex-col bg-background [--background:var(--surface)]">
+    <div className="relative flex min-h-[100dvh] flex-col bg-background [--background:var(--surface)]">
+      <HeaderCondenser />
       <SiteHeader profile={profile} />
+      {/* Holds the fixed header's full height in the flow from `lg` up. Constant, so condensing the
+          header never moves the page. */}
+      <div aria-hidden="true" className="hidden h-[var(--header-h-full)] shrink-0 lg:block" />
 
       <div className="flex-1 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
         <SiteSidebar />

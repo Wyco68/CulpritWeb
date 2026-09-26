@@ -124,7 +124,7 @@ export function SectionNav({ items, label = 'On this page', className }: Section
         // Full width of the content column's padding box, so the rule underneath reads as a
         // divider across the page rather than a floating pill.
         // Sticks beneath the pinned header (`--header-h` is 0 where the header scrolls away).
-        'sticky top-[var(--header-h)] z-20 -mx-6 border-b border-border bg-background/90 px-6 backdrop-blur-sm',
+        'sticky top-[var(--header-h)] z-20 -mx-6 border-b border-border bg-background/90 px-6 backdrop-blur-sm transition-[top] duration-300 ease-[var(--ease-out-expo)]',
         className,
       )}
     >

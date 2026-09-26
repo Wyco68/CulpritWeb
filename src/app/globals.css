@@ -193,6 +193,23 @@
 @media (min-width: 64rem) {
   :root {
     --header-h: 11.5rem;
+    /* The band's full height, which a spacer holds in the page flow (the band itself is fixed). */
+    --header-h-full: 11.5rem;
+  }
+  /* Scrolled away from the top (HeaderCondenser): the band shrinks to the name and its action.
+     Nothing here changes the page's layout — the band is `position: fixed` over a spacer of
+     constant height — and the name shrinks by `scale`, not `font-size`, so the text is never
+     re-wrapped mid-animation. The tagline and affiliation fade and are clipped by the shrinking
+     band rather than removed, so nothing inside the band jumps either. */
+  :root[data-header-condensed] {
+    --header-h: 5rem;
+  }
+  :root[data-header-condensed] .header-extra {
+    opacity: 0;
+  }
+  :root[data-header-condensed] .header-name {
+    scale: 0.58;
+    translate: 0 -0.7rem;
   }
   :root:has([data-shell='admin']) {
     --header-h: 4.5rem;

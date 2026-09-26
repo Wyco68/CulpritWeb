@@ -58,6 +58,22 @@ export function SidebarNav({ items, label }: { items: readonly NavItem[]; label:
   );
 }
 
+/**
+ * The navigation column under the header, from `lg` up, shared by the public site and the admin.
+ * A lighter wash of the masthead green, so header and sidebar read as one L-shaped frame around
+ * the white page. The list sticks directly under the pinned header, so neither moves while the
+ * page scrolls.
+ */
+export function NavSidebar({ items, label }: { items: readonly NavItem[]; label: string }) {
+  return (
+    <aside className="hidden border-r border-masthead-foreground/10 bg-[color-mix(in_srgb,var(--masthead)_45%,var(--surface))] [--ring:var(--accent-on-band)] lg:block">
+      <div className="sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h))] overflow-y-auto px-4 py-8 transition-[top,max-height] duration-300 ease-[var(--ease-out-expo)]">
+        <SidebarNav items={items} label={label} />
+      </div>
+    </aside>
+  );
+}
+
 export function MobileMenu({
   items,
   label,
