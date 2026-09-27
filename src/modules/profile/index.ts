@@ -21,9 +21,6 @@ export type { ProfileRepository } from './profile.repository';
 
 export { getProfileService, getProfileCached } from './container';
 
-export {
-  ProfileFieldsForm,
-  PROFILE_FIELD_KEYS,
-  type ProfileFieldKey,
-  type ProfileFormSection,
-} from './ui/profile-fields-form';
+// Admin UI is NOT re-exported here — admin pages import it by path. Public pages import this barrel
+// for its services, and Next ships every client component reachable from a page's imports, used or
+// not: re-exporting an admin table here put it (and its zod form schema) on every public page.

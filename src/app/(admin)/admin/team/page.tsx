@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
-import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
-import { getTeamMemberService, getTeamService, TeamsAdmin } from '@/modules/research-groups';
+import { getProfileCached } from '@/modules/profile';
+import { ProfileFieldsForm } from '@/modules/profile/ui/profile-fields-form';
+import { getTeamMemberService, getTeamService } from '@/modules/research-groups';
+import { TeamsAdmin } from '@/modules/research-groups/ui/teams-admin';
 import { AdminScreen } from '../_components/admin-screen';
 import { loadMemberProfilesData } from './_components/member-profile-data';
 import { TeamMembersAdmin } from './_components/team-members-admin';
