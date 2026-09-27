@@ -12,28 +12,22 @@ import type { RowAction } from '@/modules/shared/ui/row-actions-menu';
 import type { Course } from '../teaching.types';
 import { CourseFormDialog } from './course-form-dialog';
 
-// The courses section of a member's admin profile page, next to that member's CV lists.
-//
-// Only some teams teach (ADR-017). For a team that does not, the section is not offered at all —
-// the server answers 400 on a create, and an admin should never be able to click into a form whose
-// only outcome is a rejection. What it does NOT do is hide rows that already exist: a team change
-// never deletes anything, so courses written while the member taught stay visible here, read-only
-// apart from Delete, with the reason said in text.
+// The courses section of a member's admin profile page, next to that member's CV lists. Always
+// editable; while the member's Courses section is switched off (ADR-020) the rows are marked as
+// hidden from the public profile, with the reason said next to them.
 
-/** Said where the rows are, not in a banner at the top: the explanation belongs next to the data. */
-const RETIRED_DESCRIPTION =
-  'This team does not teach, so these no longer appear on the public profile. They are kept on record — delete them, or move the member back to a team that teaches.';
+const HIDDEN_NOTE = 'Hidden from the public profile — switch it on under “Shown on profile”.';
 
 export function CoursesAdmin({
   teamMemberId,
   courses,
-  allowed = true,
+  hidden = false,
 }: {
   /** The member who teaches these courses. */
   teamMemberId: string;
   courses: Course[];
-  /** Whether this member's team may have courses at all — `allowsCourses(member.teamKind)`. */
-  allowed?: boolean;
+  /** Whether the member's Courses section is switched off on their public profile. */
+  hidden?: boolean;
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Course | undefined>(undefined);
@@ -45,24 +39,17 @@ export function CoursesAdmin({
     setFormOpen(true);
   }
 
-  // Nothing to show and nothing to add: the section would be an empty box explaining an absence.
-  if (!allowed && courses.length === 0) return null;
-
   return (
     <div id="courses" className="scroll-mt-24">
       <FormSection
         title="Courses"
-        description={
-          allowed ? "Shown on the member's public profile, grouped by level." : RETIRED_DESCRIPTION
-        }
+        description={`Shown on the member's public profile, grouped by level.${hidden ? ` ${HIDDEN_NOTE}` : ''}`}
         badge={<FormSectionCount count={courses.length} />}
         action={
-          allowed ? (
-            <Button aria-label="Add course" onClick={openCreate}>
-              <Plus className="size-4" aria-hidden="true" />
-              Add
-            </Button>
-          ) : undefined
+          <Button aria-label="Add course" onClick={openCreate}>
+            <Plus className="size-4" aria-hidden="true" />
+            Add
+          </Button>
         }
       >
         <RecordTable
@@ -88,11 +75,10 @@ export function CoursesAdmin({
             />
           )}
           statusHeader="Profile"
-          // Retired rows are the ones a team change left behind (ADR-017): kept, but not shown.
           status={() =>
-            allowed
-              ? { tone: 'ok', label: 'On profile' }
-              : { tone: 'neutral', label: 'Hidden', icon: EyeOff }
+            hidden
+              ? { tone: 'neutral', label: 'Hidden', icon: EyeOff }
+              : { tone: 'ok', label: 'On profile' }
           }
           groupHeader="Level"
           group={(course) => (
@@ -109,7 +95,6 @@ export function CoursesAdmin({
               destructive: true,
               onSelect: () => remove.request(course),
             };
-            if (!allowed) return [del];
             return [
               {
                 label: 'Edit',
@@ -132,14 +117,12 @@ export function CoursesAdmin({
         />
       </FormSection>
 
-      {allowed && (
-        <CourseFormDialog
-          teamMemberId={teamMemberId}
-          open={formOpen}
-          onOpenChange={setFormOpen}
-          course={editing}
-        />
-      )}
+      <CourseFormDialog
+        teamMemberId={teamMemberId}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        course={editing}
+      />
 
       <ConfirmDialog
         {...remove.dialogProps}

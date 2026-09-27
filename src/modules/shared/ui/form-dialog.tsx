@@ -130,11 +130,6 @@ export function FormDialog({
             <>
               <p className="mr-auto hidden text-xs text-muted-foreground sm:block">
                 <span className="text-destructive">*</span> Required
-                <span className="mx-2 text-border-strong" aria-hidden="true">
-                  |
-                </span>
-                <kbd className="font-sans">Ctrl</kbd> or <kbd className="font-sans">⌘</kbd> +{' '}
-                <kbd className="font-sans">Enter</kbd> to save
               </p>
               <Button type="button" variant="outline" onClick={cancel}>
                 Cancel

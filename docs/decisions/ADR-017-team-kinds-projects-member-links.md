@@ -1,5 +1,5 @@
 ---
-status: current
+status: superseded
 source_of_truth: true
 last_updated: 2026-09-12
 related_modules: [research-groups, teaching, projects, research, publications]
@@ -9,6 +9,10 @@ related_decisions: [ADR-012, ADR-015, ADR-016]
 # ADR-017: Members belong to a team; projects and member links become their own tables
 
 ## Status
+
+Superseded in part by [ADR-020](ADR-020-admin-teams-and-profile-sections.md) (2026-09-27): the fixed
+`TeamKind` teams and their per-team rules are replaced by admin-defined teams and per-member section
+switches. The `member_link` and `project` tables below still stand.
 
 Accepted. Extends ADR-016 (which made every member a flat row on one Team tab) and ADR-012 (whose
 one-table-with-a-discriminator pattern this reuses).

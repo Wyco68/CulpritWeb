@@ -15,11 +15,11 @@ import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
 import { PhotoUpload } from '@/modules/shared/ui/photo-upload';
-import { TEAM_KINDS, TEAM_KIND_LABELS } from '@/modules/shared/lib/team-kind';
 // Deep, module-internal imports — see the equivalent comment in research-form-dialog.tsx (the
 // barrel also re-exports Prisma-backed service getters; even a type-only barrel import drags
 // Prisma/`pg` into the client bundle, confirmed empirically).
 import type { MemberLink, TeamMember } from '../team-member.types';
+import type { TeamRef } from '../team.types';
 import {
   createTeamMemberSchema,
   type CreateTeamMemberInput,
@@ -48,10 +48,13 @@ export function TeamMemberFormDialog({
   onOpenChange,
   member,
   links = [],
+  teams,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   member?: TeamMember;
+  /** The admin's teams, in display order, for the team picker. */
+  teams: readonly TeamRef[];
   /** The member's stored links, in order. Empty for a new member. */
   links?: readonly MemberLink[];
 }) {
@@ -79,6 +82,8 @@ export function TeamMemberFormDialog({
         {
           ...values,
           photoUrl: values.photoUrl === '' ? undefined : values.photoUrl,
+          // The "No team" option's value is '' — on the wire that is an explicit null.
+          teamId: values.teamId === '' ? null : values.teamId,
         },
         context,
         options,
@@ -90,10 +95,7 @@ export function TeamMemberFormDialog({
       affiliation: member?.affiliation ?? '',
       bio: member?.bio ?? '',
       photoUrl: member?.photoUrl ?? '',
-      // Defaults to the research team for a new member — the team that keeps the most of what a
-      // member can have short of teaching. `isDirector` is not a form field any more: the service
-      // derives it from the team, so offering both would be two controls for one decision.
-      teamKind: member?.teamKind ?? 'research',
+      teamId: member?.team?.id ?? '',
       // Only the editable halves: `id` and `sortOrder` are the server's, and the array order is
       // what becomes `sortOrder` on save.
       links: links.map(({ label, url }) => ({ label, url })),
@@ -165,25 +167,33 @@ export function TeamMemberFormDialog({
             <Input {...fieldProps} autoComplete="off" {...register('affiliation')} />
           )}
         </FormField>
-        {/* Choosing "Director" moves the title from whoever holds it now. */}
-        <FormField
-          label="Team"
-          htmlFor="member-teamKind"
-          required
-          description="Decides which sections their profile page can have. Entries a new team cannot have are kept, but stop showing."
-          error={errors.teamKind?.message}
-          className="sm:col-span-2"
-        >
-          {(fieldProps) => (
-            <Select {...fieldProps} {...register('teamKind')}>
-              {TEAM_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {TEAM_KIND_LABELS[kind]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </FormField>
+        {member?.isDirector ? (
+          // The director heads the Team tab on their own and is never on a team; who holds the
+          // title is fixed, not something this form can change (ADR-020).
+          <p className="self-end text-sm text-muted-foreground sm:col-span-2">
+            <span className="font-medium text-foreground">Lab director.</span> Featured on their own
+            at the top of the Team tab, not under a team.
+          </p>
+        ) : (
+          <FormField
+            label="Team"
+            htmlFor="member-teamId"
+            description="Which heading they are listed under on the Team tab. Teams are added and renamed in the Teams section."
+            error={errors.teamId?.message}
+            className="sm:col-span-2"
+          >
+            {(fieldProps) => (
+              <Select {...fieldProps} {...register('teamId')}>
+                <option value="">No team</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </FormField>
+        )}
       </FormGroup>
 
       <FormGroup title="Photo and bio">

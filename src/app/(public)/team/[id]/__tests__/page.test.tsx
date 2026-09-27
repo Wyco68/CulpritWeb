@@ -1,11 +1,12 @@
 import { afterEach, beforeAll, describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import type { TeamMember, TeamMemberProfile } from '@/modules/research-groups';
+import type { CvSection } from '@/modules/teaching/teaching.types';
 
 // The page reads through four module barrels, each of which also re-exports a Prisma-backed
 // container. Those are replaced here with the module's real pure pieces plus a stub service, so the
-// test exercises the page's own logic — team gating, byline resolution, the jump list — and never
-// touches a database.
+// test exercises the page's own logic — hidden sections, byline resolution, section order, the jump
+// list — and never touches a database.
 
 const findProfileMock = vi.fn();
 const listResearchMock = vi.fn();
@@ -33,13 +34,15 @@ vi.mock('@/modules/research-groups', async () => {
   const view = await import('@/modules/research-groups/ui/team-members-view');
   const credited = await import('@/modules/research-groups/ui/credited-works');
   const byline = await import('@/modules/research-groups/byline-match');
-  const teamKind = await import('@/modules/shared/lib/team-kind');
+  const sections = await import('@/modules/shared/lib/profile-sections');
   return {
     memberInitials: view.memberInitials,
     MemberCard: (await import('@/modules/research-groups/ui/member-card')).MemberCard,
     CreditedWorkList: credited.CreditedWorkList,
     isMemberByline: byline.isMemberByline,
-    allowsResearchAndPublications: teamKind.allowsResearchAndPublications,
+    PROFILE_SECTIONS: sections.PROFILE_SECTIONS,
+    PROFILE_SECTION_LABELS: sections.PROFILE_SECTION_LABELS,
+    showsSection: sections.showsSection,
     getTeamMemberService: () => ({ findProfile: findProfileMock }),
   };
 });
@@ -65,7 +68,20 @@ const member = (overrides: Partial<TeamMember> = {}): TeamMember => ({
   affiliation: null,
   bio: 'Builds the things.',
   photoUrl: null,
-  teamKind: 'development',
+  team: null,
+  // An engineer's page as the admin set it up: projects and links only.
+  hiddenSections: [
+    'research_interest',
+    'education',
+    'fellowship',
+    'scholarship',
+    'invited_talk',
+    'teaching_role',
+    'teaching_award',
+    'courses',
+    'research',
+    'publications',
+  ],
   isDirector: false,
   sortOrder: 0,
   createdAt: new Date('2024-01-01'),
@@ -141,7 +157,7 @@ describe('TeamMemberPage', () => {
     listPublicationsMock.mockReset().mockResolvedValue({ ok: true, data: [publication] });
   });
 
-  it('renders a development member’s projects and links, and no credited work at all', async () => {
+  it('renders only the sections left on — no credited work when both are hidden', async () => {
     findProfileMock.mockResolvedValue({ ok: true, data: profile() });
     await renderPage();
 
@@ -156,8 +172,8 @@ describe('TeamMemberPage', () => {
       'https://github.com/sam',
     );
 
-    // The byline says "Sam Rowe" on both lists, but ADR-017 gives a development member no research
-    // or publications section — a name collision must not manufacture one.
+    // The byline says "Sam Rowe" on both lists, but this member has research and publications
+    // switched off (ADR-020) — a name collision must not manufacture either section.
     expect(screen.queryByRole('region', { name: 'Research' })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Publications' })).not.toBeInTheDocument();
     expect(screen.queryByText('Privacy by architecture')).not.toBeInTheDocument();
@@ -166,10 +182,10 @@ describe('TeamMemberPage', () => {
     expect(listResearchMock).not.toHaveBeenCalled();
   });
 
-  it('credits a professor with the work their byline name appears on, linked to its tab', async () => {
+  it('credits a member with the work their byline name appears on, linked to its tab', async () => {
     findProfileMock.mockResolvedValue({
       ok: true,
-      data: profile({ member: member({ teamKind: 'professor', role: 'Professor' }) }),
+      data: profile({ member: member({ hiddenSections: [], role: 'Professor' }) }),
     });
     await renderPage();
 
@@ -184,21 +200,20 @@ describe('TeamMemberPage', () => {
       }),
     ).toHaveAttribute('href', '/research#works');
 
-    // The jump list lists only what is on the page, in page order.
+    // The jump list lists only what is on the page, most important first.
     const nav = screen.getByRole('navigation', { name: 'On this page' });
-    expect(within(nav).getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Biography',
-      'Projects',
-      'Research',
-      'Publications',
-    ]);
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Biography', 'Publications', 'Research', 'Projects']);
   });
 
   it('omits an empty section from the page and from the jump list', async () => {
     findProfileMock.mockResolvedValue({
       ok: true,
       data: profile({
-        member: member({ teamKind: 'professor' }),
+        member: member({ hiddenSections: [] }),
         projects: [],
         links: [],
       }),
@@ -209,10 +224,11 @@ describe('TeamMemberPage', () => {
     expect(screen.queryByRole('region', { name: 'Projects' })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Research' })).not.toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'On this page' });
-    expect(within(nav).getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Biography',
-      'Publications',
-    ]);
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Biography', 'Publications']);
   });
 
   it('404s on an unknown member', async () => {
@@ -221,5 +237,54 @@ describe('TeamMemberPage', () => {
     await expect(TeamMemberPage({ params: Promise.resolve({ id: 'nope' }) })).rejects.toThrow(
       'NEXT_NOT_FOUND',
     );
+  });
+
+  it('orders CV and non-CV sections together by importance, page and jump list alike', async () => {
+    const cv = (id: string, section: CvSection, title: string) => ({
+      id,
+      teamMemberId: 'm1',
+      section,
+      title,
+      subtitle: null,
+      description: null,
+      year: null,
+      sortOrder: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    findProfileMock.mockResolvedValue({
+      ok: true,
+      data: profile({
+        member: member({ hiddenSections: [] }),
+        cvEntries: [
+          cv('c1', 'education', 'PhD'),
+          cv('c2', 'research_interest', 'Privacy engineering'),
+          cv('c3', 'teaching_award', 'Best teacher'),
+        ],
+      }),
+    });
+    await renderPage();
+
+    const nav = screen.getByRole('navigation', { name: 'On this page' });
+    const order = [
+      'Biography',
+      'Research interests',
+      'Publications',
+      'Research',
+      'Projects',
+      'Education',
+      'Teaching awards',
+    ];
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(order);
+    // The page renders its sections in the same order as the jump list.
+    const headings = screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+      .filter((text) => text && order.includes(text));
+    expect(headings).toEqual(order.slice(1));
   });
 });

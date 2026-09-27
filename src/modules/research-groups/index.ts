@@ -1,11 +1,12 @@
-// research-groups module — the lab's team members (ADR-016). The name predates the removal of
-// research groups and is kept so imports did not all have to move; every member has a profile page,
-// and the director is the member flagged `isDirector`.
+// research-groups module — the lab's team members (ADR-016) and the admin-defined teams they are
+// listed under (ADR-020). The name predates the removal of research groups and is kept so imports
+// did not all have to move; every member has a profile page, and the director is the member
+// flagged `isDirector`.
 
 export {
   createTeamMemberSchema,
   updateTeamMemberSchema,
-  teamKindSchema,
+  hiddenSectionsSchema,
   type CreateTeamMemberInput,
   type UpdateTeamMemberInput,
   type MemberLinkInput,
@@ -19,28 +20,26 @@ export type {
   AuditContext,
 } from './team-member.types';
 
-// The team vocabulary and the per-team attribute rules live in shared (the teaching module enforces
-// the same rules on write, so neither module can own them) and are re-exported here as part of this
-// module's public surface.
 export {
-  TEAM_KINDS,
-  TEAM_KIND_LABELS,
-  TEAM_KIND_RULES,
-  allowsCourses,
-  allowsCvSection,
-  allowsProjects,
-  allowsResearchAndPublications,
-  isDirectorTeam,
-  type TeamKind,
-  type TeamKindRules,
-} from '@/modules/shared/lib/team-kind';
+  createTeamSchema,
+  updateTeamSchema,
+  type CreateTeamInput,
+  type UpdateTeamInput,
+} from './team.schema';
+export type { Team, TeamRef } from './team.types';
+export { createTeamService, type TeamService, type TeamServiceDeps } from './team.service';
+export type { TeamRepository } from './team.repository';
 
+// The profile-section vocabulary lives in shared (the teaching module's labels mirror it, so
+// neither module can own it) and is re-exported here as part of this module's public surface.
 export {
-  groupByTeam,
-  resolveTeamAssignment,
-  type TeamAssignment,
-  type TeamGroup,
-} from './team-assignment';
+  PROFILE_SECTIONS,
+  PROFILE_SECTION_LABELS,
+  showsSection,
+  type ProfileSection,
+} from '@/modules/shared/lib/profile-sections';
+
+export { groupMembers, type MemberGroup } from './team-grouping';
 
 export {
   createTeamMemberService,
@@ -52,17 +51,13 @@ export {
 
 export type { TeamMemberRepository } from './team-member.repository';
 
-export {
-  matchMember,
-  isMemberByline,
-  bylineSuggestions,
-  type BylineMember,
-} from './byline-match';
+export { matchMember, isMemberByline, bylineSuggestions, type BylineMember } from './byline-match';
 
-export { getTeamMemberService } from './container';
+export { getTeamMemberService, getTeamService } from './container';
 
 export { TeamMembersView, TeamMemberCard, memberInitials } from './ui/team-members-view';
 export { MemberCard } from './ui/member-card';
 export { BylineNames } from './ui/byline-names';
 export { CreditedWorkList, type CreditedWork } from './ui/credited-works';
 export { TeamMembersTable } from './ui/team-members-table';
+export { TeamsAdmin } from './ui/teams-admin';

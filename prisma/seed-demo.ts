@@ -35,7 +35,6 @@ const DEMO_DIRECTOR = {
   role: 'Professor of Information Security',
   affiliation: 'Chair of Applied Security · Department of Computing, Northgate University',
   bio: 'Amara Osei studies how large systems fail under adversarial pressure, and how the people who operate them can be given better tools to notice when they are failing.',
-  teamKind: 'director' as const,
   isDirector: true,
   sortOrder: -1,
 };
@@ -289,6 +288,12 @@ const DEMO_PUBLICATIONS = [
   },
 ];
 
+// The demo teams (ADR-020), in Team-tab order. Members name theirs; ids are resolved at insert.
+const DEMO_TEAMS = [
+  { name: 'Professors', sortOrder: 1 },
+  { name: 'Research Team', sortOrder: 2 },
+];
+
 // Lab members. Their citation names match the demo bylines ("R. Lindqvist"), so the public lists
 // have highlighted names to render alongside grey outside authors (N. Haddad, J. Park).
 const DEMO_MEMBERS = [
@@ -297,7 +302,7 @@ const DEMO_MEMBERS = [
     citationName: 'R. Lindqvist',
     role: 'Postdoctoral Researcher',
     bio: 'Builds attestation tooling for air-gapped deployments.',
-    teamKind: 'research' as const,
+    team: 'Research Team',
     sortOrder: 1,
   },
   {
@@ -305,7 +310,7 @@ const DEMO_MEMBERS = [
     citationName: 'T. Meyer',
     role: 'PhD Candidate',
     bio: 'Studying formal verification of TLS implementations.',
-    teamKind: 'research' as const,
+    team: 'Research Team',
     sortOrder: 2,
   },
   {
@@ -313,21 +318,21 @@ const DEMO_MEMBERS = [
     citationName: 'S. Whitcombe',
     role: 'Senior Researcher',
     bio: 'Field studies of incident-response teams under time pressure.',
-    teamKind: 'research' as const,
+    team: 'Research Team',
     sortOrder: 3,
   },
   {
     name: 'Yuki Tanaka',
     role: 'PhD Candidate',
     bio: 'Post-quantum migration paths for long-lived signing keys.',
-    teamKind: 'research' as const,
+    team: 'Research Team',
     sortOrder: 4,
   },
   {
     name: 'Prof. Elena Vasquez',
     role: 'Visiting Professor',
     bio: 'On sabbatical from the Institute for Secure Systems, Aalborg.',
-    teamKind: 'professor' as const,
+    team: 'Professors',
     sortOrder: 5,
   },
 ];
@@ -352,7 +357,19 @@ async function seed() {
 
   if ((await prisma.teamMember.count()) === 0) {
     const director = await prisma.teamMember.create({ data: DEMO_DIRECTOR });
-    await prisma.teamMember.createMany({ data: DEMO_MEMBERS });
+    const teamIds = new Map<string, string>();
+    for (const team of DEMO_TEAMS) {
+      // Upserted by name: a lab that already has a "Research Team" keeps it and gains the members.
+      const row = await prisma.team.upsert({
+        where: { name: team.name },
+        create: team,
+        update: {},
+      });
+      teamIds.set(team.name, row.id);
+    }
+    await prisma.teamMember.createMany({
+      data: DEMO_MEMBERS.map(({ team, ...member }) => ({ ...member, teamId: teamIds.get(team) })),
+    });
     // CV entries and courses belong to a member; in the demo they are all the director's.
     await prisma.cvEntry.createMany({
       data: DEMO_CV_ENTRIES.map((entry) => ({ ...entry, teamMemberId: director.id })),

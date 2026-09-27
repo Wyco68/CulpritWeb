@@ -1,6 +1,7 @@
 import type { Course, CvEntry } from '@/modules/teaching';
 import type { Project } from '@/modules/projects';
-import type { TeamKind } from '@/modules/shared/lib/team-kind';
+import type { ProfileSection } from '@/modules/shared/lib/profile-sections';
+import type { TeamRef } from './team.types';
 
 // Domain model — the shape services/routes work with. Mapped from the Prisma row inside the
 // repository so Prisma's generated types never leak across the service boundary.
@@ -13,11 +14,13 @@ export type TeamMember = {
   affiliation: string | null;
   bio: string | null;
   photoUrl: string | null;
-  /** Which team they belong to, and therefore which profile sections they may have. */
-  teamKind: TeamKind;
+  /** The admin-defined team they are listed under, or null (ADR-020). */
+  team: TeamRef | null;
+  /** Profile sections switched off for this member. Empty shows everything with content. */
+  hiddenSections: ProfileSection[];
   /**
-   * The lab director. True exactly when `teamKind` is `director` — the service keeps the two in
-   * step (`resolveTeamAssignment`). At most one member has it; the list puts her first.
+   * The lab director, featured on their own at the top of the Team tab. At most one member has
+   * it; the list puts them first.
    */
   isDirector: boolean;
   sortOrder: number;
@@ -40,10 +43,10 @@ export type MemberLink = {
 /**
  * Everything a member's public profile page renders.
  *
- * The CV, course and project arrays are ALREADY GATED by the member's team (see
- * shared/lib/team-kind): a member whose team changed after those rows were written keeps the rows —
- * nothing is deleted, and a team change is never blocked — they simply stop being returned here,
- * so the page can render this straight through.
+ * The CV, course and project arrays are ALREADY FILTERED by the member's `hiddenSections`: a hidden
+ * section keeps its rows — nothing is deleted, so switching it back on restores them — they simply
+ * are not returned here, so the page can render this straight through. Research and publications
+ * are resolved from bylines by the page, which checks the same list.
  */
 export type TeamMemberProfile = {
   member: TeamMember;

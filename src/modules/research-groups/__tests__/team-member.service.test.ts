@@ -10,6 +10,7 @@ import type {
   UpdateTeamMemberData,
 } from '../team-member.repository';
 import type { AuditContext, MemberLink, TeamMember } from '../team-member.types';
+import { createTeamMemberSchema, updateTeamMemberSchema } from '../team-member.schema';
 import type { Course, CvEntry } from '@/modules/teaching';
 import type { Project } from '@/modules/projects';
 
@@ -24,7 +25,8 @@ function makeMember(overrides: Partial<TeamMember> = {}): TeamMember {
     affiliation: null,
     bio: null,
     photoUrl: null,
-    teamKind: 'research',
+    team: null,
+    hiddenSections: [],
     isDirector: false,
     sortOrder: 0,
     createdAt: NOW,
@@ -65,22 +67,15 @@ class FakeRepository implements TeamMemberRepository {
     return { total: this.store.size };
   }
 
-  private clearOtherDirectors(exceptId?: string) {
-    for (const member of this.store.values()) {
-      if (member.id !== exceptId) member.isDirector = false;
-    }
-  }
-
   async createWithAudit(input: { data: CreateTeamMemberData; audit: AuditContext }) {
-    if (input.data.isDirector) this.clearOtherDirectors();
     const id = `mem_${++this.seq}`;
     const member = makeMember({
       id,
       name: input.data.name,
       role: input.data.role,
       citationName: input.data.citationName ?? null,
-      teamKind: input.data.teamKind,
-      isDirector: input.data.isDirector ?? false,
+      team: teamRef(input.data.teamId),
+      hiddenSections: input.data.hiddenSections ?? [],
       sortOrder: input.data.sortOrder ?? 0,
     });
     this.store.set(id, member);
@@ -92,12 +87,17 @@ class FakeRepository implements TeamMemberRepository {
   async updateWithAudit(input: { id: string; data: UpdateTeamMemberData; audit: AuditContext }) {
     const current = this.store.get(input.id);
     if (!current) throw new Error('not found');
-    if (input.data.isDirector) this.clearOtherDirectors(input.id);
     const defined = Object.fromEntries(
       Object.entries(input.data).filter(([, value]) => value !== undefined),
     );
-    const { links, ...columns } = defined;
-    const updated: TeamMember = { ...current, ...columns, updatedAt: NOW };
+    const { links, teamId, ...columns } = defined;
+    const updated: TeamMember = {
+      ...current,
+      ...columns,
+      // `null` survives the filter above only as a real null; `undefined` means "leave alone".
+      ...(input.data.teamId !== undefined ? { team: teamRef(teamId as string | null) } : {}),
+      updatedAt: NOW,
+    };
     this.store.set(input.id, updated);
     // Absent means "leave them alone"; present replaces the whole list.
     if (links) this.links.set(input.id, toLinkRows(links as { label: string; url: string }[]));
@@ -111,6 +111,11 @@ class FakeRepository implements TeamMemberRepository {
     this.audits.push({ ...input.audit, entityId: input.id });
   }
 }
+
+const TEAM = { id: 'team_1', name: 'Research Team', sortOrder: 1 };
+
+/** The fake stores the team a member points at the way the Prisma repository `include`s it. */
+const teamRef = (teamId: string | null | undefined) => (teamId === TEAM.id ? TEAM : null);
 
 const toLinkRows = (links: { label: string; url: string }[]): MemberLink[] =>
   links.map((link, index) => ({ id: `lnk_${index}`, ...link, sortOrder: index }));
@@ -136,6 +141,11 @@ function build() {
   };
   const service = createTeamMemberService({
     repository,
+    teams: {
+      findById: vi.fn(async (id: string) =>
+        id === TEAM.id ? { ...TEAM, memberCount: 0, createdAt: NOW, updatedAt: NOW } : null,
+      ),
+    },
     cv,
     projects,
     logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -147,7 +157,7 @@ describe('team member service', () => {
   it('create() persists a non-director by default and audits', async () => {
     const { repository, service } = build();
     const result = await service.create(
-      { name: 'Jane Doe', role: 'PhD Candidate', teamKind: 'research', links: [] },
+      { name: 'Jane Doe', role: 'PhD Candidate', links: [] },
       'admin:1',
     );
     expect(result.ok).toBe(true);
@@ -160,41 +170,14 @@ describe('team member service', () => {
     const { repository, service } = build();
     repository.seed(makeMember({ id: 'a', sortOrder: 2 }));
     repository.seed(makeMember({ id: 'b', sortOrder: 1 }));
-    repository.seed(
-      makeMember({ id: 'dir', sortOrder: 5, teamKind: 'director', isDirector: true }),
-    );
+    repository.seed(makeMember({ id: 'dir', sortOrder: 5, isDirector: true }));
     const result = await service.list();
     expect(result.ok && result.data.map((m) => m.id)).toEqual(['dir', 'b', 'a']);
   });
 
-  it('making a second member director unsets the first', async () => {
-    const { repository, service } = build();
-    repository.seed(makeMember({ id: 'first', teamKind: 'director', isDirector: true }));
-    repository.seed(makeMember({ id: 'second' }));
-
-    const result = await service.update('second', { teamKind: 'director' }, 'admin:1');
-
-    expect(result.ok).toBe(true);
-    const directors = [...repository.store.values()].filter((m) => m.isDirector);
-    expect(directors.map((m) => m.id)).toEqual(['second']);
-  });
-
-  it('creating a new director unsets the existing one', async () => {
-    const { repository, service } = build();
-    repository.seed(makeMember({ id: 'first', teamKind: 'director', isDirector: true }));
-
-    const result = await service.create(
-      { name: 'New Director', role: 'Professor', teamKind: 'director', links: [] },
-      'admin:1',
-    );
-
-    expect(result.ok).toBe(true);
-    expect(repository.store.get('first')?.isDirector).toBe(false);
-  });
-
   it('findProfile() returns the member with their CV entries and courses', async () => {
     const { repository, service, cv } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'director' }));
+    repository.seed(makeMember({ id: 'mem_1' }));
 
     const result = await service.findProfile('mem_1');
 
@@ -219,7 +202,7 @@ describe('team member service', () => {
 
   it('findProfile() maps a CV read failure onto the error channel', async () => {
     const { repository, service, cv } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'director' }));
+    repository.seed(makeMember({ id: 'mem_1' }));
     vi.mocked(cv.coursesFor).mockRejectedValueOnce(new Error('db down'));
     const result = await service.findProfile('mem_1');
     expect(result.ok).toBe(false);
@@ -239,7 +222,7 @@ describe('team member service', () => {
 
   it('findDirectorProfile() reuses the row from list() instead of a second findById', async () => {
     const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1', isDirector: true, teamKind: 'director' }));
+    repository.seed(makeMember({ id: 'mem_1', isDirector: true }));
     const findByIdSpy = vi.spyOn(repository, 'findById');
 
     const result = await service.findDirectorProfile();
@@ -275,81 +258,73 @@ describe('team member service', () => {
   });
 });
 
-// `teamKind` and `isDirector` are one decision stored in two columns. The service is the only place
-// that keeps them in step, whichever of the two the caller sent.
-describe('team member service — director flag consistency', () => {
-  it('derives isDirector from the team on create', async () => {
-    const { service } = build();
-
-    const director = await service.create(
-      { name: 'Dir', role: 'Professor', teamKind: 'director', links: [] },
-      'admin:1',
-    );
-    const other = await service.create(
-      { name: 'Dev', role: 'Developer', teamKind: 'development', links: [] },
-      'admin:1',
-    );
-
-    expect(director.ok && director.data.isDirector).toBe(true);
-    expect(other.ok && other.data.isDirector).toBe(false);
-  });
-
-  it('lets the legacy isDirector flag alone set the team', async () => {
-    const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1' }));
-
-    const result = await service.update('mem_1', { isDirector: true }, 'admin:1');
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.teamKind).toBe('director');
-    expect(result.data.isDirector).toBe(true);
-  });
-
-  it('clears the flag when the director is moved to another team', async () => {
-    const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'director', isDirector: true }));
-
-    const result = await service.update('mem_1', { teamKind: 'professor' }, 'admin:1');
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.teamKind).toBe('professor');
-    expect(result.data.isDirector).toBe(false);
-  });
-
-  it('lets the team win when the two disagree', async () => {
+// Teams are admin-defined rows (ADR-020): a member points at one, or at none.
+describe('team member service — teams', () => {
+  it('puts a member on an existing team', async () => {
     const { service } = build();
 
     const result = await service.create(
-      { name: 'Dev', role: 'Developer', teamKind: 'development', isDirector: true, links: [] },
+      { name: 'Jane', role: 'Researcher', teamId: TEAM.id, links: [] },
       'admin:1',
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.data.isDirector).toBe(false);
+    expect(result.ok && result.data.team).toEqual(TEAM);
   });
 
-  it('refuses to unset the flag on the director without a new team, writing nothing', async () => {
+  it('rejects a team that does not exist, writing nothing', async () => {
     const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'director', isDirector: true }));
 
-    const result = await service.update('mem_1', { isDirector: false }, 'admin:1');
+    const result = await service.create(
+      { name: 'Jane', role: 'Researcher', teamId: 'gone', links: [] },
+      'admin:1',
+    );
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe('validation');
-    expect(repository.store.get('mem_1')?.isDirector).toBe(true);
     expect(repository.audits).toEqual([]);
+  });
+
+  it('takes a member off their team with an explicit null', async () => {
+    const { repository, service } = build();
+    repository.seed(makeMember({ id: 'mem_1', team: TEAM }));
+
+    const result = await service.update('mem_1', { teamId: null }, 'admin:1');
+
+    expect(result.ok && result.data.team).toBeNull();
   });
 });
 
-// The read side of the per-team rules. Rows a member's team may not have are NOT deleted on a team
-// change — they stay in the database and simply stop being returned.
-describe('team member service — profile gating', () => {
-  it('gives the director everything', async () => {
+// There is one director and the admin cannot change who it is (ADR-020): `isDirector` is not part
+// of the member input at all, so no request can grant or remove it.
+describe('team member service — the one director', () => {
+  it('cannot make a member director', async () => {
     const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'director' }));
+    repository.seed(makeMember({ id: 'dir', isDirector: true }));
+    repository.seed(makeMember({ id: 'mem_1' }));
+
+    const payload = updateTeamMemberSchema.parse({ isDirector: true, role: 'Professor' });
+    await service.update('mem_1', payload, 'admin:1');
+
+    const directors = [...repository.store.values()].filter((m) => m.isDirector);
+    expect(directors.map((m) => m.id)).toEqual(['dir']);
+  });
+
+  it('creates every new member as a non-director', async () => {
+    const { service } = build();
+    const payload = createTeamMemberSchema.parse({ name: 'X', role: 'Y', isDirector: true });
+
+    const result = await service.create(payload, 'admin:1');
+
+    expect(result.ok && result.data.isDirector).toBe(false);
+  });
+});
+
+// The read side of the per-member section switches. Hidden rows are NOT deleted — they stay in the
+// database and simply stop being returned, so switching a section back on restores them.
+describe('team member service — hidden sections', () => {
+  it('returns everything when nothing is hidden', async () => {
+    const { repository, service } = build();
+    repository.seed(makeMember({ id: 'mem_1' }));
 
     const result = await service.findProfile('mem_1');
 
@@ -358,43 +333,26 @@ describe('team member service — profile gating', () => {
     expect(result.ok && result.data?.projects).toEqual([PROJECT]);
   });
 
-  it('gives a research member research interests and projects, but no courses', async () => {
+  it('drops exactly the hidden CV sections, courses and projects', async () => {
     const { repository, service, cv } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'research' }));
+    repository.seed(
+      makeMember({ id: 'mem_1', hiddenSections: ['education', 'courses', 'projects'] }),
+    );
 
     const result = await service.findProfile('mem_1');
 
     expect(result.ok && result.data?.cvEntries).toEqual([INTEREST]);
     expect(result.ok && result.data?.courses).toEqual([]);
-    expect(result.ok && result.data?.projects).toEqual([PROJECT]);
-    // Read unconditionally (all five reads share one wave) and filtered out afterward, rather than
-    // skipped before the query fires.
+    expect(result.ok && result.data?.projects).toEqual([]);
+    // Read unconditionally (all five reads share one wave) and filtered out afterward.
     expect(cv.coursesFor).toHaveBeenCalledWith('mem_1');
   });
 
-  it('gives a development member projects and links only', async () => {
-    const { repository, service, cv } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'development' }), [
-      { id: 'lnk_0', label: 'GitHub', url: 'https://github.com/example', sortOrder: 0 },
-    ]);
-
-    const result = await service.findProfile('mem_1');
-
-    expect(result.ok && result.data?.cvEntries).toEqual([]);
-    expect(result.ok && result.data?.courses).toEqual([]);
-    expect(result.ok && result.data?.projects).toEqual([PROJECT]);
-    expect(result.ok && result.data?.links.map((link) => link.label)).toEqual(['GitHub']);
-    // Read unconditionally and filtered out afterward — see the research-member case above.
-    expect(cv.cvEntriesFor).toHaveBeenCalledWith('mem_1');
-    expect(cv.coursesFor).toHaveBeenCalledWith('mem_1');
-  });
-
-  it('keeps the orphaned rows, so moving the member back brings them right back', async () => {
+  it('brings hidden rows back when the section is switched on again', async () => {
     const { repository, service } = build();
-    repository.seed(makeMember({ id: 'mem_1', teamKind: 'development' }));
+    repository.seed(makeMember({ id: 'mem_1', hiddenSections: ['education', 'courses'] }));
 
-    expect((await service.findProfile('mem_1')).ok).toBe(true);
-    await service.update('mem_1', { teamKind: 'professor' }, 'admin:1');
+    await service.update('mem_1', { hiddenSections: [] }, 'admin:1');
     const after = await service.findProfile('mem_1');
 
     expect(after.ok && after.data?.cvEntries).toEqual([ENTRY, INTEREST]);
@@ -414,7 +372,7 @@ describe('team member service — links', () => {
     const { repository, service } = build();
 
     const created = await service.create(
-      { name: 'Jane', role: 'Researcher', teamKind: 'research', links: LINKS },
+      { name: 'Jane', role: 'Researcher', links: LINKS },
       'admin:1',
     );
 
@@ -432,7 +390,11 @@ describe('team member service — links', () => {
       { id: 'old', label: 'LinkedIn', url: 'https://www.linkedin.com/in/old', sortOrder: 0 },
     ]);
 
-    await service.update('mem_1', { links: [{ label: 'GitHub', url: 'https://github.com/x' }] }, 'admin:1');
+    await service.update(
+      'mem_1',
+      { links: [{ label: 'GitHub', url: 'https://github.com/x' }] },
+      'admin:1',
+    );
 
     expect(await repository.listLinks('mem_1')).toEqual([
       { id: 'lnk_0', label: 'GitHub', url: 'https://github.com/x', sortOrder: 0 },

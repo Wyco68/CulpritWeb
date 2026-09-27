@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { IdCard, ImageOff, Pencil, Plus, Trash2, Users2 } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
-import { TEAM_KIND_LABELS, TEAM_KINDS } from '@/modules/shared/lib/team-kind';
 import { useDeleteRecord } from '@/modules/shared/lib/use-delete-record';
 import { useEditFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Button } from '@/modules/shared/ui/button';
@@ -12,15 +11,25 @@ import { ConfirmDialog } from '@/modules/shared/ui/confirm-dialog';
 import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
 // Deep imports, not the barrel — see team-member-form-dialog.tsx's comment.
 import type { MemberLink, TeamMember } from '../team-member.types';
+import type { TeamRef } from '../team.types';
 import { TeamMemberFormDialog } from './team-member-form-dialog';
 import { memberInitials } from './team-members-view';
 
+/** Where a member sits on the Team tab: the director on their own, else their team, else none. */
+const DIRECTOR = 'director';
+const NO_TEAM = 'none';
+const placeOf = (member: TeamMember) =>
+  member.isDirector ? DIRECTOR : (member.team?.id ?? NO_TEAM);
+
 export function TeamMembersTable({
   items,
+  teams,
   linksByMember = {},
   onEditProfile,
 }: {
   items: TeamMember[];
+  /** The admin's teams, in display order — the filter options and the form's team picker. */
+  teams: readonly TeamRef[];
   /**
    * Each member's external links, keyed by member id, so the edit dialog opens with the list the
    * admin is about to change. Read on the server with the members themselves — the alternative,
@@ -66,7 +75,7 @@ export function TeamMembersTable({
           items={items}
           noun="team members"
           searchText={(item) =>
-            [item.name, item.citationName, item.role, TEAM_KIND_LABELS[item.teamKind]].join(' ')
+            [item.name, item.citationName, item.role, item.team?.name].join(' ')
           }
           identityHeader="Member"
           identity={(item) => (
@@ -94,10 +103,14 @@ export function TeamMembersTable({
           groupHeader="Team"
           filter={{
             label: 'Filter by team',
-            options: TEAM_KINDS.map((kind) => ({ value: kind, label: TEAM_KIND_LABELS[kind] })),
-            valueOf: (item) => item.teamKind,
+            options: [
+              { value: DIRECTOR, label: 'Director' },
+              ...teams.map((team) => ({ value: team.id, label: team.name })),
+              { value: NO_TEAM, label: 'No team' },
+            ],
+            valueOf: placeOf,
           }}
-          group={(item) => (item.isDirector ? 'Director' : TEAM_KIND_LABELS[item.teamKind])}
+          group={(item) => (item.isDirector ? 'Director' : (item.team?.name ?? 'No team'))}
           rowLabel={(item) => `Actions: ${item.name}`}
           actions={(item) => [
             {
@@ -139,6 +152,7 @@ export function TeamMembersTable({
         onOpenChange={setFormOpen}
         member={editing}
         links={editing ? (linksByMember[editing.id] ?? []) : []}
+        teams={teams}
       />
 
       <ConfirmDialog

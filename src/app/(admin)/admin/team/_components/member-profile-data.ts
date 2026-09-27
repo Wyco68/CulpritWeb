@@ -6,10 +6,9 @@ export type MemberProfileData = { cvEntries: CvEntry[]; courses: Course[]; proje
 
 /**
  * Everything a member's profile editor lists. Read from the teaching and projects services
- * directly rather than through `findProfile`, which gates rows by the member's team on the way
- * out (ADR-017). That gating is right for the public page and wrong here: rows written before a
- * team change still exist, and an admin screen that hid them would leave content nobody could
- * find or delete. The team decides only what can be *added*, which the services enforce on write.
+ * directly rather than through `findProfile`, which drops the member's hidden sections on the way
+ * out (ADR-020). That filtering is right for the public page and wrong here: a hidden section's
+ * rows still exist, and the admin has to be able to see and edit them.
  */
 export async function loadMemberProfileData(
   member: Pick<TeamMember, 'id'>,

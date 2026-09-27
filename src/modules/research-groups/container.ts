@@ -1,6 +1,8 @@
 import { getCourseService, getCvEntryService } from '@/modules/teaching';
 import { getProjectService } from '@/modules/projects';
 import { PrismaTeamMemberRepository } from './team-member.repository';
+import { PrismaTeamRepository } from './team.repository';
+import { createTeamService, type TeamService } from './team.service';
 import {
   createTeamMemberService,
   type MemberCvDirectory,
@@ -8,9 +10,9 @@ import {
   type TeamMemberService,
 } from './team-member.service';
 
-// Composition root: wires the Prisma-backed repository and the teaching/projects modules'
-// per-member reads into the service. Route handlers and Server Components call
-// getTeamMemberService() and nothing else.
+// Composition root: wires the Prisma-backed repositories and the teaching/projects modules'
+// per-member reads into the services. Route handlers and Server Components call
+// getTeamMemberService() / getTeamService() and nothing else.
 
 const memberCv: MemberCvDirectory = {
   async cvEntriesFor(teamMemberId) {
@@ -33,15 +35,24 @@ const memberProjects: MemberProjectDirectory = {
   },
 };
 
+const teamRepository = new PrismaTeamRepository();
+
 let cached: TeamMemberService | undefined;
+let cachedTeams: TeamService | undefined;
 
 export function getTeamMemberService(): TeamMemberService {
   if (!cached) {
     cached = createTeamMemberService({
       repository: new PrismaTeamMemberRepository(),
+      teams: teamRepository,
       cv: memberCv,
       projects: memberProjects,
     });
   }
   return cached;
+}
+
+export function getTeamService(): TeamService {
+  if (!cachedTeams) cachedTeams = createTeamService({ repository: teamRepository });
+  return cachedTeams;
 }

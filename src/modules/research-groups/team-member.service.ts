@@ -1,7 +1,7 @@
-import { NotFoundError } from '@/modules/shared/lib/errors';
+import { NotFoundError, ValidationError } from '@/modules/shared/lib/errors';
 import { attempt, type Result } from '@/modules/shared/lib/result';
 import { logger as defaultLogger, type Logger } from '@/modules/shared/lib/logger';
-import { TEAM_KIND_RULES } from '@/modules/shared/lib/team-kind';
+import { showsSection } from '@/modules/shared/lib/profile-sections';
 import type { Course, CvEntry } from '@/modules/teaching';
 import type { Project } from '@/modules/projects';
 import type { TeamMemberRepository } from './team-member.repository';
@@ -12,7 +12,7 @@ import type {
   TeamMemberStats,
 } from './team-member.types';
 import type { CreateTeamMemberInput, UpdateTeamMemberInput } from './team-member.schema';
-import { resolveTeamAssignment } from './team-assignment';
+import type { TeamRepository } from './team.repository';
 
 /**
  * Port onto the teaching module's per-member reads. Injected rather than imported so this service
@@ -32,6 +32,8 @@ export interface MemberProjectDirectory {
 
 export type TeamMemberServiceDeps = {
   repository: TeamMemberRepository;
+  /** To check a `teamId` names a real team before the foreign key does, less helpfully. */
+  teams: Pick<TeamRepository, 'findById'>;
   cv: MemberCvDirectory;
   projects: MemberProjectDirectory;
   logger?: Logger;
@@ -44,7 +46,7 @@ export interface TeamMemberService {
   findProfile(id: string): Promise<Result<TeamMemberProfile | null>>;
   /** The director's profile, or null when no member is flagged director. */
   findDirectorProfile(): Promise<Result<TeamMemberProfile | null>>;
-  /** Every member, the director first, then by sortOrder. Group them with `groupByTeam`. */
+  /** Every member, the director first, then by sortOrder. Group them with `groupMembers`. */
   list(): Promise<Result<TeamMember[]>>;
   /** One member's external links, in the admin's arrangement. */
   listLinks(teamMemberId: string): Promise<Result<MemberLink[]>>;
@@ -57,7 +59,7 @@ export interface TeamMemberService {
 }
 
 export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMemberService {
-  const { repository, cv, projects } = deps;
+  const { repository, teams, cv, projects } = deps;
   const log = deps.logger ?? defaultLogger;
 
   async function requireExisting(id: string): Promise<TeamMember> {
@@ -66,19 +68,20 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
     return existing;
   }
 
+  /** A 400 on the field rather than a foreign-key 500 when the team was deleted meanwhile. */
+  async function requireTeam(teamId: string | null | undefined): Promise<void> {
+    if (!teamId) return;
+    if (!(await teams.findById(teamId))) {
+      throw new ValidationError('That team no longer exists.', { teamId: ['Choose a team.'] });
+    }
+  }
+
   /**
-   * Assembles the profile, gated by the member's team (see shared/lib/team-kind).
+   * Assembles the profile, less the sections the admin has hidden for this member (ADR-020).
    *
-   * All five reads fire in a single wave — `findById` included — rather than waiting to learn
-   * `teamKind` before deciding what else to ask for. That means `cvEntries`/`courses`/`projects` can
-   * no longer be skipped up front for a team that disallows them; instead every section is read
-   * unconditionally and filtered afterward, the same way `cvEntries` already worked. Rows written
-   * while the member was on another team are left exactly where they are, whether or not this
-   * request happens to read them: deleting them on a team change would destroy hand-typed content on
-   * what is meant to be a reversible editorial decision, and refusing the team change because rows
-   * exist would make the admin clear a CV before they could move someone. So they stay, orphaned and
-   * invisible, and come back if the member moves back — this function just no longer avoids the read
-   * of the section that hides them.
+   * All five reads fire in a single wave — `findById` included — rather than waiting to learn which
+   * sections are hidden before deciding what else to ask for; the hidden ones are filtered out
+   * afterwards. Hidden rows are never deleted: switching a section back on restores them.
    *
    * `known`, when passed, is a row the caller already has in hand (`findDirectorProfile` gets it
    * from `list()`) — passing it fills the member slot with an already-resolved value instead of
@@ -93,15 +96,12 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
       projects.projectsFor(id),
     ]);
     if (!member) return null;
-    const rules = TEAM_KIND_RULES[member.teamKind];
     return {
       member,
       links,
-      // The team may allow only some sections (a `research` member has research interests and
-      // nothing else), so what is read is filtered too, not just switched on and off.
-      cvEntries: cvEntries.filter((entry) => rules.cvSections.includes(entry.section)),
-      courses: rules.courses ? courses : [],
-      projects: rules.projects ? memberProjects : [],
+      cvEntries: cvEntries.filter((entry) => showsSection(member, entry.section)),
+      courses: showsSection(member, 'courses') ? courses : [],
+      projects: showsSection(member, 'projects') ? memberProjects : [],
     };
   }
 
@@ -125,16 +125,16 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
 
     create: (input, actor) =>
       attempt(async () => {
+        await requireTeam(input.teamId);
+        // The repository clears `isDirector` on every other member inside the same transaction.
         const created = await repository.createWithAudit({
-          // `teamKind` and `isDirector` are reconciled in exactly one place; the repository then
-          // clears the flag on every other member inside the same transaction.
-          data: { ...input, ...resolveTeamAssignment(input) },
+          data: input,
           audit: { actor, action: 'team_member.create' },
         });
         log.info('team_member_created', {
           id: created.id,
           actor,
-          teamKind: created.teamKind,
+          teamId: created.team?.id ?? null,
           isDirector: created.isDirector,
         });
         return created;
@@ -142,13 +142,14 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
 
     update: (id, input, actor) =>
       attempt(async () => {
-        const existing = await requireExisting(id);
+        await requireExisting(id);
+        await requireTeam(input.teamId);
         const updated = await repository.updateWithAudit({
           id,
-          data: { ...input, ...resolveTeamAssignment(input, existing) },
+          data: input,
           audit: { actor, action: 'team_member.update' },
         });
-        log.info('team_member_updated', { id, actor, teamKind: updated.teamKind });
+        log.info('team_member_updated', { id, actor, teamId: updated.team?.id ?? null });
         return updated;
       }),
 
@@ -167,7 +168,8 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
               citationName: existing.citationName,
               role: existing.role,
               affiliation: existing.affiliation,
-              teamKind: existing.teamKind,
+              team: existing.team?.name ?? null,
+              hiddenSections: existing.hiddenSections,
               isDirector: existing.isDirector,
             },
           },

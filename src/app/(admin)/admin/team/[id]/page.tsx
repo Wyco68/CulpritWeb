@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import { getTeamMemberService, TEAM_KIND_LABELS } from '@/modules/research-groups';
+import { getTeamMemberService } from '@/modules/research-groups';
 import { AdminScreen } from '../../_components/admin-screen';
 import { loadMemberProfileData } from '../_components/member-profile-data';
 import { MemberProfileSections, memberProfileNav } from '../_components/member-profile-sections';
@@ -38,8 +38,8 @@ export default async function AdminTeamMemberPage({ params }: Props) {
       </Link>
       <AdminScreen
         title={member.name}
-        intro={`${member.role} · ${TEAM_KIND_LABELS[member.teamKind]}. What this member's team can have is set by the team, on /admin/team.`}
-        sections={memberProfileNav(member, data)}
+        intro={`${[member.role, member.isDirector ? 'Lab director' : member.team?.name].filter(Boolean).join(' · ')}. Choose which sections their public page shows, then edit the lists below.`}
+        sections={memberProfileNav()}
       >
         <MemberProfileSections member={member} data={data} />
       </AdminScreen>

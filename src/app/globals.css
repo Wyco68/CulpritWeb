@@ -286,7 +286,16 @@ html {
    relevant gestures — and drops only the double-tap gesture, so nothing a low-vision user relies
    on is taken away. Applied to controls only, never to the page, so text can still be
    double-tap-zoomed. */
-:where(a[href], button, [role='button'], label, select, summary, [type='checkbox'], [type='radio']) {
+:where(
+  a[href],
+  button,
+  [role='button'],
+  label,
+  select,
+  summary,
+  [type='checkbox'],
+  [type='radio']
+) {
   touch-action: manipulation;
 }
 
@@ -300,16 +309,21 @@ body {
 
 /* Media never overflows its column. `next/image` already emits intrinsic sizing for everything
    this app renders itself, so this is a backstop for the markup it does not control: the Calendly
-   widget and the YouTube embed, both of which inject their own iframes and images. */
-img,
-video,
-svg,
-iframe {
-  max-width: 100%;
-}
-img,
-video {
-  height: auto;
+   widget and the YouTube embed, both of which inject their own iframes and images.
+   In `@layer base`, not unlayered: unlayered CSS beats every layered utility, so `height: auto`
+   here was overriding `size-16` on avatars and letting a portrait photo render taller than its
+   square frame. Layered, a sizing utility wins and this applies only where nothing else is set. */
+@layer base {
+  img,
+  video,
+  svg,
+  iframe {
+    max-width: 100%;
+  }
+  img,
+  video {
+    height: auto;
+  }
 }
 
 /* Numerals carry meaning on this site — publication years, dates, list indices. Tabular figures

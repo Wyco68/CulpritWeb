@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The one-director rule lives in the repository: the write that makes someone director must first
-// clear the flag everywhere else, inside the same transaction, or the partial unique index
-// `team_member_one_director` rejects it. Prisma is faked here — no database — so what is asserted is
-// the order and scope of the calls made on the transaction client.
+// Prisma is faked here — no database — so what is asserted is the order and scope of the calls made
+// on the transaction client: a member write, its links and its audit entry in one transaction.
 
 const calls: string[] = [];
 const tx = {
@@ -53,53 +51,26 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+// Who the director is cannot be changed through the admin (ADR-020): no member write touches the
+// flag, and none reaches any other member's row.
 describe('PrismaTeamMemberRepository director handling', () => {
-  it('clears every other director before updating one to director, in the same transaction', async () => {
-    await new PrismaTeamMemberRepository().updateWithAudit({
-      id: 'second',
-      data: { isDirector: true },
-      audit: AUDIT,
-    });
-
-    expect(calls).toEqual(['updateMany', 'update', 'audit']);
-    expect(tx.teamMember.updateMany).toHaveBeenCalledWith({
-      where: { isDirector: true, id: { not: 'second' } },
-      data: { isDirector: false },
-    });
-  });
-
-  it('clears the existing director before creating a new one', async () => {
+  it('never writes isDirector, and never touches another member', async () => {
     await new PrismaTeamMemberRepository().createWithAudit({
-      data: {
-        name: 'New',
-        role: 'Professor',
-        teamKind: 'director',
-        isDirector: true,
-        links: [],
-      },
+      data: { name: 'New', role: 'Professor', links: [] },
       audit: { ...AUDIT, action: 'team_member.create' },
     });
-
-    expect(calls).toEqual(['updateMany', 'create', 'audit']);
-    expect(tx.teamMember.updateMany).toHaveBeenCalledWith({
-      where: { isDirector: true },
-      data: { isDirector: false },
-    });
-  });
-
-  it('leaves other members alone when the write does not set the flag', async () => {
     await new PrismaTeamMemberRepository().updateWithAudit({
       id: 'someone',
-      data: { name: 'Renamed' },
-      audit: AUDIT,
-    });
-    await new PrismaTeamMemberRepository().updateWithAudit({
-      id: 'someone',
-      data: { isDirector: false },
+      data: { name: 'Renamed', teamId: 'team_1', hiddenSections: ['courses'] },
       audit: AUDIT,
     });
 
     expect(tx.teamMember.updateMany).not.toHaveBeenCalled();
+    const created = tx.teamMember.create.mock.calls[0]![0];
+    const updated = tx.teamMember.update.mock.calls[0]![0];
+    expect(created.data).not.toHaveProperty('isDirector');
+    expect(updated.data).not.toHaveProperty('isDirector');
+    expect(updated.data).toMatchObject({ teamId: 'team_1', hiddenSections: ['courses'] });
   });
 });
 
@@ -173,7 +144,6 @@ describe('PrismaTeamMemberRepository links', () => {
       data: {
         name: 'New',
         role: 'Developer',
-        teamKind: 'development',
         links: [{ label: 'GitHub', url: 'https://github.com/example' }],
       },
       audit: { ...AUDIT, action: 'team_member.create' },
