@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { cn } from '@/modules/shared/lib/utils';

@@ -16,6 +16,8 @@ vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('NEXT_NOT_FOUND');
   },
+  // The page's links prefetch on hover through the router (shared/ui/intent-link).
+  useRouter: () => ({ prefetch: vi.fn() }),
 }));
 
 vi.mock('@/modules/projects', async () => ({

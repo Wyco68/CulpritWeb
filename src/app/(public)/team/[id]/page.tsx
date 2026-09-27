@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { ProjectList } from '@/modules/projects';

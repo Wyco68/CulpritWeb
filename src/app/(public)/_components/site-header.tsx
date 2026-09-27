@@ -1,4 +1,5 @@
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import type { Profile } from '@/modules/profile';
 import { Guilloche } from '@/modules/shared/ui/guilloche';
 import { MobileMenu, NavSidebar, type NavItem } from '@/modules/shared/ui/site-nav';

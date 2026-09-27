@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { getProfileCached } from '@/modules/profile';
 import { PublicShell } from './(public)/_components/public-shell';
 import { PageHeading } from '@/modules/shared/ui/page-heading';

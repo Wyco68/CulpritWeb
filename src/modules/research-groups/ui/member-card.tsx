@@ -1,4 +1,5 @@
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { ArrowUpRight, GraduationCap } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { linkPillClassName } from '@/modules/shared/ui/card';

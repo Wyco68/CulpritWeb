@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { matchMember, type BylineMember } from '../byline-match';
 
 // A comma-joined byline. A name that matches a lab member links to their profile in the accent
