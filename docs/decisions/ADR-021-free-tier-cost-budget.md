@@ -19,7 +19,7 @@ Accepted.
 ## Context
 
 The project stays on free tiers deliberately (Vercel Hobby as the intended host, Supabase Free,
-Cloudflare Free with R2, Upstash Free). Nobody had measured what one page view or one admin action
+Cloudflare Free with R2). Nobody had measured what one page view or one admin action
 actually costs against those allowances. This records the measurement, the fixes it led to, and the
 resulting budget, so a later change can be checked against it.
 
@@ -108,8 +108,8 @@ Worst case — every view a first visit with an empty cache — per month:
 | Supabase egress (5 GB) | ≤ ~0.7 GB → ≤ ~50 MB | same |
 | R2 storage (10 GB) / Class A (1M) / Class B (10M) | < 0.1 GB / tens / ≤ ~10K → ~100 | same |
 
-Admin actions add one Cloudflare purge call and a rate-limit check (Upstash) each — hundreds a
-month at most.
+Admin actions add one Cloudflare purge call each — hundreds a month at most. Rate limiting is an
+in-process limiter behind a Cloudflare WAF rule (ADR-008), so it has no metered service of its own.
 
 ## Consequences and follow-ups
 
