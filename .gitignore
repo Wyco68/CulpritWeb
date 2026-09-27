@@ -57,3 +57,7 @@ Thumbs.db
 
 # Local-only backup of data a destructive migration dropped — never commit.
 .backups/
+
+# Local-only production secrets and hand-written deployment guides.
+env.production
+/*-Guide.pdf
