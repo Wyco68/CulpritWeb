@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/modules/shared/lib/prisma';
 import { auditLogData } from '@/modules/shared/lib/audit';
-import { parseCoverCrop, type CoverCrop } from '@/modules/shared/lib/cover-crop';
+import { parseCoverCrop, type CoverCrop } from '@/modules/shared/lib/cover-crop.schema';
 import type {
   Event as PrismaEvent,
   EventParticipant as PrismaEventParticipant,

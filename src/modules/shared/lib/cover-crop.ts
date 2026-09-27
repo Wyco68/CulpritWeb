@@ -1,44 +1,14 @@
-import { z } from 'zod';
-import { httpUrl } from './schema-fields';
+import type { CoverCrop } from './cover-crop.schema';
 
-// Card covers (ADR-019). Events and research works store every photo uncropped; the only cropped
+// Card covers (ADR-019). Pure helpers only: the public cards import this file, so it must not pull
+// in zod — the schema lives in `cover-crop.schema.ts`, which only the server imports.
+// Events and research works store every photo uncropped; the only cropped
 // image on the site is the 3:2 cover at the head of a card, and that crop is data rather than
 // pixels. Keeping it as a rectangle over the original is what lets the admin re-frame a cover at
 // any time without re-uploading, and lets the detail dialog show the very same photo whole.
 
 /** Width ÷ height of every card cover. Matches `CardPhoto`'s `aspect-[3/2]`. */
 export const COVER_ASPECT = 3 / 2;
-
-const fraction = z.number().min(0).max(1);
-
-/**
- * A rectangle over the cover's source image, in fractions of its width and height, so it survives
- * the image being served at any resolution.
- *
- * `url` names the image the rectangle was drawn on. A crop only means something for that one
- * image, and the cover's source can change underneath it without the crop being touched — delete
- * the first gallery photo and the second becomes the cover. `resolveCover` drops a crop whose
- * `url` no longer matches, so a stale rectangle can never frame the wrong photo.
- */
-export const coverCropSchema = z
-  .object({
-    url: httpUrl,
-    x: fraction,
-    y: fraction,
-    width: fraction.refine((value) => value > 0, { message: 'Must be greater than 0.' }),
-    height: fraction.refine((value) => value > 0, { message: 'Must be greater than 0.' }),
-  })
-  // A little slack for floating-point rounding in the editor; anything more is a malformed rect.
-  .refine((crop) => crop.x + crop.width <= 1.001 && crop.y + crop.height <= 1.001, {
-    message: 'The crop must lie inside the photo.',
-  });
-export type CoverCrop = z.infer<typeof coverCropSchema>;
-
-/** Read a stored crop defensively: a malformed JSON value renders as "no crop", never an error. */
-export function parseCoverCrop(value: unknown): CoverCrop | null {
-  const parsed = coverCropSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
 
 /** The fields a card cover is derived from — shared by events and research works. */
 export type CoverSource = {
@@ -71,3 +41,5 @@ export function coverCropStyle(crop: CoverCrop): React.CSSProperties {
     top: `${(-crop.y / crop.height) * 100}%`,
   };
 }
+
+export type { CoverCrop };

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { httpUrl, optionalUrl, safeText, sortOrder } from '@/modules/shared/lib/schema-fields';
-import { coverCropSchema } from '@/modules/shared/lib/cover-crop';
+import { coverCropSchema } from '@/modules/shared/lib/cover-crop.schema';
 
 /**
  * One credited contributor: a plain typed name. Same shape and reasoning as a publication author —

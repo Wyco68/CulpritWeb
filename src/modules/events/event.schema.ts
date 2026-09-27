@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
 import { entityId, httpUrl, optionalText, safeText } from '@/modules/shared/lib/schema-fields';
-import { coverCropSchema } from '@/modules/shared/lib/cover-crop';
+import { coverCropSchema } from '@/modules/shared/lib/cover-crop.schema';
 import { parseInstitutionLocalDatetime } from '@/modules/shared/lib/timezone';
 import { parseYouTubeVideoId } from '@/modules/integrations/youtube/youtube-utils';
 
