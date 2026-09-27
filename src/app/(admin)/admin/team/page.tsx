@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
 import { getTeamMemberService, getTeamService, TeamsAdmin } from '@/modules/research-groups';
 import { AdminScreen } from '../_components/admin-screen';
-import { loadMemberProfileData } from './_components/member-profile-data';
+import { loadMemberProfilesData } from './_components/member-profile-data';
 import { TeamMembersAdmin } from './_components/team-members-admin';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,21 +36,14 @@ export default async function AdminTeamPage() {
   const members = membersResult.ok ? membersResult.data : [];
   const teams = teamsResult.ok ? teamsResult.data : [];
 
-  // The member dialog edits the whole link list, so it needs the stored rows up front. One small
-  // read per member: the lab is a handful of people, and this is an admin screen with no cache to
-  // protect — a join would be the repository's call to make, not this page's.
-  const links = await Promise.all(
-    members.map(async (member) => {
-      const result = await service.listLinks(member.id);
-      return [member.id, result.ok ? result.data : []] as const;
-    }),
-  );
-  // Every member's profile lists, read up front so the popup opens already filled.
-  // ponytail: three small reads per member — fine for a lab of tens of people; fetch on open if
-  // the team grows past that.
-  const profiles = await Promise.all(
-    members.map(async (member) => [member.id, await loadMemberProfileData(member)] as const),
-  );
+  // The member dialog edits the whole link list and the profile popup opens already filled, so both
+  // are read up front for every member — batched, so the query count stays flat as the lab grows.
+  const ids = members.map((member) => member.id);
+  const [linksResult, profiles] = await Promise.all([
+    service.listLinksForMembers(ids),
+    loadMemberProfilesData(members),
+  ]);
+  const linksByMember = linksResult.ok ? linksResult.data : {};
 
   return (
     <AdminScreen title="Team" intro="Everything on the public Team tab." sections={SECTIONS}>
@@ -62,8 +55,8 @@ export default async function AdminTeamPage() {
       <TeamMembersAdmin
         members={members}
         teams={teams.map(({ id, name, sortOrder }) => ({ id, name, sortOrder }))}
-        linksByMember={Object.fromEntries(links)}
-        profiles={Object.fromEntries(profiles)}
+        linksByMember={linksByMember}
+        profiles={profiles}
       />
     </AdminScreen>
   );

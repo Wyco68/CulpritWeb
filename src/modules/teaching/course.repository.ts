@@ -11,6 +11,8 @@ export interface CourseRepository {
   findById(id: string): Promise<Course | null>;
   /** One member's courses, in the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<Course[]>;
+  /** Several members' rows in one query, in the same order `listForMember` uses. */
+  listForMembers(teamMemberIds: string[]): Promise<Course[]>;
   /** Counts only — no course rows leave the database. */
   stats(): Promise<CourseStats>;
   createWithAudit(input: { data: CreateCourseInput; audit: AuditContext }): Promise<Course>;
@@ -52,6 +54,13 @@ export class PrismaCourseRepository implements CourseRepository {
     // don't shuffle between requests. The profile page groups by `level` in render order.
     const rows = await prisma.course.findMany({
       where: { teamMemberId },
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+    });
+    return rows.map(toDomain);
+  }
+  async listForMembers(teamMemberIds: string[]): Promise<Course[]> {
+    const rows = await prisma.course.findMany({
+      where: { teamMemberId: { in: teamMemberIds } },
       orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
     });
     return rows.map(toDomain);

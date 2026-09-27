@@ -50,6 +50,8 @@ export interface TeamMemberService {
   list(): Promise<Result<TeamMember[]>>;
   /** One member's external links, in the admin's arrangement. */
   listLinks(teamMemberId: string): Promise<Result<MemberLink[]>>;
+  /** Several members' links in one query, keyed by member id. */
+  listLinksForMembers(teamMemberIds: string[]): Promise<Result<Record<string, MemberLink[]>>>;
   /** Headline counts for the dashboard, aggregated in SQL. */
   stats(): Promise<Result<TeamMemberStats>>;
   create(input: CreateTeamMemberInput, actor: string): Promise<Result<TeamMember>>;
@@ -120,6 +122,9 @@ export function createTeamMemberService(deps: TeamMemberServiceDeps): TeamMember
     list: () => attempt(() => repository.list()),
 
     listLinks: (teamMemberId) => attempt(() => repository.listLinks(teamMemberId)),
+
+    listLinksForMembers: (teamMemberIds) =>
+      attempt(() => repository.listLinksForMembers(teamMemberIds)),
 
     stats: () => attempt(() => repository.stats()),
 

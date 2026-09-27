@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createProjectSchema, listProjectsQuerySchema, updateProjectSchema } from '../project.schema';
+import {
+  createProjectSchema,
+  listProjectsQuerySchema,
+  updateProjectSchema,
+} from '../project.schema';
 
 describe('createProjectSchema', () => {
   const VALID = {

@@ -1,10 +1,5 @@
 import { z } from 'zod';
-import {
-  entityId,
-  optionalUrl,
-  safeText,
-  sortOrder,
-} from '@/modules/shared/lib/schema-fields';
+import { entityId, optionalUrl, safeText, sortOrder } from '@/modules/shared/lib/schema-fields';
 
 /**
  * Admin: create a project for one team member. An unknown `teamMemberId` is rejected by the foreign

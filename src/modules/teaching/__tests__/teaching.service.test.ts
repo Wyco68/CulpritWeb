@@ -64,6 +64,10 @@ class FakeEntryRepository implements CvEntryRepository {
     return found ? { ...found } : null;
   }
 
+  async listForMembers(teamMemberIds: string[]) {
+    return (await Promise.all(teamMemberIds.map((id) => this.listForMember(id)))).flat();
+  }
+
   async listForMember(teamMemberId: string) {
     return [...this.store.values()].filter((e) => e.teamMemberId === teamMemberId);
   }
@@ -110,6 +114,10 @@ class FakeCourseRepository implements CourseRepository {
   async findById(id: string) {
     const found = this.store.get(id);
     return found ? { ...found } : null;
+  }
+
+  async listForMembers(teamMemberIds: string[]) {
+    return (await Promise.all(teamMemberIds.map((id) => this.listForMember(id)))).flat();
   }
 
   async listForMember(teamMemberId: string) {

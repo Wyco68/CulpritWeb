@@ -48,6 +48,10 @@ class FakeRepository implements TeamMemberRepository {
     this.links.set(member.id, links);
   }
 
+  async listLinksForMembers(teamMemberIds: string[]) {
+    return Object.fromEntries(teamMemberIds.map((id) => [id, this.links.get(id) ?? []]));
+  }
+
   async listLinks(teamMemberId: string): Promise<MemberLink[]> {
     return this.links.get(teamMemberId) ?? [];
   }

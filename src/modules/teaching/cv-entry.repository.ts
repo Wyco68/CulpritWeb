@@ -11,6 +11,8 @@ export interface CvEntryRepository {
   findById(id: string): Promise<CvEntry | null>;
   /** One member's entries, ordered by section then the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<CvEntry[]>;
+  /** Several members' entries in one query, in the same order `listForMember` uses. */
+  listForMembers(teamMemberIds: string[]): Promise<CvEntry[]>;
   /** Counts only — how many entries there are and which sections are populated. */
   stats(): Promise<CvEntryStats>;
   createWithAudit(input: { data: CreateCvEntryInput; audit: AuditContext }): Promise<CvEntry>;
@@ -57,6 +59,14 @@ export class PrismaCvEntryRepository implements CvEntryRepository {
 
   async listForMember(teamMemberId: string): Promise<CvEntry[]> {
     const rows = await prisma.cvEntry.findMany({ where: { teamMemberId }, orderBy: LIST_ORDER });
+    return rows.map(toDomain);
+  }
+
+  async listForMembers(teamMemberIds: string[]): Promise<CvEntry[]> {
+    const rows = await prisma.cvEntry.findMany({
+      where: { teamMemberId: { in: teamMemberIds } },
+      orderBy: LIST_ORDER,
+    });
     return rows.map(toDomain);
   }
 
