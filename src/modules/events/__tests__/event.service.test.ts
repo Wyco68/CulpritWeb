@@ -20,6 +20,8 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     eventDate: new Date('2026-10-14T04:00:00Z'),
     photoUrls: [],
     videoUrls: [],
+    coverPhotoUrl: null,
+    coverCrop: null,
     participants: [],
     createdAt: now,
     updatedAt: now,

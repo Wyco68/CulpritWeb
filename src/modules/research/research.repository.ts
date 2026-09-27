@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/modules/shared/lib/prisma';
 import { auditLogData } from '@/modules/shared/lib/audit';
+import { parseCoverCrop, type CoverCrop } from '@/modules/shared/lib/cover-crop';
 import type {
   Research as PrismaResearch,
   ResearchContributor as PrismaResearchContributor,
@@ -57,7 +59,9 @@ function toDomain(row: PrismaResearchRow): Research {
     summary: row.summary,
     area: row.area,
     link: row.link,
-    photoUrl: row.photoUrl,
+    coverPhotoUrl: row.coverPhotoUrl,
+    photoUrls: row.photoUrls,
+    coverCrop: parseCoverCrop(row.coverCrop),
     contributors: row.contributors.map(toContributor),
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
@@ -67,6 +71,11 @@ function toDomain(row: PrismaResearchRow): Research {
 
 const auditData = (audit: AuditContext, entityId: string) =>
   auditLogData('research', audit, entityId);
+
+/** See the identical helper in event.repository.ts: SQL NULL on a Json column needs `DbNull`. */
+function coverCropData(crop: CoverCrop | null | undefined) {
+  return crop === null ? Prisma.DbNull : crop;
+}
 
 export class PrismaResearchRepository implements ResearchRepository {
   async findById(id: string): Promise<Research | null> {
@@ -109,7 +118,9 @@ export class PrismaResearchRepository implements ResearchRepository {
           summary: input.data.summary,
           area: input.data.area,
           link: input.data.link ?? null,
-          photoUrl: input.data.photoUrl ?? null,
+          coverPhotoUrl: input.data.coverPhotoUrl ?? null,
+          photoUrls: input.data.photoUrls ?? [],
+          coverCrop: coverCropData(input.data.coverCrop ?? null),
           contributors: { create: toContributorRows(input.data.contributors) },
           sortOrder: input.data.sortOrder ?? 0,
         },
@@ -136,7 +147,10 @@ export class PrismaResearchRepository implements ResearchRepository {
           summary: input.data.summary,
           area: input.data.area,
           link: input.data.link,
-          photoUrl: input.data.photoUrl,
+          coverPhotoUrl: input.data.coverPhotoUrl,
+          // Replaced wholesale when present, like an event's gallery — `set` makes `[]` a clear.
+          photoUrls: input.data.photoUrls === undefined ? undefined : { set: input.data.photoUrls },
+          coverCrop: coverCropData(input.data.coverCrop),
           sortOrder: input.data.sortOrder,
         },
       });

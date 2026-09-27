@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/modules/shared/lib/prisma';
 import { auditLogData } from '@/modules/shared/lib/audit';
+import { parseCoverCrop, type CoverCrop } from '@/modules/shared/lib/cover-crop';
 import type {
   Event as PrismaEvent,
   EventParticipant as PrismaEventParticipant,
@@ -97,6 +99,8 @@ function toDomain(row: PrismaEvent & { participants?: ParticipantRow[] }): Event
     eventDate: row.eventDate,
     photoUrls: row.photoUrls,
     videoUrls: row.videoUrls,
+    coverPhotoUrl: row.coverPhotoUrl,
+    coverCrop: parseCoverCrop(row.coverCrop),
     participants: (row.participants ?? []).map(toParticipant),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -104,6 +108,14 @@ function toDomain(row: PrismaEvent & { participants?: ParticipantRow[] }): Event
 }
 
 const auditData = (audit: AuditContext, entityId: string) => auditLogData('event', audit, entityId);
+
+/**
+ * A nullable Json column cannot take a plain `null` — Prisma needs `DbNull` to write SQL NULL.
+ * `undefined` still means "leave the column alone".
+ */
+function coverCropData(crop: CoverCrop | null | undefined) {
+  return crop === null ? Prisma.DbNull : crop;
+}
 
 export class PrismaEventRepository implements EventRepository {
   async findById(id: string): Promise<Event | null> {
@@ -152,6 +164,8 @@ export class PrismaEventRepository implements EventRepository {
           eventDate: input.data.eventDate,
           photoUrls: input.data.photoUrls ?? [],
           videoUrls: input.data.videoUrls ?? [],
+          coverPhotoUrl: input.data.coverPhotoUrl ?? null,
+          coverCrop: coverCropData(input.data.coverCrop ?? null),
         },
       });
       await tx.auditLog.create({ data: auditData(input.audit, row.id) });
@@ -179,6 +193,8 @@ export class PrismaEventRepository implements EventRepository {
           // carrying `photoUrls: []` clears the gallery rather than reading as "no change".
           photoUrls: input.data.photoUrls === undefined ? undefined : { set: input.data.photoUrls },
           videoUrls: input.data.videoUrls === undefined ? undefined : { set: input.data.videoUrls },
+          coverPhotoUrl: input.data.coverPhotoUrl,
+          coverCrop: coverCropData(input.data.coverCrop),
         },
         include: WITH_PARTICIPANTS,
       });

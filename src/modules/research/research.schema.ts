@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { httpUrl, optionalUrl, safeText, sortOrder } from '@/modules/shared/lib/schema-fields';
+import { coverCropSchema } from '@/modules/shared/lib/cover-crop';
 
 /**
  * One credited contributor: a plain typed name. Same shape and reasoning as a publication author —
@@ -20,8 +21,12 @@ export const createResearchSchema = z.object({
   area: safeText(200),
   /** Optional external artefact — a tool listing, project page or dataset. */
   link: optionalUrl,
-  /** Card photo: the URL returned by the admin photo upload. `null` clears it. */
-  photoUrl: httpUrl.nullable().optional(),
+  /** Dedicated card cover: a URL returned by the admin photo upload. `null` clears it. */
+  coverPhotoUrl: httpUrl.nullable().optional(),
+  /** The detail dialog's gallery, uncropped, in display order. */
+  photoUrls: z.array(httpUrl).max(20).optional(),
+  /** How the cover is framed on the card. `null` centres it. */
+  coverCrop: coverCropSchema.nullable().optional(),
   contributors: contributorList.default([]),
   sortOrder,
 });

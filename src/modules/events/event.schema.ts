@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
 import { entityId, httpUrl, optionalText, safeText } from '@/modules/shared/lib/schema-fields';
+import { coverCropSchema } from '@/modules/shared/lib/cover-crop';
 import { parseInstitutionLocalDatetime } from '@/modules/shared/lib/timezone';
 import { parseYouTubeVideoId } from '@/modules/integrations/youtube/youtube-utils';
 
@@ -48,6 +49,10 @@ export const createEventSchema = z.object({
   eventDate: institutionDate,
   photoUrls: z.array(photoUrlSchema).max(20).optional(),
   videoUrls: z.array(videoRefSchema).max(10).optional(),
+  /** Dedicated card cover. `null` clears it, and the card falls back to the first photo. */
+  coverPhotoUrl: photoUrlSchema.nullable().optional(),
+  /** How the cover is framed on the card. `null` centres it. */
+  coverCrop: coverCropSchema.nullable().optional(),
 });
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 

@@ -59,19 +59,26 @@ model Profile {
 }
 
 model Research {
-  id           String                @id @default(cuid())
-  title        String
-  summary      String                @db.Text
-  area         String
+  id            String                @id @default(cuid())
+  title         String
+  summary       String                @db.Text
+  area          String
   /// Optional external link — a project page, tool listing, or artefact repository.
-  link         String?
-  /// Optional card photo — a public R2 URL under the `research/` prefix (2026-09-26).
-  photoUrl     String?               @map("photo_url")
+  link          String?
+  /// Optional dedicated cover for the card — a public R2 URL under the `research/` prefix. Stored
+  /// uncropped; `coverCrop` frames it. The column predates the gallery and keeps its name
+  /// (`photo_url`) so adding covers stayed additive (ADR-019).
+  coverPhotoUrl String?               @map("photo_url")
+  /// The work's gallery, uncropped, in display order. The first one is the card cover when no
+  /// dedicated cover is uploaded.
+  photoUrls     String[]              @default([]) @map("photo_urls")
+  /// How the cover is framed on the 3:2 card — see `CoverCrop` in shared/lib/cover-crop.ts.
+  coverCrop     Json?                 @map("cover_crop")
   /// Who worked on this, in display order. Empty renders no byline — see `ResearchContributor`.
-  contributors ResearchContributor[]
-  sortOrder    Int                   @default(0) @map("sort_order")
-  createdAt    DateTime              @default(now()) @map("created_at")
-  updatedAt    DateTime              @updatedAt @map("updated_at")
+  contributors  ResearchContributor[]
+  sortOrder     Int                   @default(0) @map("sort_order")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
 
   @@map("research")
 }
@@ -285,22 +292,27 @@ model Course {
 // structure, and an array column keeps them queryable and typed instead of opaque.
 
 model Event {
-  id           String             @id @default(cuid())
-  title        String
-  description  String             @db.Text
+  id            String             @id @default(cuid())
+  title         String
+  description   String             @db.Text
   /// Long-form write-up, shown only inside the event's detail dialog. `description` stays the
   /// short summary the event card itself renders, which is what lets every card keep the same
   /// height no matter how much has been written here.
-  content      String?            @db.Text
-  eventDate    DateTime           @map("event_date")
-  /// Public R2 URLs, uploaded through POST /api/admin/events/photo.
-  photoUrls    String[]           @map("photo_urls")
+  content       String?            @db.Text
+  eventDate     DateTime           @map("event_date")
+  /// Public R2 URLs, uploaded through POST /api/admin/events/photo. Stored uncropped — the
+  /// detail dialog shows each at its own aspect ratio.
+  photoUrls     String[]           @map("photo_urls")
+  /// Optional dedicated card cover, uncropped. Without one the first gallery photo is the cover.
+  coverPhotoUrl String?            @map("cover_photo_url")
+  /// How the cover is framed on the 3:2 card — see `CoverCrop` in shared/lib/cover-crop.ts.
+  coverCrop     Json?              @map("cover_crop")
   /// YouTube watch/share URLs (or bare 11-character video IDs). Embed-only — no video file is
   /// ever stored or proxied by this app; see modules/integrations/youtube.
-  videoUrls    String[]           @map("video_urls")
-  participants EventParticipant[]
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt @map("updated_at")
+  videoUrls     String[]           @map("video_urls")
+  participants  EventParticipant[]
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
 
   @@index([eventDate])
   @@map("event")

@@ -1,9 +1,7 @@
-import { ArrowUpRight } from 'lucide-react';
-import { BylineNames, type BylineMember } from '@/modules/research-groups';
+import type { BylineMember } from '@/modules/research-groups';
 import type { Research } from '@/modules/research';
-import { contentCardClassName, linkPillClassName } from '@/modules/shared/ui/card';
-import { CardPhoto } from '@/modules/shared/ui/card-photo';
 import { SectionHeading } from '@/modules/shared/ui/prose';
+import { ResearchCards } from './research-cards';
 
 // Grouped by area. Every well-structured faculty and lab site organises research thematically
 // rather than as one undifferentiated list — the area is what a visitor is actually scanning for
@@ -33,6 +31,9 @@ export function ResearchList({
   members?: readonly BylineMember[];
 }) {
   const groups = groupByArea(items);
+  // Only the fields a byline match needs cross into the client cards — the page passes whole member
+  // rows, and everything else on them would otherwise be serialised into the page payload.
+  const bylineMembers = members.map(({ id, name, citationName }) => ({ id, name, citationName }));
 
   return (
     <div className="space-y-10">
@@ -47,51 +48,7 @@ export function ResearchList({
             {group.area}
           </SectionHeading>
 
-          {/* Three cards to a row when the content column is wide, two when it is medium, one on a
-              phone — sized by the column (`main` is a container), not the viewport. Each card
-              stretches to the tallest in its row, and the project link is pinned to the foot so
-              the links line up across the row. */}
-          <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
-            {group.items.map((item) => (
-              <li key={item.id} className={contentCardClassName}>
-                <CardPhoto src={item.photoUrl} />
-
-                <div className="flex flex-1 flex-col p-6">
-                  <h4 className="text-balance break-words font-serif text-xl leading-snug text-foreground">
-                    {item.title}
-                  </h4>
-                  <p className="mt-2 text-pretty break-words leading-[1.7] text-muted-foreground">
-                    {item.summary}
-                  </p>
-                  {/* Omitted entirely when nobody is credited — that means it is the lab's own work. */}
-                  {item.contributors.length > 0 && (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      With{' '}
-                      <BylineNames
-                        names={item.contributors.map((contributor) => contributor.name)}
-                        members={members}
-                      />
-                    </p>
-                  )}
-
-                  {item.link && (
-                    <div className="mt-auto pt-5">
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={linkPillClassName}
-                      >
-                        <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                        View Project
-                        <span className="sr-only"> (opens in a new tab)</span>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <ResearchCards items={group.items} members={bylineMembers} />
         </section>
       ))}
     </div>

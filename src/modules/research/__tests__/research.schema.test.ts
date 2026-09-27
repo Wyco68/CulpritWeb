@@ -120,3 +120,29 @@ describe('updateResearchSchema', () => {
     expect(result.contributors).toEqual([]);
   });
 });
+
+describe('research cover and gallery', () => {
+  const base = { title: 'X', summary: 'Y', area: 'Z' };
+
+  it('accepts a cover, a crop and a gallery', () => {
+    const parsed = createResearchSchema.parse({
+      ...base,
+      coverPhotoUrl: 'https://r2.example/cover.jpg',
+      coverCrop: { url: 'https://r2.example/cover.jpg', x: 0.1, y: 0, width: 0.8, height: 1 },
+      photoUrls: ['https://r2.example/a.jpg', 'https://r2.example/b.jpg'],
+    });
+    expect(parsed.photoUrls).toHaveLength(2);
+    expect(parsed.coverCrop?.width).toBe(0.8);
+  });
+
+  it('rejects a non-http gallery photo', () => {
+    expect(
+      createResearchSchema.safeParse({ ...base, photoUrls: ['javascript:alert(1)'] }).success,
+    ).toBe(false);
+  });
+
+  it('caps the gallery at 20 photos', () => {
+    const photoUrls = Array.from({ length: 21 }, (_, i) => `https://r2.example/${i}.jpg`);
+    expect(createResearchSchema.safeParse({ ...base, photoUrls }).success).toBe(false);
+  });
+});

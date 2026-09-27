@@ -12,6 +12,8 @@ import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
+import { CoverField } from '@/modules/shared/ui/cover-field';
+import { GalleryField } from '@/modules/shared/ui/gallery-field';
 import { toInstitutionLocalDatetimeValue } from '@/modules/shared/lib/timezone';
 // Deep, module-internal imports (not the barrel): `@/modules/events`'s index also re-exports
 // `getEventService`, whose composition root imports the Prisma repository (`pg`/`fs`, Node-only).
@@ -20,7 +22,7 @@ import { toInstitutionLocalDatetimeValue } from '@/modules/shared/lib/timezone';
 // `.types`/`.schema` files are safe to import directly.
 import type { Event } from '../event.types';
 import { createEventSchema, type CreateEventInput } from '../event.schema';
-import { PhotoUploadList, VideoLinkList } from './event-media-fields';
+import { VideoLinkList } from './event-media-fields';
 
 // `eventDate` goes through `z.preprocess`, whose *input* type is `unknown` — wider than its
 // *output* type (`Date`). RHF's 3-generic `useForm<Input, Context, Output>` keeps the form's raw
@@ -69,6 +71,8 @@ export function EventFormDialog({
       eventDate: event ? toInstitutionLocalDatetimeValue(event.eventDate) : '',
       photoUrls: event?.photoUrls ?? [],
       videoUrls: event?.videoUrls ?? [],
+      coverPhotoUrl: event?.coverPhotoUrl ?? null,
+      coverCrop: event?.coverCrop ?? null,
     },
   });
 
@@ -76,6 +80,8 @@ export function EventFormDialog({
   // through watch/setValue. `?? []` guards the first render before `values` has been applied.
   const photoUrls = watch('photoUrls') ?? [];
   const videoUrls = watch('videoUrls') ?? [];
+  const coverPhotoUrl = watch('coverPhotoUrl') ?? null;
+  const coverCrop = watch('coverCrop') ?? null;
 
   const mutation = useMutation({
     mutationFn: (input: CreateEventInput) => submitEvent(event?.id, input),
@@ -158,11 +164,30 @@ export function EventFormDialog({
       </FormGroup>
 
       <FormGroup
-        title="Gallery"
-        description="The first photo leads the event card. Drag photos in, or upload them."
+        title="Card cover"
+        description="The photo at the top of the event card, cropped to fit it. Without a cover of its own, the card uses the first gallery photo."
       >
-        <PhotoUploadList
+        <CoverField
+          coverPhotoUrl={coverPhotoUrl}
+          coverCrop={coverCrop}
+          photoUrls={photoUrls}
+          endpoint="/api/admin/events/photo"
+          disabled={busy}
+          onChange={(next) => {
+            setValue('coverPhotoUrl', next.coverPhotoUrl, { shouldDirty: true });
+            setValue('coverCrop', next.coverCrop, { shouldDirty: true });
+          }}
+        />
+      </FormGroup>
+
+      <FormGroup
+        title="Gallery"
+        description="Shown whole in Show Details. Drag photos in, or upload them."
+      >
+        <GalleryField
           urls={photoUrls}
+          endpoint="/api/admin/events/photo"
+          firstIsCover={!coverPhotoUrl}
           disabled={busy}
           onChange={(next) =>
             setValue('photoUrls', next, { shouldDirty: true, shouldValidate: true })

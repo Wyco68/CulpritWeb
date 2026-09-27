@@ -6,6 +6,7 @@ import { cn } from '@/modules/shared/lib/utils';
 import { Button } from '@/modules/shared/ui/button';
 import { contentCardClassName } from '@/modules/shared/ui/card';
 import { CardPhoto } from '@/modules/shared/ui/card-photo';
+import { resolveCover } from '@/modules/shared/lib/cover-crop';
 import { dateFormatter, timeFormatter } from './event-media';
 import { EventDetailDialog } from './event-detail-dialog';
 import type { Event } from '../event.types';
@@ -45,7 +46,7 @@ export function EventList({ events }: { events: Event[] }) {
               style={{ '--i': index } as React.CSSProperties}
               className={cn('rise h-full', contentCardClassName)}
             >
-              <CardPhoto src={event.photoUrls[0]} />
+              <CardPhoto {...resolveCover(event)} />
 
               <div className="flex flex-1 flex-col p-6">
                 <p className="tabular text-sm text-muted-foreground">
