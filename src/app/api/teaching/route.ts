@@ -8,8 +8,8 @@ import { NotFoundError } from '@/modules/shared/lib/errors';
 // existing consumers of the URL keep getting her teaching content.
 //
 // ISR-style route cache: purged by `revalidatePath('/api/teaching')` on CV/course writes (see
-// modules/shared/lib/revalidate). The 1h figure is a safety-net ceiling only.
-export const revalidate = 3600;
+// modules/shared/lib/revalidate). The daily figure is a safety-net ceiling only.
+export const revalidate = 86400;
 
 export async function GET() {
   try {

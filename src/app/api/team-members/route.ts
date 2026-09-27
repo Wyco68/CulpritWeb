@@ -13,7 +13,8 @@ import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-resp
 // `next build`'s "Dynamic server usage" error), silently defeating the `revalidate` below despite
 // this file's own comment claiming otherwise. Moving the redirect to middleware — which isn't
 // subject to route-level static analysis — is what actually makes this route cacheable.
-export const revalidate = 3600;
+// Purged on every admin write that changes it; this daily ceiling is only the safety net.
+export const revalidate = 86400;
 
 export async function GET() {
   try {

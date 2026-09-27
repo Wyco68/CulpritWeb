@@ -16,9 +16,11 @@ import { PublicShell } from './_components/public-shell';
 
 // Safety net only. Every admin write already invalidates the pages it affects on demand (see
 // modules/shared/lib/revalidate), which is what keeps the public site current within a request or
-// two. This hourly ceiling just bounds how long a change made *outside* the app — a direct DB
-// edit, a re-seed, a restored backup — could otherwise sit invisible behind the Full Route Cache.
-export const revalidate = 3600;
+// two. This daily ceiling just bounds how long a change made *outside* the app — a direct DB edit,
+// a re-seed, a restored backup — could otherwise sit invisible behind the Full Route Cache. It was
+// hourly; each expiry is a regeneration (a function run, its queries and a cache write) on the
+// host's free tier, and on-demand purges already cover every admin edit, so a day is enough.
+export const revalidate = 86400;
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const result = await getProfileCached();

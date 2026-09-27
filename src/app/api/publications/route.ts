@@ -3,8 +3,8 @@ import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-resp
 
 // Public: list publications, ordered by year desc then createdAt desc.
 // ISR-style route cache: purged by `revalidatePath('/api/publications')` on admin writes (see
-// modules/shared/lib/revalidate). 1h ceiling is a safety net, not the primary freshness path.
-export const revalidate = 3600;
+// modules/shared/lib/revalidate). The daily ceiling is a safety net, not the primary freshness path.
+export const revalidate = 86400;
 
 export async function GET() {
   try {

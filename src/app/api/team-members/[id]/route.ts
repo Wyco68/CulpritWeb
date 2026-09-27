@@ -16,6 +16,14 @@ import { entityId } from '@/modules/shared/lib/schema-fields';
 // (see modules/shared/lib/revalidate), so the ceiling is what bounds staleness here.
 export const revalidate = 3600;
 
+// Prerender every member's response, like the `/team/[id]` pages. Without this the route built as
+// Dynamic despite `revalidate`, so every request ran the handler and its four queries.
+// `dynamicParams` keeps its default: a member added after the build is rendered on first request.
+export async function generateStaticParams() {
+  const result = await getTeamMemberService().list();
+  return result.ok ? result.data.map((member) => ({ id: member.id })) : [];
+}
+
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;

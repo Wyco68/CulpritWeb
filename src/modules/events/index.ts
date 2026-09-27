@@ -31,3 +31,4 @@ export { getEventService } from './container';
 
 export { EventList } from './ui/event-list';
 export { EventsTable } from './ui/events-table';
+export { EventTimeline } from './ui/event-timeline';
