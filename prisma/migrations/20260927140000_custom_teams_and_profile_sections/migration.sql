@@ -7,10 +7,8 @@
 -- * `team_member.team_kind` loses its NOT NULL, since new members no longer get one. The column and
 --   the `TeamKind` type are dropped in a follow-up once this deploy is live.
 --
--- The backfill keeps today's grouping: each existing team becomes a row and its members point at
--- it. Nothing else is derived from the team — every member starts with all sections switched on,
--- and what their profile shows is the admin's choice per member from here on. A section with no
--- content never shows, so this changes nothing visible until the admin fills one in.
+-- The backfill reproduces today's pages exactly: each existing team becomes a row, and each
+-- member's hidden sections are what their team's rules used to withhold.
 
 -- CreateEnum
 CREATE TYPE "ProfileSection" AS ENUM ('research_interest', 'publications', 'research', 'projects', 'education', 'invited_talk', 'fellowship', 'scholarship', 'courses', 'teaching_role', 'teaching_award');
@@ -54,3 +52,13 @@ WHERE EXISTS (SELECT 1 FROM "team_member" m WHERE m."team_kind"::text = v.kind);
 UPDATE "team_member"
 SET "team_id" = 'team_' || "team_kind"::text
 WHERE "team_kind" IN ('professor', 'research', 'development');
+
+-- Backfill: hide what each old team could not have (the rules table in the deleted
+-- shared/lib/team-kind.ts). Director and professor could have everything.
+UPDATE "team_member"
+SET "hidden_sections" = ARRAY['education', 'fellowship', 'scholarship', 'invited_talk', 'teaching_role', 'teaching_award', 'courses']::"ProfileSection"[]
+WHERE "team_kind" = 'research';
+
+UPDATE "team_member"
+SET "hidden_sections" = ARRAY['research_interest', 'education', 'fellowship', 'scholarship', 'invited_talk', 'teaching_role', 'teaching_award', 'courses', 'research', 'publications']::"ProfileSection"[]
+WHERE "team_kind" = 'development';

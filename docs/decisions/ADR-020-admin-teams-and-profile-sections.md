@@ -51,8 +51,13 @@ should be able to show it, and a researcher who teaches should be able to list c
 `20260927140000_custom_teams_and_profile_sections`, additive because the database is shared with
 the deployed app: the `team` table, `team_member.team_id` and `hidden_sections`, and
 `team_member.team_kind` made nullable. Existing professor/research/development members are moved
-onto matching team rows; nobody's hidden sections are backfilled — a section with no content never
-shows, so this changes nothing visible until the admin fills one in.
+onto matching team rows.
+
+That migration also backfilled `hidden_sections` from each member's old team. It had already run on
+the shared database when that was ruled out — the team must not decide what a profile shows — so
+`20260927150000_clear_team_derived_sections` clears it again, touching only rows still holding
+exactly the backfilled value. Every member now starts with all sections on; a section with no
+content never shows, so nothing visible changes until the admin fills one in.
 
 **Follow-up:** drop `team_member.team_kind` and the `TeamKind` type once this deploy is live. Until
 then the deployed build still reads the column, so a member created by the new build (which leaves
