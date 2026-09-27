@@ -25,6 +25,8 @@ export interface TeamMemberRepository {
   list(): Promise<TeamMember[]>;
   /** One member's external links, in the admin's arrangement. */
   listLinks(teamMemberId: string): Promise<MemberLink[]>;
+  /** Several members' links in one query, keyed by member id; members with none are absent. */
+  listLinksForMembers(teamMemberIds: string[]): Promise<Record<string, MemberLink[]>>;
   /** Headline counts only — no rows leave the database. */
   stats(): Promise<TeamMemberStats>;
   /**
@@ -110,6 +112,16 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
       orderBy: LINK_ORDER,
     });
     return rows.map(toLink);
+  }
+
+  async listLinksForMembers(teamMemberIds: string[]): Promise<Record<string, MemberLink[]>> {
+    const rows = await prisma.memberLink.findMany({
+      where: { teamMemberId: { in: teamMemberIds } },
+      orderBy: LINK_ORDER,
+    });
+    const byMember: Record<string, MemberLink[]> = {};
+    for (const row of rows) (byMember[row.teamMemberId] ??= []).push(toLink(row));
+    return byMember;
   }
 
   async stats(): Promise<TeamMemberStats> {

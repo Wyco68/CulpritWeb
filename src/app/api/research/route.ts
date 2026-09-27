@@ -4,8 +4,8 @@ import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-resp
 // Public: list research works, ordered by sortOrder.
 // ISR-style route cache: served from the same on-demand cache Next manages for pages, so
 // `revalidatePath('/api/research')` (see modules/shared/lib/revalidate) purges it on admin writes.
-// The 1h figure is a safety-net ceiling only, matching the public layout's fallback TTL.
-export const revalidate = 3600;
+// The daily figure is a safety-net ceiling only, matching the public layout's fallback TTL.
+export const revalidate = 86400;
 
 export async function GET() {
   try {

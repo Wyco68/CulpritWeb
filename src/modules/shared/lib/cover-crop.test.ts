@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { coverCropSchema, coverCropStyle, parseCoverCrop, resolveCover } from './cover-crop';
+import { coverCropStyle, resolveCover } from './cover-crop';
+import { coverCropSchema, parseCoverCrop } from './cover-crop.schema';
 
 const A = 'https://r2.example/a.jpg';
 const B = 'https://r2.example/b.jpg';

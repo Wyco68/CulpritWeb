@@ -158,6 +158,11 @@ export class R2StorageAdapter implements StorageAdapter {
           Key: objectKey(bucket, path),
           Body: file,
           ContentType: contentType,
+          // Every URL this app hands out is immutable: photos get a fresh random key, and the one
+          // reused key (the lab avatar) is always served with a `?v=` stamp. Without a header, R2
+          // sends none, and the image optimizer fell back to re-fetching and re-transforming the
+          // original every 60s it was in demand.
+          CacheControl: 'public, max-age=31536000, immutable',
         }),
       );
       return ok({ path });

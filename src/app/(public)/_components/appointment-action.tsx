@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { usePathname } from 'next/navigation';
 import { CalendarClock } from 'lucide-react';
 import { buttonVariants } from '@/modules/shared/ui/button';

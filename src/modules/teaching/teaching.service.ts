@@ -41,6 +41,8 @@ export type CvEntryServiceDeps = {
 export interface CvEntryService {
   /** One member's entries, every section, ordered by section then the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<Result<CvEntry[]>>;
+  /** Several members' entries in one query — the admin Team screen reads everyone's at once. */
+  listForMembers(teamMemberIds: string[]): Promise<Result<CvEntry[]>>;
   /** Headline counts for the dashboard, aggregated in SQL. */
   stats(): Promise<Result<CvEntryStats>>;
   create(input: CreateCvEntryInput, actor: string): Promise<Result<CvEntry>>;
@@ -61,6 +63,8 @@ export function createCvEntryService(deps: CvEntryServiceDeps): CvEntryService {
 
   return {
     listForMember: (teamMemberId) => attempt(() => repository.listForMember(teamMemberId)),
+
+    listForMembers: (teamMemberIds) => attempt(() => repository.listForMembers(teamMemberIds)),
 
     stats: () => attempt(() => repository.stats()),
 
@@ -127,6 +131,8 @@ export type CourseServiceDeps = {
 export interface CourseService {
   /** One member's courses, in the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<Result<Course[]>>;
+  /** Several members' courses in one query. */
+  listForMembers(teamMemberIds: string[]): Promise<Result<Course[]>>;
   /** Headline counts for the dashboard, aggregated in SQL. */
   stats(): Promise<Result<CourseStats>>;
   create(input: CreateCourseInput, actor: string): Promise<Result<Course>>;
@@ -146,6 +152,8 @@ export function createCourseService(deps: CourseServiceDeps): CourseService {
 
   return {
     listForMember: (teamMemberId) => attempt(() => repository.listForMember(teamMemberId)),
+
+    listForMembers: (teamMemberIds) => attempt(() => repository.listForMembers(teamMemberIds)),
 
     stats: () => attempt(() => repository.stats()),
 

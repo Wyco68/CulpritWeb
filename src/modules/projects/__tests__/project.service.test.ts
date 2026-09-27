@@ -34,6 +34,10 @@ class FakeRepository implements ProjectRepository {
     return found ? { ...found } : null;
   }
 
+  async listForMembers(teamMemberIds: string[]) {
+    return (await Promise.all(teamMemberIds.map((id) => this.listForMember(id)))).flat();
+  }
+
   async listForMember(teamMemberId: string) {
     return [...this.store.values()]
       .filter((project) => project.teamMemberId === teamMemberId)

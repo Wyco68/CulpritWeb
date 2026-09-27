@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
-import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
-import { getResearchService, ResearchTable } from '@/modules/research';
+import { getProfileCached } from '@/modules/profile';
+import { ProfileFieldsForm } from '@/modules/profile/ui/profile-fields-form';
+import { getResearchService } from '@/modules/research';
+import { ResearchTable } from '@/modules/research/ui/research-table';
 import { bylineSuggestions } from '@/modules/research-groups/byline-match';
 import { getTeamMemberService } from '@/modules/research-groups';
 import { AdminScreen } from '../_components/admin-screen';

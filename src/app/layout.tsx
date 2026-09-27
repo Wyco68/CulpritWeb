@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Newsreader, Schibsted_Grotesk } from 'next/font/google';
 import { SITE_URL } from '@/modules/shared/lib/site-url';
-import { Providers } from './providers';
 import './globals.css';
 
 // English-only, no i18n layer at all (removed 2026-08-08): every component uses literal English
@@ -85,7 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );

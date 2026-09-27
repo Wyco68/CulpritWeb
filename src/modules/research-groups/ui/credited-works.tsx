@@ -1,4 +1,5 @@
-import Link from 'next/link';
+// Prefetches on hover/focus rather than on sight — see intent-link.tsx.
+import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 
 // The research items and publications a member is credited on, listed on their profile page.
 //

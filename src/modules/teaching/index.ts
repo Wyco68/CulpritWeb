@@ -46,5 +46,7 @@ export { getCvEntryService, getCourseService } from './container';
 
 export { CvEntryList } from './ui/cv-entry-list';
 export { CourseList } from './ui/course-list';
-export { CoursesAdmin } from './ui/courses-admin';
-export { CvEntriesAdmin, type CvEntriesAdminProps } from './ui/cv-entries-admin';
+
+// Admin UI is NOT re-exported here — admin pages import it by path. Public pages import this barrel
+// for its services, and Next ships every client component reachable from a page's imports, used or
+// not: re-exporting an admin table here put it (and its zod form schema) on every public page.

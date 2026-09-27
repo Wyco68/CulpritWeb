@@ -11,7 +11,7 @@ import { apiUnexpected, respondPublicCache } from '@/modules/shared/lib/api-resp
 // public.
 //
 // ISR-style route cache: purged by `revalidatePath('/api/events')` on admin event writes (see
-// modules/shared/lib/revalidate). The 300s ceiling (vs. the usual 3600s elsewhere) is kept from
+// modules/shared/lib/revalidate). The 300s ceiling (vs. the daily one elsewhere) is kept from
 // the route this replaced, for the same reason: the upcoming/past boundary is computed against the
 // clock at render time, so a cached response can only be trusted for as long as it is plausible
 // that nothing has crossed it.

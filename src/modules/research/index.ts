@@ -20,4 +20,7 @@ export type { ResearchRepository } from './research.repository';
 export { getResearchService } from './container';
 
 export { ResearchList } from './ui/research-list';
-export { ResearchTable } from './ui/research-table';
+
+// Admin UI is NOT re-exported here — admin pages import it by path. Public pages import this barrel
+// for its services, and Next ships every client component reachable from a page's imports, used or
+// not: re-exporting an admin table here put it (and its zod form schema) on every public page.

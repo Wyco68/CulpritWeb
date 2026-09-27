@@ -59,5 +59,7 @@ export { TeamMembersView, TeamMemberCard, memberInitials } from './ui/team-membe
 export { MemberCard } from './ui/member-card';
 export { BylineNames } from './ui/byline-names';
 export { CreditedWorkList, type CreditedWork } from './ui/credited-works';
-export { TeamMembersTable } from './ui/team-members-table';
-export { TeamsAdmin } from './ui/teams-admin';
+
+// Admin UI is NOT re-exported here — admin pages import it by path. Public pages import this barrel
+// for its services, and Next ships every client component reachable from a page's imports, used or
+// not: re-exporting an admin table here put it (and its zod form schema) on every public page.

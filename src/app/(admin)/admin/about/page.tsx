@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
+import { getProfileCached } from '@/modules/profile';
+import { ProfileFieldsForm } from '@/modules/profile/ui/profile-fields-form';
 import { AdminScreen } from '../_components/admin-screen';
 
 export async function generateMetadata(): Promise<Metadata> {

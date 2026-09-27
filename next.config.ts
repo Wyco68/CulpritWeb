@@ -88,7 +88,12 @@ function buildCsp(): string {
     // fetch, so it widens img-src no further than the app's own memory.
     'img-src': [`'self'`, 'data:', 'blob:', ...(r2Origin ? [r2Origin] : [])],
     'font-src': [`'self'`, 'data:'],
-    'connect-src': [`'self'`, 'https://calendly.com', 'https://*.calendly.com', 'https://challenges.cloudflare.com'],
+    'connect-src': [
+      `'self'`,
+      'https://calendly.com',
+      'https://*.calendly.com',
+      'https://challenges.cloudflare.com',
+    ],
     'frame-src': [
       'https://calendly.com',
       'https://*.calendly.com',
@@ -125,6 +130,19 @@ const nextConfig: NextConfig = {
   // instead of 404ing.
   images: {
     remotePatterns: r2RemotePatterns(),
+    // Every distinct (image, width, quality) the optimizer produces is a billed transformation on
+    // the host's free tier, and every expiry of its cached result is another. So:
+    // * Cache results for 31 days. Uploads are stored under a fresh random key (or a `?v=` stamp for
+    //   the lab avatar), so a changed photo is a new URL — nothing here can go stale. The default
+    //   60s TTL was re-transforming every photo each minute it was in demand.
+    // * Offer only the widths the site renders: avatars at 40/64/112/128px, cards at up to 340px or
+    //   half the column, the gallery at up to 90vw. The defaults also offered 750, 1080, 2048 and
+    //   3840, each a separate transformation per photo — 3840 alone for a phone at 3x DPR.
+    // * One quality. An unrestricted `q` lets any URL mint a new variant (and a new bill).
+    minimumCacheTTL: 60 * 60 * 24 * 31,
+    imageSizes: [48, 64, 96, 128, 256, 384],
+    deviceSizes: [640, 828, 1200, 1920],
+    qualities: [75],
   },
   async headers() {
     return [
@@ -145,7 +163,10 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
           { key: 'Content-Security-Policy', value: buildCsp() },
         ],
       },

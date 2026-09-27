@@ -14,19 +14,23 @@ beforeEach(() => {
 });
 
 describe('revalidatePublic', () => {
-  it('revalidates the flat public route and its mirrored API route for research', () => {
+  it('revalidates research, its API route and the member profiles that credit it', () => {
     revalidatePublic('research');
 
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/research');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/api/research');
-    expect(mockedRevalidatePath).toHaveBeenCalledTimes(2);
+    // Profiles list the works a member is credited on; without this they waited for the safety net.
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/team/[id]', 'page');
+    expect(mockedRevalidatePath).toHaveBeenCalledTimes(3);
   });
 
-  it('revalidates publications page + API route', () => {
+  it('revalidates publications, its API route and the member profiles that credit it', () => {
     revalidatePublic('publications');
 
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/publications');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/api/publications');
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/team/[id]', 'page');
+    expect(mockedRevalidatePath).toHaveBeenCalledTimes(3);
   });
 
   it('revalidates the team page, every profile page, and the byline pages for team edits', () => {

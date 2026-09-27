@@ -11,6 +11,8 @@ export interface ProjectRepository {
   findById(id: string): Promise<Project | null>;
   /** One member's projects, in the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<Project[]>;
+  /** Several members' rows in one query, in the same order `listForMember` uses. */
+  listForMembers(teamMemberIds: string[]): Promise<Project[]>;
   /** Counts only — no project rows leave the database. */
   stats(): Promise<ProjectStats>;
   createWithAudit(input: { data: CreateProjectInput; audit: AuditContext }): Promise<Project>;
@@ -49,6 +51,13 @@ export class PrismaProjectRepository implements ProjectRepository {
     // shuffle between requests.
     const rows = await prisma.project.findMany({
       where: { teamMemberId },
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+    });
+    return rows.map(toDomain);
+  }
+  async listForMembers(teamMemberIds: string[]): Promise<Project[]> {
+    const rows = await prisma.project.findMany({
+      where: { teamMemberId: { in: teamMemberIds } },
       orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
     });
     return rows.map(toDomain);

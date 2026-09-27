@@ -13,6 +13,22 @@ vi.mock('next/cache', () => ({
   unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
 }));
 
+// `useRouter` throws unless a real App Router is mounted, which no component test has. The public
+// site's links call it to prefetch on hover (shared/ui/intent-link), so a default stub is supplied
+// here; the rest of the module stays real. A test that asserts on navigation mocks
+// `next/navigation` itself, and its own `vi.mock` takes precedence over this one.
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({
+    prefetch: vi.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+  }),
+}));
+
 // jsdom implements the <dialog> ELEMENT but not its imperative `showModal()`/`close()` methods
 // (still true as of jsdom 26 — https://github.com/jsdom/jsdom/issues/3294). Real browsers have
 // supported both natively since ~2022; this is a test-environment-only gap. Polyfilled here once

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
-import { getProfileCached, ProfileFieldsForm } from '@/modules/profile';
-import { EventsTable, getEventService } from '@/modules/events';
+import { getProfileCached } from '@/modules/profile';
+import { ProfileFieldsForm } from '@/modules/profile/ui/profile-fields-form';
+import { getEventService } from '@/modules/events';
+import { EventsTable } from '@/modules/events/ui/events-table';
 import { getTeamMemberService } from '@/modules/research-groups';
 import { AdminScreen } from '../_components/admin-screen';
 

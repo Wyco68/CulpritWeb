@@ -24,8 +24,13 @@ import type { Result } from './result';
 
 /** Public surfaces (and their mirrored public API routes) that admin-editable content feeds. */
 const AREA_PATHS = {
-  research: ['/research', '/api/research'],
-  publications: ['/publications', '/api/publications'],
+  /**
+   * Research works and publications also render on the profile page of every member they credit
+   * (the "Research" and "Publications" sections), so both purge every profile. The member ids are
+   * not known here — a byline is a plain name — so all of them go, which is a handful of pages.
+   */
+  research: ['/research', '/api/research', '/team/[id]'],
+  publications: ['/publications', '/api/publications', '/team/[id]'],
   /**
    * Team members: the Team tab, every member profile page, and — because a byline name that
    * matches a member's name or citation name is highlighted and linked — Research and Publications.

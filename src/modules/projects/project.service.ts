@@ -18,6 +18,8 @@ export type ProjectServiceDeps = {
 export interface ProjectService {
   /** One member's projects, in the admin's arrangement. */
   listForMember(teamMemberId: string): Promise<Result<Project[]>>;
+  /** Several members' projects in one query. */
+  listForMembers(teamMemberIds: string[]): Promise<Result<Project[]>>;
   /** Headline counts for the dashboard, aggregated in SQL. */
   stats(): Promise<Result<ProjectStats>>;
   create(input: CreateProjectInput, actor: string): Promise<Result<Project>>;
@@ -38,6 +40,8 @@ export function createProjectService(deps: ProjectServiceDeps): ProjectService {
 
   return {
     listForMember: (teamMemberId) => attempt(() => repository.listForMember(teamMemberId)),
+
+    listForMembers: (teamMemberIds) => attempt(() => repository.listForMembers(teamMemberIds)),
 
     stats: () => attempt(() => repository.stats()),
 
