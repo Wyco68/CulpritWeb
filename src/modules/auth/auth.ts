@@ -38,12 +38,6 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // refresh daily (rolling)
-    // Every admin page and write checks the session, which cost two queries (session, then user)
-    // per request. The cookie cache keeps a signed copy of the session in a second cookie and
-    // trusts it for 5 minutes, so most admin requests reach no table at all for auth. The trade:
-    // a session revoked from ANOTHER device stays usable for up to 5 minutes. Signing out on this
-    // device clears the cookie immediately. Acceptable for the single admin account.
-    cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
   advanced: {
     cookiePrefix: 'culprit',
