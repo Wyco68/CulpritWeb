@@ -52,7 +52,9 @@ export function PhotoGallery({
 
   return (
     <div className={className}>
-      <div className="relative overflow-hidden rounded-xl border border-border bg-muted">
+      {/* The dialog's own surface behind the photos, with no frame: a photo narrower or shorter
+          than the viewing area sits on the popup itself instead of inside a visible letterbox. */}
+      <div className="relative overflow-hidden bg-surface">
         {/* Current photo count */}
         <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-full bg-foreground/70 px-2.5 py-1 text-xs font-medium tabular-nums text-background backdrop-blur-sm">
           {currentIndex + 1} / {urls.length}
