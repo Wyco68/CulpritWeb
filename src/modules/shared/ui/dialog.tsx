@@ -19,7 +19,7 @@ export interface DialogProps {
   className?: string;
   closeLabel?: string;
   /** `sm` for a confirmation, `md` (default) for a form, `lg` for wide content. */
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Optional icon in a tile beside the title. */
   icon?: LucideIcon;
   /** `destructive` tints the icon tile — a confirmation for something that cannot be undone. */
@@ -35,6 +35,7 @@ const SIZES: Record<NonNullable<DialogProps['size']>, string> = {
   sm: 'sm:max-w-md',
   md: 'sm:max-w-xl',
   lg: 'sm:max-w-4xl',
+  xl: 'sm:max-w-6xl',
 };
 
 /**

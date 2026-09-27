@@ -29,7 +29,8 @@ export function EventDetailDialog({
   if (!event) return null;
 
   const participants = event.participants;
-  const hasMedia = event.photoUrls.length > 0 || event.videoUrls.length > 0;
+  const hasMedia =
+    event.photoUrls.length > 0 || event.videoUrls.length > 0;
 
   return (
     <Dialog
@@ -38,8 +39,10 @@ export function EventDetailDialog({
       title={event.title}
       description={`${dateFormatter.format(event.eventDate)} at ${timeFormatter.format(event.eventDate)}`}
       closeLabel="Close"
-      // Wider than the default dialog: this one holds a reading column and a sidebar side by side.
-      size="lg"
+      // The larger dialog gives the Instagram-style photo viewer enough room
+      // while keeping the participant sidebar visible on desktop.
+      size="xl"
+      className="h-[85dvh]"
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_14rem]">
         <div className="min-w-0">
@@ -54,11 +57,15 @@ export function EventDetailDialog({
         </div>
 
         {participants.length > 0 && (
-          <aside aria-label="Participants" className="lg:border-l lg:border-border lg:pl-6">
+          <aside
+            aria-label="Participants"
+            className="lg:border-l lg:border-border lg:pl-6"
+          >
             <h3 className="text-sm font-semibold text-foreground">
               Participants
               <span className="tabular ml-2">{participants.length}</span>
             </h3>
+
             <ul className="mt-3 flex flex-col">
               {participants.map((participant) => (
                 <li
@@ -73,12 +80,16 @@ export function EventDetailDialog({
                     fallback={participant.name.slice(0, 1).toUpperCase()}
                     size="sm"
                   />
+
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
                       {participant.name}
                     </p>
+
                     {participant.role && (
-                      <p className="truncate text-xs text-muted-foreground">{participant.role}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {participant.role}
+                      </p>
                     )}
                   </div>
                 </li>
