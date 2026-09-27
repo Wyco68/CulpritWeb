@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ResearchList } from '../ui/research-list';
 import type { Research } from '../research.types';
 
@@ -17,7 +18,9 @@ const research = (overrides: Partial<Research>): Research => ({
   summary: 'Detecting evasive samples.',
   area: 'malware analysis',
   link: null,
-  photoUrl: null,
+  coverPhotoUrl: null,
+  photoUrls: [],
+  coverCrop: null,
   contributors: [],
   sortOrder: 0,
   createdAt: new Date('2024-01-01'),
@@ -61,5 +64,46 @@ describe('ResearchList', () => {
 
     expect(screen.getByText('Adversarial Malware Sandboxing')).toBeInTheDocument();
     expect(screen.queryByText(/^With/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the link and the gallery for Show Details, and shows them there', async () => {
+    const user = userEvent.setup();
+    render(
+      <ResearchList
+        items={[
+          research({
+            summary: 'The whole write-up.',
+            link: 'https://example.org/tool',
+            photoUrls: ['https://r2.example/a.jpg', 'https://r2.example/b.jpg'],
+          }),
+        ]}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: /View Project/ })).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Show Details: Adversarial Malware Sandboxing' }),
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('The whole write-up.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /View Project/ })).toHaveAttribute(
+      'href',
+      'https://example.org/tool',
+    );
+    expect(
+      within(dialog).getByRole('region', { name: /Adversarial Malware Sandboxing photo gallery/ }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getAllByRole('img')).toHaveLength(2);
+  });
+
+  it('covers the card with the first gallery photo when there is no dedicated cover', () => {
+    const { container } = render(
+      <ResearchList items={[research({ photoUrls: ['https://r2.example/first.jpg'] })]} />,
+    );
+    const cover = container.querySelector('li img');
+    expect(cover?.getAttribute('src')).toContain(
+      encodeURIComponent('https://r2.example/first.jpg'),
+    );
   });
 });

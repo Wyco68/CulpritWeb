@@ -92,3 +92,30 @@ describe('updateEventSchema', () => {
     expect(updateEventSchema.parse({ title: 'Renamed' }).photoUrls).toBeUndefined();
   });
 });
+
+describe('event cover', () => {
+  const crop = { url: 'https://r2.example/a.jpg', x: 0, y: 0.25, width: 1, height: 0.5 };
+
+  it('accepts a dedicated cover and its crop', () => {
+    const parsed = createEventSchema.parse({
+      ...VALID,
+      coverPhotoUrl: 'https://r2.example/a.jpg',
+      coverCrop: crop,
+    });
+    expect(parsed.coverPhotoUrl).toBe('https://r2.example/a.jpg');
+    expect(parsed.coverCrop).toEqual(crop);
+  });
+
+  it('takes an explicit null as "clear", and an absent key as "leave alone"', () => {
+    const cleared = updateEventSchema.parse({ coverPhotoUrl: null, coverCrop: null });
+    expect(cleared.coverPhotoUrl).toBeNull();
+    expect(cleared.coverCrop).toBeNull();
+    const untouched = updateEventSchema.parse({ title: 'Renamed' });
+    expect(untouched.coverPhotoUrl).toBeUndefined();
+    expect(untouched.coverCrop).toBeUndefined();
+  });
+
+  it('rejects a crop that runs off the photo', () => {
+    expect(updateEventSchema.safeParse({ coverCrop: { ...crop, y: 0.8 } }).success).toBe(false);
+  });
+});

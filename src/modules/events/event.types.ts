@@ -1,3 +1,5 @@
+import type { CoverCrop } from '@/modules/shared/lib/cover-crop';
+
 // Domain model — the shape services/routes work with. Mapped from the Prisma row inside the
 // repository so Prisma's generated types never leak across the service boundary.
 /**
@@ -31,8 +33,12 @@ export type Event = {
   /** Long-form write-up, rendered only in the detail dialog. */
   content: string | null;
   eventDate: Date;
-  /** Public R2 URLs, in the order the admin arranged them. */
+  /** Public R2 URLs, uncropped, in the order the admin arranged them. */
   photoUrls: string[];
+  /** Dedicated card cover, uncropped. Null means the first photo is the cover. */
+  coverPhotoUrl: string | null;
+  /** How the cover is framed on the card; null centres it. See `resolveCover`. */
+  coverCrop: CoverCrop | null;
   /** YouTube watch/share URLs or bare video IDs — embed-only, never a stored video file. */
   videoUrls: string[];
   /** In `sortOrder`, then insertion order. Empty for an event nobody has been added to. */

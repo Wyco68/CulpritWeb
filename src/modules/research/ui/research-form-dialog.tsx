@@ -13,7 +13,8 @@ import { Input } from '@/modules/shared/ui/input';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { BylineField } from '@/modules/shared/ui/byline-field';
 import { FormField } from '@/modules/shared/ui/form-field';
-import { PhotoUpload } from '@/modules/shared/ui/photo-upload';
+import { CoverField } from '@/modules/shared/ui/cover-field';
+import { GalleryField } from '@/modules/shared/ui/gallery-field';
 // Deep, module-internal imports (not the barrel): `@/modules/research`'s index also re-exports
 // `getResearchService`, whose composition root imports the Prisma repository (`pg`/`fs`, Node-only).
 // A Client Component importing that barrel — even a type-only import, confirmed empirically —
@@ -54,6 +55,8 @@ export function ResearchFormDialog({
     register,
     control,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
     reset,
   } = useForm<ResearchFormInput, unknown, CreateResearchInput>({
@@ -70,10 +73,18 @@ export function ResearchFormDialog({
       link: research?.link ?? '',
       // `null` (not `''`) when there is none: an empty string would fail the URL check, and null
       // is also what a removal sends so the column is actually cleared.
-      photoUrl: research?.photoUrl ?? null,
+      coverPhotoUrl: research?.coverPhotoUrl ?? null,
+      coverCrop: research?.coverCrop ?? null,
+      photoUrls: research?.photoUrls ?? [],
       sortOrder: research?.sortOrder ?? 0,
     },
   });
+
+  // Photos are managed by their own widgets rather than `register`, so they are read and written
+  // through watch/setValue. `?? []` guards the first render before `values` has been applied.
+  const photoUrls = watch('photoUrls') ?? [];
+  const coverPhotoUrl = watch('coverPhotoUrl') ?? null;
+  const coverCrop = watch('coverCrop') ?? null;
 
   const mutation = useMutation({
     mutationFn: (input: CreateResearchInput) => submitResearch(research?.id, input),
@@ -90,6 +101,8 @@ export function ResearchFormDialog({
     },
   });
 
+  const busy = isSubmitting || mutation.isPending;
+
   return (
     <FormDialog
       icon={FlaskConical}
@@ -98,7 +111,7 @@ export function ResearchFormDialog({
       onOpenChange={onOpenChange}
       title={isEdit ? 'Edit research work' : 'Add research work'}
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      submitting={isSubmitting || mutation.isPending}
+      submitting={busy}
       dirty={isDirty}
       errorCount={Object.keys(errors).length}
     >
@@ -135,20 +148,38 @@ export function ResearchFormDialog({
         </FormField>
       </FormGroup>
 
-      <FormGroup title="Card photo" description="Shown at the top of the work's card. Optional.">
-        <Controller
-          control={control}
-          name="photoUrl"
-          render={({ field }) => (
-            <PhotoUpload
-              variant="landscape"
-              label="Photo"
-              value={field.value}
-              onChange={field.onChange}
-              endpoint="/api/admin/research/photo"
-            />
-          )}
+      <FormGroup
+        title="Card cover"
+        description="The photo at the top of the work's card, cropped to fit it. Without a cover of its own, the card uses the first gallery photo."
+      >
+        <CoverField
+          coverPhotoUrl={coverPhotoUrl}
+          coverCrop={coverCrop}
+          photoUrls={photoUrls}
+          endpoint="/api/admin/research/photo"
+          disabled={busy}
+          onChange={(next) => {
+            setValue('coverPhotoUrl', next.coverPhotoUrl, { shouldDirty: true });
+            setValue('coverCrop', next.coverCrop, { shouldDirty: true });
+          }}
         />
+      </FormGroup>
+
+      <FormGroup title="Gallery" description="Shown whole in the work's Show Details. Optional.">
+        <GalleryField
+          urls={photoUrls}
+          endpoint="/api/admin/research/photo"
+          firstIsCover={!coverPhotoUrl}
+          disabled={busy}
+          onChange={(next) =>
+            setValue('photoUrls', next, { shouldDirty: true, shouldValidate: true })
+          }
+        />
+        {errors.photoUrls && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {errors.photoUrls.message}
+          </p>
+        )}
       </FormGroup>
 
       <FormGroup title="Credit and link">
