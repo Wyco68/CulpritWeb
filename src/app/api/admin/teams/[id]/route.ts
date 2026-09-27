@@ -1,0 +1,53 @@
+import type { NextRequest } from 'next/server';
+import { getTeamService, updateTeamSchema } from '@/modules/research-groups';
+import { requireAdmin } from '@/modules/auth';
+import {
+  apiError,
+  apiUnexpected,
+  apiValidationError,
+  respond,
+} from '@/modules/shared/lib/api-response';
+import { entityId } from '@/modules/shared/lib/schema-fields';
+import { revalidateOn } from '@/modules/shared/lib/revalidate';
+import { readJsonBody } from '@/modules/shared/lib/request';
+
+// Admin: rename, move or delete a team (ADR-020). Deleting leaves its members with no team.
+
+export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const admin = await requireAdmin();
+    if (!admin.ok) return apiError(admin.error);
+
+    const { id } = await ctx.params;
+    const parsedId = entityId.safeParse(id);
+    if (!parsedId.success) return apiValidationError(parsedId.error);
+
+    const parsed = updateTeamSchema.safeParse(await readJsonBody(request));
+    if (!parsed.success) return apiValidationError(parsed.error);
+
+    const result = await getTeamService().update(
+      parsedId.data,
+      parsed.data,
+      `admin:${admin.data.userId}`,
+    );
+    return respond(revalidateOn(result, 'team'));
+  } catch (error) {
+    return apiUnexpected(error);
+  }
+}
+
+export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const admin = await requireAdmin();
+    if (!admin.ok) return apiError(admin.error);
+
+    const { id } = await ctx.params;
+    const parsedId = entityId.safeParse(id);
+    if (!parsedId.success) return apiValidationError(parsedId.error);
+
+    const result = await getTeamService().remove(parsedId.data, `admin:${admin.data.userId}`);
+    return respond(revalidateOn(result, 'team'));
+  } catch (error) {
+    return apiUnexpected(error);
+  }
+}

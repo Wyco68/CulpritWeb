@@ -8,19 +8,13 @@ import {
 import type { CvEntryRepository } from '../cv-entry.repository';
 import type { CourseRepository } from '../course.repository';
 import { ABOUT_SECTIONS } from '../teaching.types';
-import type { MemberTeamDirectory } from '../teaching.service';
+import type { MemberDirectory } from '../teaching.service';
 import type { AuditContext, Course, CvEntry } from '../teaching.types';
-import type { TeamKind } from '@/modules/shared/lib/team-kind';
 
 const SILENT_LOGGER = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 
-/**
- * The injected team lookup. Every member in a test belongs to `kind`; `unknown` stands for an id
- * that does not resolve to a member at all.
- */
-const membersOn = (kind: TeamKind | 'unknown'): MemberTeamDirectory => ({
-  teamKindOf: async () => (kind === 'unknown' ? null : kind),
-});
+/** The injected member lookup: every id resolves, unless `known` is false. */
+const members = (known = true): MemberDirectory => ({ exists: async () => known });
 const NOW = new Date('2026-09-02T00:00:00Z');
 
 function makeEntry(overrides: Partial<CvEntry> = {}): CvEntry {
@@ -154,7 +148,7 @@ class FakeCourseRepository implements CourseRepository {
 describe('cv entry service', () => {
   it('creates an entry and writes an audit row', async () => {
     const repository = new FakeEntryRepository();
-    const service = createCvEntryService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCvEntryService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.create(
       { teamMemberId: 'mem_1', section: 'teaching_role', title: 'Lecturer' },
@@ -168,7 +162,7 @@ describe('cv entry service', () => {
   it('records the before-state when deleting', async () => {
     const repository = new FakeEntryRepository();
     repository.seed(makeEntry({ id: 'cv_9', section: 'teaching_award', title: 'Teaching Prize' }));
-    const service = createCvEntryService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCvEntryService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.remove('cv_9', 'admin:1');
 
@@ -183,7 +177,7 @@ describe('cv entry service', () => {
   it('refuses to update or delete an id that does not exist', async () => {
     const service = createCvEntryService({
       repository: new FakeEntryRepository(),
-      members: membersOn('director'),
+      members: members(),
       logger: SILENT_LOGGER,
     });
 
@@ -195,7 +189,7 @@ describe('cv entry service', () => {
     const repository = new FakeEntryRepository();
     repository.seed(makeEntry({ id: 'a', teamMemberId: 'mem_1' }));
     repository.seed(makeEntry({ id: 'b', teamMemberId: 'mem_2' }));
-    const service = createCvEntryService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCvEntryService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.listForMember('mem_2');
 
@@ -207,7 +201,7 @@ describe('cv entry service', () => {
     repository.seed(makeEntry({ id: 'a', section: 'education' }));
     repository.seed(makeEntry({ id: 'b', section: 'education' }));
     repository.seed(makeEntry({ id: 'c', section: 'invited_talk' }));
-    const service = createCvEntryService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCvEntryService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.stats();
 
@@ -229,7 +223,7 @@ describe('cv entry service', () => {
 describe('course service', () => {
   it('creates a course and writes an audit row', async () => {
     const repository = new FakeCourseRepository();
-    const service = createCourseService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCourseService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.create(
       { teamMemberId: 'mem_1', title: 'Systems Security', level: 'Undergraduate' },
@@ -245,7 +239,7 @@ describe('course service', () => {
     repository.seed(makeCourse({ id: 'b', teamMemberId: 'mem_1', sortOrder: 2 }));
     repository.seed(makeCourse({ id: 'a', teamMemberId: 'mem_1', sortOrder: 1 }));
     repository.seed(makeCourse({ id: 'x', teamMemberId: 'mem_2' }));
-    const service = createCourseService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCourseService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.listForMember('mem_1');
 
@@ -255,7 +249,7 @@ describe('course service', () => {
   it('refuses to delete an id that does not exist', async () => {
     const service = createCourseService({
       repository: new FakeCourseRepository(),
-      members: membersOn('director'),
+      members: members(),
       logger: SILENT_LOGGER,
     });
 
@@ -266,7 +260,7 @@ describe('course service', () => {
     const repository = new FakeCourseRepository();
     repository.seed(makeCourse({ id: 'a' }));
     repository.seed(makeCourse({ id: 'b' }));
-    const service = createCourseService({ repository, members: membersOn('director'), logger: SILENT_LOGGER });
+    const service = createCourseService({ repository, members: members(), logger: SILENT_LOGGER });
 
     const result = await service.stats();
 
@@ -275,133 +269,52 @@ describe('course service', () => {
   });
 });
 
-// The per-team attribute rules (shared/lib/team-kind), enforced on write. Rejections are
-// `validation` errors — nothing in this codebase has a state machine, so no service returns 409 —
-// and they must leave NOTHING behind: no row, no audit entry.
-describe('team rules', () => {
-  const CV_INPUT = { teamMemberId: 'mem_1', section: 'education', title: 'PhD' } as const;
-  const COURSE_INPUT = { teamMemberId: 'mem_1', title: 'Systems Security', level: 'Graduate' };
+// Any member may hold any kind of entry since ADR-020 — what shows on their profile is their own
+// `hiddenSections`, applied on read. The write only checks the member exists.
+describe('member checks', () => {
+  it('accepts every CV section and courses for any member', async () => {
+    const cv = createCvEntryService({
+      repository: new FakeEntryRepository(),
+      members: members(),
+      logger: SILENT_LOGGER,
+    });
+    const courses = createCourseService({
+      repository: new FakeCourseRepository(),
+      members: members(),
+      logger: SILENT_LOGGER,
+    });
 
-  function cvServiceFor(kind: TeamKind | 'unknown') {
-    const repository = new FakeEntryRepository();
-    return {
-      repository,
-      service: createCvEntryService({
-        repository,
-        members: membersOn(kind),
-        logger: SILENT_LOGGER,
-      }),
-    };
-  }
-
-  function courseServiceFor(kind: TeamKind | 'unknown') {
-    const repository = new FakeCourseRepository();
-    return {
-      repository,
-      service: createCourseService({
-        repository,
-        members: membersOn(kind),
-        logger: SILENT_LOGGER,
-      }),
-    };
-  }
-
-  it.each(['director', 'professor'] as const)('lets a %s member teach a course', async (kind) => {
-    const { repository, service } = courseServiceFor(kind);
-
-    expect((await service.create(COURSE_INPUT, 'admin:1')).ok).toBe(true);
-    expect(repository.store.size).toBe(1);
-  });
-
-  it.each(['research', 'development'] as const)(
-    'rejects a course for a %s member, writing nothing',
-    async (kind) => {
-      const { repository, service } = courseServiceFor(kind);
-
-      const result = await service.create(COURSE_INPUT, 'admin:1');
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.error.kind).toBe('validation');
-      expect(repository.store.size).toBe(0);
-      expect(repository.audits).toEqual([]);
-    },
-  );
-
-  it('rejects updating a course whose member has since moved off a teaching team', async () => {
-    const { repository, service } = courseServiceFor('research');
-    repository.seed(makeCourse({ id: 'course_9' }));
-
-    const result = await service.update('course_9', { title: 'Renamed' }, 'admin:1');
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.kind).toBe('validation');
-    expect(repository.store.get('course_9')?.title).toBe('Applied Cryptography');
-    expect(repository.audits).toEqual([]);
-  });
-
-  it.each(['director', 'professor'] as const)('lets a %s member have any CV section', async (kind) => {
-    const { service } = cvServiceFor(kind);
-
-    expect((await service.create({ ...CV_INPUT, section: 'education' }, 'admin:1')).ok).toBe(true);
-    expect((await service.create({ ...CV_INPUT, section: 'teaching_award' }, 'admin:1')).ok).toBe(
-      true,
+    for (const section of ['education', 'teaching_award', 'research_interest'] as const) {
+      const result = await cv.create({ teamMemberId: 'mem_1', section, title: 'X' }, 'admin:1');
+      expect(result.ok).toBe(true);
+    }
+    const course = await courses.create(
+      { teamMemberId: 'mem_1', title: 'Systems Security', level: 'Graduate' },
+      'admin:1',
     );
-  });
-
-  it('lets a research member have research interests only', async () => {
-    const { repository, service } = cvServiceFor('research');
-
-    const allowed = await service.create({ ...CV_INPUT, section: 'research_interest' }, 'admin:1');
-    const rejected = await service.create({ ...CV_INPUT, section: 'education' }, 'admin:1');
-
-    expect(allowed.ok).toBe(true);
-    expect(rejected.ok).toBe(false);
-    if (!rejected.ok) expect(rejected.error.kind).toBe('validation');
-    expect(repository.store.size).toBe(1);
-  });
-
-  it.each(['education', 'research_interest', 'teaching_role'] as const)(
-    'rejects a %s entry for a development member',
-    async (section) => {
-      const { repository, service } = cvServiceFor('development');
-
-      const result = await service.create({ ...CV_INPUT, section }, 'admin:1');
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.error.kind).toBe('validation');
-      expect(repository.store.size).toBe(0);
-      expect(repository.audits).toEqual([]);
-    },
-  );
-
-  it('rejects MOVING an entry into a section the member’s team cannot have', async () => {
-    const { repository, service } = cvServiceFor('research');
-    repository.seed(makeEntry({ id: 'cv_9', section: 'research_interest', title: 'Privacy' }));
-
-    const result = await service.update('cv_9', { section: 'education' }, 'admin:1');
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.kind).toBe('validation');
-    expect(repository.store.get('cv_9')?.section).toBe('research_interest');
-    expect(repository.audits).toEqual([]);
-  });
-
-  it('allows an update that leaves the section where the team allows it', async () => {
-    const { repository, service } = cvServiceFor('research');
-    repository.seed(makeEntry({ id: 'cv_9', section: 'research_interest', title: 'Privacy' }));
-
-    const result = await service.update('cv_9', { title: 'Privacy by design' }, 'admin:1');
-
-    expect(result.ok).toBe(true);
-    expect(repository.store.get('cv_9')?.title).toBe('Privacy by design');
+    expect(course.ok).toBe(true);
   });
 
   it('rejects a write aimed at a member id that does not exist', async () => {
-    const cv = cvServiceFor('unknown');
-    const course = courseServiceFor('unknown');
+    const cv = createCvEntryService({
+      repository: new FakeEntryRepository(),
+      members: members(false),
+      logger: SILENT_LOGGER,
+    });
+    const courses = createCourseService({
+      repository: new FakeCourseRepository(),
+      members: members(false),
+      logger: SILENT_LOGGER,
+    });
 
-    const cvResult = await cv.service.create(CV_INPUT, 'admin:1');
-    const courseResult = await course.service.create(COURSE_INPUT, 'admin:1');
+    const cvResult = await cv.create(
+      { teamMemberId: 'gone', section: 'education', title: 'PhD' },
+      'admin:1',
+    );
+    const courseResult = await courses.create(
+      { teamMemberId: 'gone', title: 'Systems Security', level: 'Graduate' },
+      'admin:1',
+    );
 
     expect(cvResult.ok).toBe(false);
     if (!cvResult.ok) expect(cvResult.error.kind).toBe('not_found');

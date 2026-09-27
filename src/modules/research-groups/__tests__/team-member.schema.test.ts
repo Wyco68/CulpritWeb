@@ -6,11 +6,10 @@ describe('createTeamMemberSchema', () => {
     const result = createTeamMemberSchema.safeParse({
       name: 'Jane Doe',
       role: 'PhD Candidate',
-      teamKind: 'research',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.isDirector).toBeUndefined();
+      expect(result.data.teamId).toBeUndefined();
       // The link list defaults to empty, which is how a member with no links is expressed.
       expect(result.data.links).toEqual([]);
     }
@@ -24,7 +23,8 @@ describe('createTeamMemberSchema', () => {
       affiliation: 'Department of Computer Engineering, Chiang Mai University',
       bio: 'Works on privacy by design.',
       photoUrl: 'https://example.com/jane.jpg',
-      teamKind: 'director',
+      teamId: 'team_research',
+      hiddenSections: ['courses'],
       links: [
         { label: 'LinkedIn', url: 'https://www.linkedin.com/in/example' },
         { label: 'Google Scholar', url: 'https://scholar.google.com/citations?user=x' },
@@ -34,24 +34,36 @@ describe('createTeamMemberSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('requires name, role and a team', () => {
+  it('requires name and role, but not a team', () => {
     const result = createTeamMemberSchema.safeParse({});
     expect(result.success).toBe(false);
     if (result.success) return;
     const fieldErrors = result.error.flatten().fieldErrors;
     expect(fieldErrors.name).toBeDefined();
     expect(fieldErrors.role).toBeDefined();
-    expect(fieldErrors.teamKind).toBeDefined();
+    expect(fieldErrors.teamId).toBeUndefined();
   });
 
-  it('rejects an unknown team', () => {
+  it('takes an explicit null team as "no team"', () => {
+    expect(updateTeamMemberSchema.parse({ teamId: null }).teamId).toBeNull();
+  });
+
+  it('rejects an unknown profile section', () => {
     expect(
-      createTeamMemberSchema.safeParse({ name: 'X', role: 'Y', teamKind: 'visiting' }).success,
+      createTeamMemberSchema.safeParse({ name: 'X', role: 'Y', hiddenSections: ['hobbies'] })
+        .success,
     ).toBe(false);
   });
 
+  it('stores hidden sections de-duplicated and in page order', () => {
+    const parsed = updateTeamMemberSchema.parse({
+      hiddenSections: ['courses', 'research_interest', 'courses', 'publications'],
+    });
+    expect(parsed.hiddenSections).toEqual(['research_interest', 'publications', 'courses']);
+  });
+
   it('accepts any label an admin types, but only an http(s) link URL', () => {
-    const base = { name: 'X', role: 'Y', teamKind: 'development' as const };
+    const base = { name: 'X', role: 'Y' };
 
     // The label is free text on purpose — adding a service must not need a migration.
     expect(
@@ -82,7 +94,6 @@ describe('createTeamMemberSchema', () => {
     const parsed = createTeamMemberSchema.parse({
       name: 'X',
       role: 'Y',
-      teamKind: 'development',
       links: [{ label: '<b>GitHub</b>', url: 'https://github.com/example' }],
     });
     expect(parsed.links[0]!.label).toBe('GitHub');
@@ -102,7 +113,6 @@ describe('createTeamMemberSchema', () => {
     const parsed = createTeamMemberSchema.parse({
       name: '<b>Jane</b>',
       role: 'PhD',
-      teamKind: 'research',
       affiliation: '<i>Lab</i>',
     });
     expect(parsed.name).toBe('Jane');
@@ -113,8 +123,11 @@ describe('createTeamMemberSchema', () => {
     const parsed = createTeamMemberSchema.parse({
       name: 'Jane',
       role: 'PhD',
-      teamKind: 'research',
       nickname: 'J',
+      // Replaced by `teamId` and `hiddenSections` on 2026-09-27 (ADR-020).
+      teamKind: 'research',
+      // Not an admin input since 2026-09-27 either: nobody can be made director (ADR-020).
+      isDirector: true,
       showOnTeamTab: false,
       researchGroupId: 'grp_1',
       // Replaced by `links` on 2026-09-12.
@@ -122,6 +135,8 @@ describe('createTeamMemberSchema', () => {
       googleScholarUrl: 'https://scholar.google.com/citations?user=x',
     });
     expect(parsed).not.toHaveProperty('nickname');
+    expect(parsed).not.toHaveProperty('teamKind');
+    expect(parsed).not.toHaveProperty('isDirector');
     expect(parsed).not.toHaveProperty('showOnTeamTab');
     expect(parsed).not.toHaveProperty('researchGroupId');
     expect(parsed).not.toHaveProperty('linkedinUrl');

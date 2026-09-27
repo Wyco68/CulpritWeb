@@ -99,18 +99,10 @@ model Publication {
   @@map("publication")
 }
 
-/// Which team a member belongs to. A flat enum discriminator on `team_member`, NOT a groups table:
-/// the `ResearchGroup` entity was deliberately deleted in ADR-016 and is not coming back. The four
-/// teams are a fixed editorial grouping of the one Team tab, not user-managed content — an admin
-/// never creates a fifth one, so there is nothing for a table to hold.
-///
-/// The team decides which sections a member's profile page may carry. The rules live in ONE place,
-/// src/modules/shared/lib/team-kind.ts, and are enforced by the services on write and again on
-/// read (a member whose team changed keeps any now-disallowed rows; they simply stop rendering):
-///
-///   director/professor  bio, all 7 CV sections, courses, projects, research+publications, links
-///   research            bio, research_interest only,  no courses, projects, research+publications, links
-///   development         bio, no CV sections,          no courses, projects, no research/publications, links
+/// DEPRECATED (ADR-020). The fixed four-team vocabulary, superseded by the admin-managed `Team`
+/// table and each member's `hiddenSections`. Kept, with `team_member.team_kind` made nullable, only
+/// so the migration that replaced it stayed additive while the deployed app still read it. Nothing
+/// in src/ reads or writes it; drop both in a follow-up migration once that deploy is live.
 enum TeamKind {
   director
   professor
@@ -118,9 +110,41 @@ enum TeamKind {
   development
 }
 
+/// An admin-defined team on the public Team tab (ADR-020) — "Research Team", "Alumni", whatever the
+/// lab calls its groups. A name and a position, nothing more: what a member's profile shows is that
+/// member's own choice (`TeamMember.hiddenSections`), not the team's. Deleting a team leaves its
+/// members in place with no team.
+model Team {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  sortOrder Int          @default(0) @map("sort_order")
+  members   TeamMember[]
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@map("team")
+}
+
+/// A section of a member's public profile page that the admin can hide for that member (ADR-020),
+/// declared in the order the page shows them — most important first. Biography and links are not
+/// here: they show whenever they are filled in.
+enum ProfileSection {
+  research_interest
+  publications
+  research
+  projects
+  education
+  invited_talk
+  fellowship
+  scholarship
+  courses
+  teaching_role
+  teaching_award
+}
+
 /// A member of the lab. Every member is listed on the public Team tab and has a profile page at
 /// `/team/[id]`, which renders this row plus its `CvEntry`, `Course`, `Project` and `MemberLink`
-/// rows — whichever of them the member's `teamKind` allows.
+/// rows — less any section the admin has hidden for this member (`hiddenSections`, ADR-020).
 ///
 /// The director — the professor who runs the lab — is a member like everyone else, flagged
 /// `isDirector`. Her bio, CV, links and photo lived on `Profile` until 2026-09-11 (ADR-016).
@@ -142,14 +166,18 @@ model TeamMember {
   affiliation         String?
   bio                 String?            @db.Text
   photoUrl            String?            @map("photo_url")
-  /// Which team this member belongs to, and therefore which profile sections they may have.
-  /// No DB-level default on purpose: the team is an editorial decision the admin makes on every
-  /// create, so a silent fallback would only hide a bug. `isDirector` is kept consistent with it by
-  /// the service (`resolveTeamAssignment`) — the flag is true exactly when the team is `director`.
-  teamKind            TeamKind           @map("team_kind")
-  /// The lab director. Sorts first on the Team tab whatever `sortOrder` says. See the model comment
-  /// for the one-director invariant. Redundant with `teamKind = director` by design: it is what the
-  /// partial unique index constrains, and what every "director first" ordering reads.
+  /// Deprecated — see `enum TeamKind`. Unused by the app; dropped in a follow-up migration.
+  teamKind            TeamKind?          @map("team_kind")
+  /// The admin-defined team this member is listed under, or null — the director usually has none,
+  /// since the director heads the page on their own.
+  teamId              String?            @map("team_id")
+  team                Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  /// Profile sections the admin has switched off for this member. Empty shows everything that has
+  /// content. Hiding a section never deletes its rows — switching it back on restores them.
+  hiddenSections      ProfileSection[]   @default([]) @map("hidden_sections")
+  /// The lab director, featured at the top of the Team tab on their own. At most one member has it —
+  /// the partial unique index `team_member_one_director` enforces that, and the repository clears
+  /// the flag on everyone else in the same write that sets it.
   isDirector          Boolean            @default(false) @map("is_director")
   sortOrder           Int                @default(0) @map("sort_order")
   /// Soft links from events this member was added to. The event rows snapshot their own copy of
@@ -164,6 +192,7 @@ model TeamMember {
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @updatedAt @map("updated_at")
 
+  @@index([teamId])
   @@map("team_member")
 }
 

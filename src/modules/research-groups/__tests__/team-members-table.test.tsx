@@ -26,12 +26,15 @@ const member: TeamMember = {
   affiliation: null,
   bio: null,
   photoUrl: null,
-  teamKind: 'research',
+  team: null,
+  hiddenSections: [],
   isDirector: true,
   sortOrder: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+const TEAMS = [{ id: 'team_r', name: 'Research Team', sortOrder: 1 }];
 
 const memberLink = { id: 'l1', label: 'GitHub', url: 'https://github.com/jane', sortOrder: 0 };
 
@@ -39,7 +42,7 @@ function renderTable(items: TeamMember[], linksByMember: Record<string, MemberLi
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <TeamMembersTable items={items} linksByMember={linksByMember} />
+      <TeamMembersTable items={items} teams={TEAMS} linksByMember={linksByMember} />
     </QueryClientProvider>,
   );
 }
@@ -74,7 +77,7 @@ describe('TeamMembersTable', () => {
     );
   });
 
-  it('creates a director with a name on papers (POST)', async () => {
+  it('creates a member on a team, with a name on papers (POST)', async () => {
     fetchMock.mockResolvedValue({ json: async () => ({ ok: true, data: {} }) });
     const user = userEvent.setup();
     renderTable([]);
@@ -84,9 +87,9 @@ describe('TeamMembersTable', () => {
     await user.type(screen.getByLabelText(/^Name(?! on papers)/), 'Dr. Alex Kim');
     await user.type(screen.getByLabelText(/^Name on papers/), 'A. Kim');
     await user.type(screen.getByLabelText(/^Role/), 'Postdoc');
-    // The team is one select now: picking "Director" is what makes someone the director — the
-    // service derives `isDirector` from it.
-    await user.selectOptions(screen.getByRole('combobox', { name: /Team/ }), 'director');
+    // Teams are the admin's own (ADR-020). There is no director control: nobody can be made one.
+    await user.selectOptions(screen.getByRole('combobox', { name: /Team/ }), 'Research Team');
+    expect(screen.queryByRole('switch', { name: /director/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
@@ -100,8 +103,9 @@ describe('TeamMembersTable', () => {
     expect(body).toMatchObject({
       name: 'Dr. Alex Kim',
       citationName: 'A. Kim',
-      teamKind: 'director',
+      teamId: 'team_r',
     });
+    expect(body).not.toHaveProperty('isDirector');
     expect(body).not.toHaveProperty('researchGroupId');
     await waitFor(() => expect(refreshMock).toHaveBeenCalled());
   });

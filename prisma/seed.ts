@@ -38,7 +38,6 @@ const DIRECTOR = {
   role: 'Assistant Professor',
   affiliation: 'Department of Computer Engineering, Chiang Mai University',
   bio: "I am currently an assistant professor in Computer Engineering at Chiang Mai University. I obtained my PhD in Computer Science from King's College London in 2021. During my PhD studies, I was a research fellow at the School of Informatics, University of Edinburgh, UK; a guest teacher at the London School of Economics and Political Science (with an Excellence in Education Award 2020-2021); and a teaching assistant at King's College London. I have been invited to be a visiting researcher in many prestigious universities in Europe and the UK, such as the University College London (2025), King's College London (2024 and 2025), and Nantes Université, which is funded by the European Union's Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant (2026). I have won multiple awards, including the Erasmus Mundus Scholarship (a ten-month program in Italy in 2009, a one-month program in the UK in 2015 and a ten-day program in Portugal in 2022), and received student travel awards at the Symposium on Search-Based Software Engineering (SSBSE 2019), Estonia and the UK PhD Winter School on Cyber Security 2020, Newcastle, UK.",
-  teamKind: 'director' as const,
   isDirector: true,
   sortOrder: -1,
 };
@@ -50,9 +49,10 @@ const DIRECTOR_LINKS = [
   { label: 'Google Scholar', url: 'https://scholar.google.com/citations?user=Evff3gsAAAAJ&hl=en' },
 ];
 
-// The team that builds and runs this site. A `development` member has a bio, projects and links and
-// nothing else — no CV sections, no courses, no bylines — so this is what exercises that path with
-// real data.
+// The team that builds and runs this site: a bio, projects and links each. Which profile sections
+// show is decided per member by the admin (ADR-020), never by the team, so nothing is hidden here.
+const DEVELOPMENT_TEAM = { name: 'Development Team', sortOrder: 3 };
+
 const DEVELOPMENT_MEMBERS = [
   {
     member: {
@@ -60,7 +60,6 @@ const DEVELOPMENT_MEMBERS = [
       role: 'Web Developer',
       affiliation: 'Culprit Web Development Team',
       bio: 'Builds and maintains the lab site — the public pages, the admin app behind them, and the deployment pipeline that ships both.',
-      teamKind: 'development' as const,
       sortOrder: 10,
     },
     links: [{ label: 'GitHub', url: 'https://github.com/Wyco68' }],
@@ -221,7 +220,9 @@ async function seedDirector() {
       })),
     );
     await tx.cvEntry.createMany({ data: entries });
-    console.log(`Director created with ${entries.length} CV entries and ${DIRECTOR_LINKS.length} links.`);
+    console.log(
+      `Director created with ${entries.length} CV entries and ${DIRECTOR_LINKS.length} links.`,
+    );
   });
 }
 
@@ -235,11 +236,16 @@ async function seedDevelopmentTeam() {
     await prisma.teamMember.create({
       data: {
         ...member,
+        team: {
+          connectOrCreate: { where: { name: DEVELOPMENT_TEAM.name }, create: DEVELOPMENT_TEAM },
+        },
         links: { create: links.map((link, sortOrder) => ({ ...link, sortOrder })) },
         projects: { create: projects.map((project, sortOrder) => ({ ...project, sortOrder })) },
       },
     });
-    console.log(`${member.name} created with ${projects.length} projects and ${links.length} links.`);
+    console.log(
+      `${member.name} created with ${projects.length} projects and ${links.length} links.`,
+    );
   }
 }
 

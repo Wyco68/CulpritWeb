@@ -1,15 +1,22 @@
 import { z } from 'zod';
 import { stripHtml } from '@/modules/shared/lib/sanitize';
 import {
+  entityId,
   httpUrl,
   optionalText,
   safeText,
   sortOrder,
 } from '@/modules/shared/lib/schema-fields';
-import { TEAM_KINDS } from '@/modules/shared/lib/team-kind';
+import { PROFILE_SECTIONS } from '@/modules/shared/lib/profile-sections';
 
-/** Which team a member belongs to. Mirrors the Prisma enum; validated at the boundary. */
-export const teamKindSchema = z.enum(TEAM_KINDS);
+/**
+ * The profile sections to hide. De-duplicated and put in page order, so the stored list is
+ * canonical whatever order the switches were flipped in.
+ */
+export const hiddenSectionsSchema = z
+  .array(z.enum(PROFILE_SECTIONS))
+  .max(PROFILE_SECTIONS.length)
+  .transform((sections) => PROFILE_SECTIONS.filter((section) => sections.includes(section)));
 
 /**
  * One external profile link. `label` is free text the admin types — deliberately NOT validated
@@ -43,14 +50,11 @@ export const createTeamMemberSchema = z.object({
   // Nullable, not just optional: an undefined key vanishes from the JSON body and the update
   // route reads that as "leave the column alone", so removing a photo needs an explicit null.
   photoUrl: httpUrl.nullable().optional(),
-  /** Required: the team is an editorial decision, with no sensible default to fall back on. */
-  teamKind: teamKindSchema,
-  /**
-   * Derived from `teamKind` by the service and accepted only for backward compatibility — sending
-   * `isDirector: true` is the same as sending `teamKind: 'director'`. When both arrive, the team
-   * wins. Setting it on one member clears it on every other member in the same write.
-   */
-  isDirector: z.boolean().optional(),
+  /** The team they are listed under; `null` for none. Must name an existing team. */
+  teamId: entityId.nullable().optional(),
+  // No `isDirector`: the lab has exactly one director, and the admin cannot make anyone else one
+  // (ADR-020). Unknown keys are stripped, so a request that sends it changes nothing.
+  hiddenSections: hiddenSectionsSchema.optional(),
   /** The whole link list, replacing whatever is stored. Absent on an update means "leave alone". */
   links: linkList.default([]),
   sortOrder,

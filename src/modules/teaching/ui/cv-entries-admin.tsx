@@ -44,12 +44,8 @@ const CV_SECTION_DESCRIPTIONS: Record<CvSection, string> = {
   teaching_award: 'Teaching prizes and commendations.',
 };
 
-/**
- * Shown instead of a section's own description once the member's team no longer uses it. Said
- * where the rows are rather than in a banner at the top of the screen.
- */
-const RETIRED_DESCRIPTION =
-  'This team does not use this list, so these no longer appear on the public profile. They are kept on record — delete them, or move the member to a team that uses them.';
+/** Added to a section's description while it is switched off for this member (ADR-020). */
+const HIDDEN_NOTE = 'Hidden from the public profile — switch it on under “Shown on profile”.';
 
 export interface CvEntriesAdminProps {
   /** The member whose profile these lists belong to. */
@@ -57,10 +53,10 @@ export interface CvEntriesAdminProps {
   /** The lists to edit, in the order the public profile renders them. */
   sections: readonly CvSection[];
   /**
-   * Lists this member's team may NOT have but which still hold rows (ADR-017: a team change never
-   * deletes anything). Rendered after the editable ones, delete-only. Usually empty.
+   * Lists switched off for this member (ADR-020). Still fully editable — hiding is about the public
+   * page only — but marked, so nobody wonders why an entry is missing from the profile.
    */
-  retiredSections?: readonly CvSection[];
+  hiddenSections?: readonly string[];
   /** Every entry for those sections. Filtering happens here so the page stays a single query. */
   entries: CvEntry[];
 }
@@ -68,7 +64,7 @@ export interface CvEntriesAdminProps {
 export function CvEntriesAdmin({
   teamMemberId,
   sections,
-  retiredSections = [],
+  hiddenSections = [],
   entries,
 }: CvEntriesAdminProps) {
   const [formOpen, setFormOpen] = useState(false);
@@ -91,29 +87,28 @@ export function CvEntriesAdmin({
 
   return (
     <>
-      {[...sections, ...retiredSections].map((section) => {
+      {sections.map((section) => {
         const rows = entries.filter((entry) => entry.section === section);
         const itemLabel = CV_SECTION_ITEM_LABELS[section];
-        const retired = retiredSections.includes(section);
-        // A retired list with nothing in it is an empty box explaining an absence. Callers pass
-        // only the sections that still hold rows, and this keeps that true if one ever doesn't.
-        if (retired && rows.length === 0) return null;
+        const hidden = hiddenSections.includes(section);
 
         return (
           <div key={section} id={`cv-${section}`} className="scroll-mt-24">
             <FormSection
               title={CV_SECTION_LABELS[section]}
-              description={retired ? RETIRED_DESCRIPTION : CV_SECTION_DESCRIPTIONS[section]}
+              description={
+                hidden
+                  ? `${CV_SECTION_DESCRIPTIONS[section]} ${HIDDEN_NOTE}`
+                  : CV_SECTION_DESCRIPTIONS[section]
+              }
               badge={<FormSectionCount count={rows.length} />}
               action={
                 // Several sections sit on one screen, so a bare "Add" would give every button the
                 // same accessible name. The visible word stays inside the name (WCAG 2.5.3).
-                retired ? undefined : (
-                  <Button aria-label={`Add ${itemLabel}`} onClick={() => openCreate(section)}>
-                    <Plus className="size-4" aria-hidden="true" />
-                    Add
-                  </Button>
-                )
+                <Button aria-label={`Add ${itemLabel}`} onClick={() => openCreate(section)}>
+                  <Plus className="size-4" aria-hidden="true" />
+                  Add
+                </Button>
               }
             >
               <RecordTable
@@ -128,7 +123,7 @@ export function CvEntriesAdmin({
                 )}
                 statusHeader="Profile"
                 status={() =>
-                  retired
+                  hidden
                     ? { tone: 'neutral', label: 'Hidden', icon: EyeOff }
                     : { tone: 'ok', label: 'On profile' }
                 }
@@ -145,7 +140,6 @@ export function CvEntriesAdmin({
                     destructive: true,
                     onSelect: () => remove.request(entry),
                   };
-                  if (retired) return [del];
                   return [
                     {
                       label: 'Edit',

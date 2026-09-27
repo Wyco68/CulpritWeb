@@ -7,20 +7,23 @@ import { ProjectList } from '@/modules/projects';
 import { getPublicationService } from '@/modules/publications';
 import { getResearchService } from '@/modules/research';
 import {
-  allowsResearchAndPublications,
   CreditedWorkList,
   getTeamMemberService,
   isMemberByline,
   MemberCard,
+  PROFILE_SECTION_LABELS,
+  PROFILE_SECTIONS,
+  showsSection,
   type CreditedWork,
+  type ProfileSection,
 } from '@/modules/research-groups';
 import {
   CourseList,
-  CV_SECTION_LABELS,
   CV_SECTIONS,
   CvEntryList,
   groupByLevel,
   groupBySection,
+  type CvSection,
 } from '@/modules/teaching';
 import { cvSectionAnchorId } from '@/modules/teaching/ui/cv-entry-list';
 import { SectionNav, type SectionNavItem } from '@/modules/shared/ui/section-nav';
@@ -41,8 +44,8 @@ const loadProfile = cache(async (id: string) => {
  * Resolved here, at render time, against the full lists: a byline carries no link to a member
  * (ADR-016), so the match is `isMemberByline` over names. Both lists are the lab's whole output —
  * tens of rows, already read on their own tabs — so filtering two arrays in the page is cheaper
- * than a per-member query, and it is skipped entirely for a team whose profile has no such section
- * (ADR-017: a name collision must not manufacture a publication list for an engineer).
+ * than a per-member query, and it is skipped entirely when the admin has hidden both sections for
+ * this member (ADR-020) — a name collision must not manufacture a publication list for an engineer.
  *
  * Each row links back to its tab rather than repeating the entry. Publications carry a year anchor,
  * which the year rail on /publications renders for every year that has rows; research areas are
@@ -96,26 +99,49 @@ export default async function TeamMemberPage({ params }: Props) {
   const profile = await loadProfile((await params).id);
   if (!profile) notFound();
 
-  // Every array here is already gated by the member's team in the service — a section their team
-  // cannot have simply arrives empty, so this page renders what it is given.
+  // The CV, course and project arrays are already filtered by the member's hidden sections in the
+  // service. Research and publications are resolved here from bylines, so they are checked here.
   const { member, links, cvEntries, courses, projects } = profile;
-  const entryGroups = groupBySection(cvEntries, CV_SECTIONS);
-  const courseGroups = groupByLevel(courses);
-  const { research, publications } = allowsResearchAndPublications(member.teamKind)
-    ? await creditedWorks(member)
-    : { research: [], publications: [] };
+  const showsCredits = showsSection(member, 'research') || showsSection(member, 'publications');
+  const credited = showsCredits ? await creditedWorks(member) : { research: [], publications: [] };
+  const research = showsSection(member, 'research') ? credited.research : [];
+  const publications = showsSection(member, 'publications') ? credited.publications : [];
 
-  // The jump list mirrors what is on the page: only sections that have content.
+  const cvGroups = new Map(
+    groupBySection(cvEntries, CV_SECTIONS).map((group) => [group.section, group]),
+  );
+  const courseGroups = groupByLevel(courses);
+
+  // Every section with content, in PROFILE_SECTIONS order — most important first. The page and its
+  // jump list are both built from this one list, so they can never disagree about the order.
+  const blocks = PROFILE_SECTIONS.flatMap((section): Block[] => {
+    if (isCvSection(section)) {
+      const group = cvGroups.get(section);
+      // CvEntryList renders its own <section>, heading and anchor id.
+      return group
+        ? [{ section, id: cvSectionAnchorId(section), content: <CvEntryList groups={[group]} /> }]
+        : [];
+    }
+    const content = {
+      publications: publications.length > 0 && <CreditedWorkList items={publications} />,
+      research: research.length > 0 && <CreditedWorkList items={research} />,
+      projects: projects.length > 0 && <ProjectList projects={projects} />,
+      courses: courseGroups.length > 0 && <CourseList groups={courseGroups} />,
+    }[section];
+    return content
+      ? [
+          {
+            section,
+            id: section,
+            content: <TitledSection section={section}>{content}</TitledSection>,
+          },
+        ]
+      : [];
+  });
+
   const sections: SectionNavItem[] = [
     ...(member.bio ? [{ id: 'biography', label: 'Biography' }] : []),
-    ...entryGroups.map((group) => ({
-      id: cvSectionAnchorId(group.section),
-      label: CV_SECTION_LABELS[group.section],
-    })),
-    ...(courseGroups.length > 0 ? [{ id: 'courses', label: 'Courses' }] : []),
-    ...(projects.length > 0 ? [{ id: 'projects', label: 'Projects' }] : []),
-    ...(research.length > 0 ? [{ id: 'research', label: 'Research' }] : []),
-    ...(publications.length > 0 ? [{ id: 'publications', label: 'Publications' }] : []),
+    ...blocks.map((block) => ({ id: block.id, label: PROFILE_SECTION_LABELS[block.section] })),
   ];
 
   return (
@@ -128,7 +154,12 @@ export default async function TeamMemberPage({ params }: Props) {
         Back to Team
       </Link>
 
-      <MemberCard member={member} links={links} eyebrow={member.isDirector ? `Lab Director · ${member.role}` : undefined} as="h2" />
+      <MemberCard
+        member={member}
+        links={links}
+        eyebrow={member.isDirector ? `Lab Director · ${member.role}` : undefined}
+        as="h2"
+      />
 
       <div className="mt-12 space-y-10">
         <SectionNav items={sections} />
@@ -139,43 +170,43 @@ export default async function TeamMemberPage({ params }: Props) {
           </section>
         )}
 
-        <CvEntryList groups={entryGroups} />
-
-        {courseGroups.length > 0 && (
-          <section id="courses" aria-label="Courses">
-            <CourseList groups={courseGroups} />
-          </section>
-        )}
-
-        {/* The headings below are set exactly like the CV section headings, so the page reads as
-            one sequence of sections rather than two families of them. */}
-        {projects.length > 0 && (
-          <section id="projects" aria-labelledby="projects-heading">
-            <SectionHeading id="projects-heading">Projects</SectionHeading>
-            <div className="mt-5">
-              <ProjectList projects={projects} />
-            </div>
-          </section>
-        )}
-
-        {research.length > 0 && (
-          <section id="research" aria-labelledby="research-heading">
-            <SectionHeading id="research-heading">Research</SectionHeading>
-            <div className="mt-5">
-              <CreditedWorkList items={research} />
-            </div>
-          </section>
-        )}
-
-        {publications.length > 0 && (
-          <section id="publications" aria-labelledby="publications-heading">
-            <SectionHeading id="publications-heading">Publications</SectionHeading>
-            <div className="mt-5">
-              <CreditedWorkList items={publications} />
-            </div>
-          </section>
+        {/* One rule between sections, whatever renders them. */}
+        {blocks.length > 0 && (
+          <div className="divide-y divide-border [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
+            {blocks.map((block) => (
+              <div key={block.section}>{block.content}</div>
+            ))}
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+type Block = { section: ProfileSection; id: string; content: React.ReactNode };
+
+const CV_SECTION_SET: ReadonlySet<string> = new Set(CV_SECTIONS);
+
+function isCvSection(section: ProfileSection): section is ProfileSection & CvSection {
+  return CV_SECTION_SET.has(section);
+}
+
+/**
+ * A non-CV section, headed exactly like the CV section headings so the page reads as one sequence
+ * of sections rather than two families of them.
+ */
+function TitledSection({
+  section,
+  children,
+}: {
+  section: Exclude<ProfileSection, CvSection>;
+  children: React.ReactNode;
+}) {
+  const headingId = `${section}-heading`;
+  return (
+    <section id={section} aria-labelledby={headingId}>
+      <SectionHeading id={headingId}>{PROFILE_SECTION_LABELS[section]}</SectionHeading>
+      <div className="mt-5">{children}</div>
+    </section>
   );
 }

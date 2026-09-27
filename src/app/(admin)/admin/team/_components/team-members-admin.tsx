@@ -4,7 +4,7 @@ import { IdCard } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { TeamMembersTable } from '@/modules/research-groups/ui/team-members-table';
 import type { MemberLink, TeamMember } from '@/modules/research-groups/team-member.types';
-import { TEAM_KIND_LABELS } from '@/modules/shared/lib/team-kind';
+import type { TeamRef } from '@/modules/research-groups/team.types';
 import { useOpenFromQuery } from '@/modules/shared/lib/use-edit-from-query';
 import { Dialog } from '@/modules/shared/ui/dialog';
 import type { MemberProfileData } from './member-profile-data';
@@ -19,10 +19,12 @@ const EMPTY_PROFILE: MemberProfileData = { cvEntries: [], courses: [], projects:
 
 export function TeamMembersAdmin({
   members,
+  teams,
   linksByMember,
   profiles,
 }: {
   members: TeamMember[];
+  teams: readonly TeamRef[];
   linksByMember: Record<string, MemberLink[]>;
   profiles: Record<string, MemberProfileData>;
 }) {
@@ -34,7 +36,12 @@ export function TeamMembersAdmin({
 
   return (
     <>
-      <TeamMembersTable items={members} linksByMember={linksByMember} onEditProfile={openProfile} />
+      <TeamMembersTable
+        items={members}
+        teams={teams}
+        linksByMember={linksByMember}
+        onEditProfile={openProfile}
+      />
       <Dialog
         icon={IdCard}
         open={Boolean(member)}
@@ -42,7 +49,13 @@ export function TeamMembersAdmin({
           if (!open) setProfileId(null);
         }}
         title={member ? `Edit profile: ${member.name}` : 'Edit profile'}
-        description={member ? `${member.role} · ${TEAM_KIND_LABELS[member.teamKind]}` : undefined}
+        description={
+          member
+            ? [member.role, member.isDirector ? 'Lab director' : member.team?.name]
+                .filter(Boolean)
+                .join(' · ')
+            : undefined
+        }
         size="lg"
       >
         {member && (

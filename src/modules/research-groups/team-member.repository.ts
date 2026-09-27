@@ -3,14 +3,10 @@ import { auditLogData } from '@/modules/shared/lib/audit';
 import type {
   Prisma,
   MemberLink as PrismaMemberLink,
+  Team as PrismaTeam,
   TeamMember as PrismaTeamMember,
 } from '@prisma/client';
-import type {
-  AuditContext,
-  MemberLink,
-  TeamMember,
-  TeamMemberStats,
-} from './team-member.types';
+import type { AuditContext, MemberLink, TeamMember, TeamMemberStats } from './team-member.types';
 import type {
   CreateTeamMemberInput,
   MemberLinkInput,
@@ -32,9 +28,8 @@ export interface TeamMemberRepository {
   /** Headline counts only — no rows leave the database. */
   stats(): Promise<TeamMemberStats>;
   /**
-   * Both writes clear `isDirector` on every other member in the same transaction when the input
-   * sets it to true, so the one-director partial unique index is never the thing that says no, and
-   * replace the member's links wholesale in that same transaction when the input carries a list.
+   * Neither write touches `isDirector`: the admin cannot change who the director is (ADR-020). An
+   * update replaces the member's links wholesale in that same transaction when the input carries a list.
    */
   createWithAudit(input: { data: CreateTeamMemberData; audit: AuditContext }): Promise<TeamMember>;
   updateWithAudit(input: {
@@ -45,7 +40,14 @@ export interface TeamMemberRepository {
   deleteWithAudit(input: { id: string; audit: AuditContext }): Promise<void>;
 }
 
-export function toDomain(row: PrismaTeamMember): TeamMember {
+/** Every member read carries its team's name and position, for grouping without a second query. */
+const WITH_TEAM = { team: { select: { id: true, name: true, sortOrder: true } } } as const;
+
+type MemberRow = PrismaTeamMember & {
+  team: Pick<PrismaTeam, 'id' | 'name' | 'sortOrder'> | null;
+};
+
+export function toDomain(row: MemberRow): TeamMember {
   return {
     id: row.id,
     name: row.name,
@@ -54,7 +56,8 @@ export function toDomain(row: PrismaTeamMember): TeamMember {
     affiliation: row.affiliation,
     bio: row.bio,
     photoUrl: row.photoUrl,
-    teamKind: row.teamKind,
+    team: row.team,
+    hiddenSections: row.hiddenSections,
     isDirector: row.isDirector,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
@@ -88,19 +91,14 @@ const LINK_ORDER: Prisma.MemberLinkOrderByWithRelationInput[] = [
 const auditData = (audit: AuditContext, entityId: string) =>
   auditLogData('team_member', audit, entityId);
 
-// Setting `isDirector` first unsets the previous director, in the same transaction, so the partial
-// unique index never sees two. Not audited separately: the audit entry of the write that made
-// someone else director records that this happened.
-const UNSET_DIRECTOR = { isDirector: false };
-
 export class PrismaTeamMemberRepository implements TeamMemberRepository {
   async findById(id: string): Promise<TeamMember | null> {
-    const row = await prisma.teamMember.findUnique({ where: { id } });
+    const row = await prisma.teamMember.findUnique({ where: { id }, include: WITH_TEAM });
     return row ? toDomain(row) : null;
   }
 
   async list(): Promise<TeamMember[]> {
-    const rows = await prisma.teamMember.findMany({ orderBy: LIST_ORDER });
+    const rows = await prisma.teamMember.findMany({ orderBy: LIST_ORDER, include: WITH_TEAM });
     return rows.map(toDomain);
   }
 
@@ -123,9 +121,6 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
     audit: AuditContext;
   }): Promise<TeamMember> {
     const created = await prisma.$transaction(async (tx) => {
-      if (input.data.isDirector) {
-        await tx.teamMember.updateMany({ where: { isDirector: true }, data: UNSET_DIRECTOR });
-      }
       const row = await tx.teamMember.create({
         data: {
           name: input.data.name,
@@ -134,11 +129,12 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
           affiliation: input.data.affiliation ?? null,
           bio: input.data.bio ?? null,
           photoUrl: input.data.photoUrl ?? null,
-          teamKind: input.data.teamKind,
-          isDirector: input.data.isDirector ?? false,
+          teamId: input.data.teamId ?? null,
+          hiddenSections: input.data.hiddenSections ?? [],
           links: { create: toLinkRows(input.data.links ?? []) },
           sortOrder: input.data.sortOrder ?? 0,
         },
+        include: WITH_TEAM,
       });
       await tx.auditLog.create({ data: auditData(input.audit, row.id) });
       return row;
@@ -152,12 +148,6 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
     audit: AuditContext;
   }): Promise<TeamMember> {
     const updated = await prisma.$transaction(async (tx) => {
-      if (input.data.isDirector) {
-        await tx.teamMember.updateMany({
-          where: { isDirector: true, id: { not: input.id } },
-          data: UNSET_DIRECTOR,
-        });
-      }
       const row = await tx.teamMember.update({
         where: { id: input.id },
         // Prisma leaves a column untouched when its value is `undefined`, so the partial
@@ -169,10 +159,11 @@ export class PrismaTeamMemberRepository implements TeamMemberRepository {
           affiliation: input.data.affiliation,
           bio: input.data.bio,
           photoUrl: input.data.photoUrl,
-          teamKind: input.data.teamKind,
-          isDirector: input.data.isDirector,
+          teamId: input.data.teamId,
+          hiddenSections: input.data.hiddenSections,
           sortOrder: input.data.sortOrder,
         },
+        include: WITH_TEAM,
       });
 
       // Replaced wholesale rather than diffed, inside the same transaction as the member write and

@@ -43,5 +43,7 @@ export function isMemberByline(
 export function bylineSuggestions(
   members: readonly Pick<BylineMember, 'name' | 'citationName'>[],
 ): string[] {
-  return [...new Set(members.flatMap((m) => (m.citationName ? [m.name, m.citationName] : [m.name])))];
+  return [
+    ...new Set(members.flatMap((m) => (m.citationName ? [m.name, m.citationName] : [m.name]))),
+  ];
 }

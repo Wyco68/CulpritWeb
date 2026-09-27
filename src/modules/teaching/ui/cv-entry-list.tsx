@@ -39,9 +39,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
       aria-labelledby={headingId}
       className="break-inside-avoid border-t border-border pt-8 first:border-t-0 first:pt-0"
     >
-      <SectionHeading id={headingId}>
-        {CV_SECTION_LABELS[section]}
-      </SectionHeading>
+      <SectionHeading id={headingId}>{CV_SECTION_LABELS[section]}</SectionHeading>
 
       <ul className="mt-5 space-y-5">
         {entries.map((entry) => (
@@ -56,9 +54,7 @@ function Section({ section, entries }: { section: CvSection; entries: CvEntry[] 
               {/* Tabular figures so the year column stays in a straight line down the list
                   instead of ragging with each entry's digit widths. */}
               {entry.year && (
-                <span className="tabular shrink-0 text-sm text-muted-foreground">
-                  {entry.year}
-                </span>
+                <span className="tabular shrink-0 text-sm text-muted-foreground">{entry.year}</span>
               )}
             </div>
             {entry.subtitle && (

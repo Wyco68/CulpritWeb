@@ -6,10 +6,10 @@ import {
   createCourseService,
   type CvEntryService,
   type CourseService,
-  type MemberTeamDirectory,
+  type MemberDirectory,
 } from './teaching.service';
 
-// Composition root: wires the Prisma-backed repositories, and the research-groups module's team
+// Composition root: wires the Prisma-backed repositories, and the research-groups module's member
 // lookup, into the services. Route handlers and Server Components call these getters and nothing
 // else.
 //
@@ -18,11 +18,11 @@ import {
 // dereferences the other at import time — every use is inside a method body that only runs once a
 // request is being served, by which point both modules are fully evaluated.
 
-const memberTeams: MemberTeamDirectory = {
-  async teamKindOf(teamMemberId) {
+const memberDirectory: MemberDirectory = {
+  async exists(teamMemberId) {
     const result = await getTeamMemberService().findById(teamMemberId);
     if (!result.ok) throw result.error;
-    return result.data?.teamKind ?? null;
+    return result.data !== null;
   },
 };
 
@@ -33,7 +33,7 @@ export function getCvEntryService(): CvEntryService {
   if (!cachedEntries) {
     cachedEntries = createCvEntryService({
       repository: new PrismaCvEntryRepository(),
-      members: memberTeams,
+      members: memberDirectory,
     });
   }
   return cachedEntries;
@@ -43,7 +43,7 @@ export function getCourseService(): CourseService {
   if (!cachedCourses) {
     cachedCourses = createCourseService({
       repository: new PrismaCourseRepository(),
-      members: memberTeams,
+      members: memberDirectory,
     });
   }
   return cachedCourses;
