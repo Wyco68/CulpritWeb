@@ -17,6 +17,9 @@ import type { Event } from '../event.types';
 // - the current photo number is shown in the top-right corner
 // - arrows and position indicators make horizontal scrolling discoverable
 
+// Without an explicit `timeZone`, `Intl.DateTimeFormat` resolves to the rendering server's ambient
+// zone (UTC in the Docker container), not the visitor's and not the zone the admin actually
+// entered. Pin it so every visitor sees the same, correct wall-clock time.
 export const dateFormatter = new Intl.DateTimeFormat('en', {
   day: '2-digit',
   month: 'short',
@@ -29,15 +32,8 @@ export const timeFormatter = new Intl.DateTimeFormat('en', {
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
-function PhotoGallery({
-  urls,
-  eventTitle,
-}: {
-  urls: string[];
-  eventTitle: string;
-}) {
+function PhotoGallery({ urls, eventTitle }: { urls: string[]; eventTitle: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [hasScrolled, setHasScrolled] = useState(false);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const scrollToPhoto = (index: number) => {
@@ -53,7 +49,6 @@ function PhotoGallery({
     });
 
     setCurrentIndex(nextIndex);
-    setHasScrolled(true);
   };
 
   const handleScroll = () => {
@@ -64,10 +59,6 @@ function PhotoGallery({
     const index = Math.round(gallery.scrollLeft / gallery.clientWidth);
 
     setCurrentIndex(Math.min(Math.max(index, 0), urls.length - 1));
-
-    if (gallery.scrollLeft > 10) {
-      setHasScrolled(true);
-    }
   };
 
   const hasPrevious = currentIndex > 0;
@@ -87,7 +78,7 @@ function PhotoGallery({
             type="button"
             onClick={() => scrollToPhoto(currentIndex - 1)}
             aria-label="Previous photo"
-            className="absolute left-3 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-foreground/65 text-background backdrop-blur-sm transition hover:bg-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="absolute left-3 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-foreground/65 text-background backdrop-blur-sm transition hover:bg-foreground/80 focus-ring"
           >
             <ChevronLeft className="size-5" aria-hidden="true" />
           </button>
@@ -99,7 +90,7 @@ function PhotoGallery({
             type="button"
             onClick={() => scrollToPhoto(currentIndex + 1)}
             aria-label="Next photo"
-            className="absolute right-3 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-foreground/65 text-background backdrop-blur-sm transition hover:bg-foreground/80 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="absolute right-3 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-foreground/65 text-background backdrop-blur-sm transition hover:bg-foreground/80 focus-ring"
           >
             <ChevronRight className="size-5" aria-hidden="true" />
           </button>
@@ -109,6 +100,7 @@ function PhotoGallery({
         <div
           ref={galleryRef}
           onScroll={handleScroll}
+          role="region"
           className="flex h-[min(55vh,600px)] snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth scrollbar-none"
           aria-label={`${eventTitle} photo gallery`}
         >
@@ -129,13 +121,6 @@ function PhotoGallery({
           ))}
         </div>
 
-        {/* Swipe hint */}
-        {urls.length > 1 && !hasScrolled && (
-          <div className="pointer-events-none absolute bottom-12 left-1/2 z-20 -translate-x-1/2 rounded-full bg-foreground/70 px-4 py-2 text-xs font-medium text-background backdrop-blur-sm">
-            Swipe to see more
-          </div>
-        )}
-
         {/* Photo position indicators */}
         {urls.length > 1 && (
           <div
@@ -146,9 +131,7 @@ function PhotoGallery({
               <span
                 key={`${url}-indicator-${index}`}
                 className={`size-1.5 rounded-full transition-all ${
-                  index === currentIndex
-                    ? 'scale-125 bg-background'
-                    : 'bg-background/50'
+                  index === currentIndex ? 'scale-125 bg-background' : 'bg-background/50'
                 }`}
               />
             ))}
@@ -165,13 +148,7 @@ function PhotoGallery({
   );
 }
 
-function VideoList({
-  ids,
-  eventTitle,
-}: {
-  ids: string[];
-  eventTitle: string;
-}) {
+function VideoList({ ids, eventTitle }: { ids: string[]; eventTitle: string }) {
   return (
     <ul className="mt-5 grid gap-4 sm:grid-cols-2">
       {ids.map((id, index) => (
@@ -194,18 +171,10 @@ export function EventMedia({ event }: { event: Event }) {
   return (
     <>
       {event.photoUrls.length > 0 && (
-        <PhotoGallery
-          urls={event.photoUrls}
-          eventTitle={event.title}
-        />
+        <PhotoGallery urls={event.photoUrls} eventTitle={event.title} />
       )}
 
-      {event.videoUrls.length > 0 && (
-        <VideoList
-          ids={event.videoUrls}
-          eventTitle={event.title}
-        />
-      )}
+      {event.videoUrls.length > 0 && <VideoList ids={event.videoUrls} eventTitle={event.title} />}
     </>
   );
 }
