@@ -1,3 +1,4 @@
+import { startOfInstitutionDay } from '@/modules/shared/lib/timezone';
 import type { Event } from './event.types';
 
 // Pure, with no server imports: the public events page re-runs this in the browser against the
@@ -5,11 +6,22 @@ import type { Event } from './event.types';
 // being regenerated every few minutes just to move events from Upcoming to Past.
 
 /**
+ * Whether an event is still ahead of `now`. An event starting exactly now counts as upcoming — the
+ * boundary has to fall on one side, and "starting right now" is not yet past. A date-only event has
+ * no known start, so it stays upcoming for the whole of its day at the institution.
+ */
+export function isUpcoming(
+  event: Pick<Event, 'eventDate' | 'showTime'>,
+  now: Date = new Date(),
+): boolean {
+  const boundary = event.showTime ? now : startOfInstitutionDay(now);
+  return event.eventDate.getTime() >= boundary.getTime();
+}
+
+/**
  * Splits a newest-first list into the two halves the public tab renders. Pure and clock-injectable
  * so the boundary is testable; the page passes no `now`, evaluating it at render time.
- *
- * An event whose date is exactly now counts as upcoming — the boundary has to fall on one side,
- * and "starting right now" is not yet past.
+ * Each event is judged by `isUpcoming`.
  */
 export function splitByTiming(
   events: Event[],
@@ -18,7 +30,7 @@ export function splitByTiming(
   const upcoming: Event[] = [];
   const past: Event[] = [];
   for (const event of events) {
-    if (event.eventDate.getTime() >= now.getTime()) upcoming.push(event);
+    if (isUpcoming(event, now)) upcoming.push(event);
     else past.push(event);
   }
   // The repository returns newest-first, which is right for past events (most recent first) but

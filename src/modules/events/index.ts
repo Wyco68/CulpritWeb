@@ -17,6 +17,7 @@ export type { Event, EventParticipant, EventTiming, EventStats, AuditContext } f
 
 export {
   createEventService,
+  isUpcoming,
   splitByTiming,
   type EventService,
   type EventServiceDeps,

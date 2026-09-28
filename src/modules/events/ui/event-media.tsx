@@ -21,6 +21,12 @@ export const timeFormatter = new Intl.DateTimeFormat('en', {
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
+/** "12 Mar 2026 at 2:30 PM", or the date alone for a date-only event. */
+export function formatEventWhen(event: Pick<Event, 'eventDate' | 'showTime'>): string {
+  const date = dateFormatter.format(event.eventDate);
+  return event.showTime ? `${date} at ${timeFormatter.format(event.eventDate)}` : date;
+}
+
 function VideoList({ ids, eventTitle }: { ids: string[]; eventTitle: string }) {
   return (
     <ul className="mt-5 grid gap-4 sm:grid-cols-2">

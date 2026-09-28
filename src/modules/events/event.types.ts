@@ -33,6 +33,11 @@ export type Event = {
   /** Long-form write-up, rendered only in the detail dialog. */
   content: string | null;
   eventDate: Date;
+  /**
+   * Whether `eventDate`'s time of day is known and shown. False makes the event date-only: only
+   * the day renders, and it stays upcoming until that day is over (see `isUpcoming`).
+   */
+  showTime: boolean;
   /** Public R2 URLs, uncropped, in the order the admin arranged them. */
   photoUrls: string[];
   /** Dedicated card cover, uncropped. Null means the first photo is the cover. */

@@ -18,6 +18,7 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     description: 'A talk.',
     content: null,
     eventDate: new Date('2026-10-14T04:00:00Z'),
+    showTime: true,
     photoUrls: [],
     videoUrls: [],
     coverPhotoUrl: null,
@@ -357,5 +358,32 @@ describe('splitByTiming', () => {
 
   it('handles an empty list', () => {
     expect(splitByTiming([], now)).toEqual({ upcoming: [], past: [] });
+  });
+
+  it('keeps a date-only event upcoming for the whole of its day at the institution', () => {
+    // 12:00Z is 19:00 in Bangkok. The event is stored at the start of that day, 00:00 Bangkok.
+    const today = makeEvent({
+      id: 'today',
+      showTime: false,
+      eventDate: new Date('2026-08-31T17:00:00Z'),
+    });
+    const yesterday = makeEvent({
+      id: 'yesterday',
+      showTime: false,
+      eventDate: new Date('2026-08-30T17:00:00Z'),
+    });
+    const { upcoming, past } = splitByTiming([today, yesterday], now);
+
+    expect(upcoming.map((e) => e.id)).toEqual(['today']);
+    expect(past.map((e) => e.id)).toEqual(['yesterday']);
+  });
+
+  it('judges a timed event by its time, even earlier on the same day', () => {
+    const { past } = splitByTiming(
+      [makeEvent({ id: 'morning', eventDate: new Date('2026-09-01T02:00:00Z') })],
+      now,
+    );
+
+    expect(past.map((e) => e.id)).toEqual(['morning']);
   });
 });

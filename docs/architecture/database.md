@@ -76,6 +76,7 @@ model Event {
   title       String
   description String
   eventDate   DateTime            // the only thing that decides Upcoming vs Past
+  showTime    Boolean             // false (default): date-only — day shown alone, upcoming all that day
   photoUrls   String[]            // public R2 URLs
   videoUrls   String[]            // parsed 11-character YouTube video IDs, never files
   createdAt   DateTime
@@ -85,8 +86,11 @@ model Event {
 
 **Fields that deliberately do not exist:** any status or lifecycle enum, `isPublic`/draft flag, and
 any stored upcoming/past marker. An event is published the moment it is saved, and whether it is
-upcoming is derived from `eventDate` against the clock at render time (`splitByTiming` in
-`event.service.ts`) — a stored flag would be wrong the moment the date passed with nobody editing.
+upcoming is derived from `eventDate` against the clock at render time (`isUpcoming`/`splitByTiming`
+in `event-timing.ts`) — a stored flag would be wrong the moment the date passed with nobody editing.
+`showTime` is not a lifecycle flag: it only says whether the time of day is known. A date-only event
+(the default, added 2026-09-28 because most past events are remembered by day alone) stores 00:00
+institution time, renders the date without a time, and stays upcoming until its day is over.
 See [ADR-011](../decisions/ADR-011-events-replace-appointments.md).
 
 **Media are native Postgres `text[]`,** not `Json`: flat lists of URLs with no internal structure.

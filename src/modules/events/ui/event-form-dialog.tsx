@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { apiSend } from '@/modules/shared/lib/api-client';
 import { FormDialog, FormGroup } from '@/modules/shared/ui/form-dialog';
 import { Input } from '@/modules/shared/ui/input';
+import { Switch } from '@/modules/shared/ui/switch';
 import { Textarea } from '@/modules/shared/ui/textarea';
 import { FormField } from '@/modules/shared/ui/form-field';
 import { CoverField } from '@/modules/shared/ui/cover-field';
@@ -29,6 +30,12 @@ import { VideoLinkList } from './event-media-fields';
 // field values loosely typed for that field while `handleSubmit`'s callback still receives the
 // fully-validated, correctly-typed `CreateEventInput`.
 type EventFormInput = z.input<typeof createEventSchema>;
+
+/** Prefill for the date input: "YYYY-MM-DDTHH:mm" with a time, "YYYY-MM-DD" without. */
+function toDateInputValue(date: Date, showTime: boolean): string {
+  const value = toInstitutionLocalDatetimeValue(date);
+  return showTime ? value : value.slice(0, 10);
+}
 
 function submitEvent(id: string | undefined, input: CreateEventInput) {
   return id
@@ -53,6 +60,7 @@ export function EventFormDialog({
     register,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors, isSubmitting, isDirty },
     reset,
@@ -65,10 +73,11 @@ export function EventFormDialog({
       title: event?.title ?? '',
       description: event?.description ?? '',
       content: event?.content ?? '',
-      // The input is a bare `datetime-local`, so it must be prefilled in the INSTITUTION's
-      // wall-clock time, not the admin's browser zone — otherwise editing an event from a
-      // different timezone would silently shift it on save.
-      eventDate: event ? toInstitutionLocalDatetimeValue(event.eventDate) : '',
+      // The input is a bare `datetime-local` (or `date`), so it must be prefilled in the
+      // INSTITUTION's wall-clock time, not the admin's browser zone — otherwise editing an event
+      // from a different timezone would silently shift it on save.
+      eventDate: event ? toDateInputValue(event.eventDate, event.showTime) : '',
+      showTime: event?.showTime ?? false,
       photoUrls: event?.photoUrls ?? [],
       videoUrls: event?.videoUrls ?? [],
       coverPhotoUrl: event?.coverPhotoUrl ?? null,
@@ -82,6 +91,19 @@ export function EventFormDialog({
   const videoUrls = watch('videoUrls') ?? [];
   const coverPhotoUrl = watch('coverPhotoUrl') ?? null;
   const coverCrop = watch('coverCrop') ?? null;
+  const showTime = watch('showTime') ?? false;
+
+  // The date input changes type with the switch, so its value is carried across in the new
+  // format. Turning the time back on starts from midnight — a time that was hidden isn't kept.
+  function toggleTime(next: boolean) {
+    const current = String(getValues('eventDate') ?? '');
+    setValue('showTime', next, { shouldDirty: true });
+    if (!current) return;
+    const day = current.slice(0, 10);
+    setValue('eventDate', next ? `${day}T${current.slice(11, 16) || '00:00'}` : day, {
+      shouldDirty: true,
+    });
+  }
 
   const mutation = useMutation({
     mutationFn: (input: CreateEventInput) => submitEvent(event?.id, input),
@@ -122,17 +144,31 @@ export function EventFormDialog({
         >
           {(fieldProps) => <Input {...fieldProps} {...register('title')} />}
         </FormField>
-        <FormField
-          label="Date and time"
-          htmlFor="event-eventDate"
-          required
-          description="Institution time (Asia/Bangkok). Future dates list under Upcoming, past ones under Past."
-          error={errors.eventDate?.message}
-        >
-          {(fieldProps) => (
-            <Input {...fieldProps} type="datetime-local" {...register('eventDate')} />
-          )}
-        </FormField>
+        <div className="grid gap-2">
+          <FormField
+            label={showTime ? 'Date and time' : 'Date'}
+            htmlFor="event-eventDate"
+            required
+            description="Institution time (Asia/Bangkok). Future dates list under Upcoming, past ones under Past."
+            error={errors.eventDate?.message}
+          >
+            {(fieldProps) => (
+              <Input
+                {...fieldProps}
+                type={showTime ? 'datetime-local' : 'date'}
+                {...register('eventDate')}
+              />
+            )}
+          </FormField>
+          <Switch
+            checked={showTime}
+            onCheckedChange={toggleTime}
+            label="Show time"
+            description="Leave off when only the day is known; the site then shows the date alone."
+            disabled={busy}
+            className="-mx-3"
+          />
+        </div>
       </FormGroup>
 
       <FormGroup title="Text">

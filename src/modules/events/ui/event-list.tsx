@@ -51,10 +51,16 @@ export function EventList({ events }: { events: Event[] }) {
               <div className="flex flex-1 flex-col p-6">
                 <p className="tabular text-sm text-muted-foreground">
                   <time dateTime={event.eventDate.toISOString()}>
-                    {dateFormatter.format(event.eventDate)} at{' '}
-                    <span className="font-medium text-foreground">
-                      {timeFormatter.format(event.eventDate)}
-                    </span>
+                    {dateFormatter.format(event.eventDate)}
+                    {event.showTime && (
+                      <>
+                        {' '}
+                        at{' '}
+                        <span className="font-medium text-foreground">
+                          {timeFormatter.format(event.eventDate)}
+                        </span>
+                      </>
+                    )}
                   </time>
                 </p>
 

@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "doppler run -- prisma migrate deploy",
     "dev": "doppler run -- next dev",
+    "dev:prod": "doppler run -- sh -c 'export R2_LEGACY_PUBLIC_URL=$R2_PUBLIC_URL && set -a && . ./env.production && set +a && BETTER_AUTH_URL=http://localhost:3000 exec next dev'",
     "build": "prisma generate && next build",
     "start": "doppler run -- next start",
     "lint": "eslint .",

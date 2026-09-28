@@ -2,7 +2,7 @@
 
 import { Dialog } from '@/modules/shared/ui/dialog';
 import { Avatar } from '@/modules/shared/ui/avatar';
-import { EventMedia, dateFormatter, timeFormatter } from './event-media';
+import { EventMedia, formatEventWhen } from './event-media';
 import type { Event } from '../event.types';
 
 // Public: everything about one event that does not fit on its card — the full write-up, the photo
@@ -37,7 +37,7 @@ export function EventDetailDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={event.title}
-      description={`${dateFormatter.format(event.eventDate)} at ${timeFormatter.format(event.eventDate)}`}
+      description={formatEventWhen(event)}
       closeLabel="Close"
       // The larger dialog gives the photo viewer enough room while keeping the participant sidebar
       // visible on desktop. Without photos it would only be empty space, so text-only events keep
