@@ -18,7 +18,7 @@ import { requireAdmin } from '@/modules/auth';
 import { getResearchService } from '@/modules/research';
 import { getPublicationService } from '@/modules/publications';
 import { getTeamMemberService } from '@/modules/research-groups';
-import { getEventService } from '@/modules/events';
+import { getEventService, isUpcoming } from '@/modules/events';
 import { getCourseService } from '@/modules/teaching';
 import { unwrapOr } from '@/modules/shared/lib/result';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
@@ -176,10 +176,9 @@ export default async function AdminDashboardPage() {
       icon: CalendarDays,
       href: `/admin/events?edit=${row.id}`,
       updatedAt: row.updatedAt,
-      status:
-        row.eventDate.getTime() >= now.getTime()
-          ? ({ tone: 'ok', label: 'Upcoming', icon: CalendarClock } as const)
-          : ({ tone: 'neutral', label: 'Past', icon: History } as const),
+      status: isUpcoming(row, now)
+        ? ({ tone: 'ok', label: 'Upcoming', icon: CalendarClock } as const)
+        : ({ tone: 'neutral', label: 'Past', icon: History } as const),
     })),
     ...memberRows.map((row) => ({
       key: `member-${row.id}`,

@@ -23,6 +23,13 @@ describe('createEventSchema', () => {
     expect(parsed.eventDate.toISOString()).toBe('2026-10-14T04:00:00.000Z');
   });
 
+  it('parses a bare date value as the start of that day at the institution', () => {
+    const parsed = createEventSchema.parse({ ...VALID, eventDate: '2026-10-14', showTime: false });
+
+    expect(parsed.eventDate.toISOString()).toBe('2026-10-13T17:00:00.000Z');
+    expect(parsed.showTime).toBe(false);
+  });
+
   it('round-trips a zone-explicit ISO string to the same instant', () => {
     const parsed = createEventSchema.parse({ ...VALID, eventDate: '2026-10-14T04:00:00.000Z' });
 

@@ -131,6 +131,7 @@ export function createEventService(deps: EventServiceDeps): EventService {
             metadata: {
               title: existing.title,
               eventDate: existing.eventDate.toISOString(),
+              showTime: existing.showTime,
               description: existing.description,
               photoUrls: existing.photoUrls,
               videoUrls: existing.videoUrls,
@@ -185,4 +186,4 @@ export function createEventService(deps: EventServiceDeps): EventService {
 
 // `splitByTiming` lives in ./event-timing (pure, so the public events page can split on the client)
 // and is re-exported here, where the service's callers have always imported it from.
-export { splitByTiming } from './event-timing';
+export { isUpcoming, splitByTiming } from './event-timing';

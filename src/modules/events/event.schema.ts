@@ -47,6 +47,8 @@ export const createEventSchema = z.object({
   description: safeText(10_000),
   content: optionalText(50_000),
   eventDate: institutionDate,
+  /** Off (the default) makes the event date-only. */
+  showTime: z.boolean().optional(),
   photoUrls: z.array(photoUrlSchema).max(20).optional(),
   videoUrls: z.array(videoRefSchema).max(10).optional(),
   /** Dedicated card cover. `null` clears it, and the card falls back to the first photo. */

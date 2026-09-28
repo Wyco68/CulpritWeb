@@ -20,7 +20,10 @@ const INSTITUTION_UTC_OFFSET = '+07:00';
  */
 export function parseInstitutionLocalDatetime(value: string): Date {
   const hasExplicitZone = /(?:[+-]\d{2}:?\d{2}|Z)$/.test(value);
-  return new Date(hasExplicitZone ? value : `${value}${INSTITUTION_UTC_OFFSET}`);
+  if (hasExplicitZone) return new Date(value);
+  // A bare `<input type="date">` value ("YYYY-MM-DD") is the start of that day at the institution.
+  const local = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00` : value;
+  return new Date(`${local}${INSTITUTION_UTC_OFFSET}`);
 }
 
 /** Inverse of `parseInstitutionLocalDatetime`: format a Date as the institution's local wall-clock
@@ -37,4 +40,9 @@ export function toInstitutionLocalDatetimeValue(date: Date): string {
   }).formatToParts(date);
   const get = (type: string) => parts.find((p) => p.type === type)?.value;
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}
+
+/** Midnight at the institution on the calendar day that contains `date`. */
+export function startOfInstitutionDay(date: Date): Date {
+  return parseInstitutionLocalDatetime(toInstitutionLocalDatetimeValue(date).slice(0, 10));
 }

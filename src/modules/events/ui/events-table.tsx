@@ -11,6 +11,7 @@ import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
 import { INSTITUTION_TIME_ZONE } from '@/modules/shared/lib/timezone';
 // Deep imports, not the barrel — see event-form-dialog.tsx's comment.
 import type { Event } from '../event.types';
+import { isUpcoming } from '../event-timing';
 import { EventFormDialog } from './event-form-dialog';
 import { EventParticipantsDialog, type ParticipantPerson } from './event-participants-dialog';
 
@@ -28,6 +29,14 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
+  timeZone: INSTITUTION_TIME_ZONE,
+});
+
+/** For a date-only event, whose stored time of day means nothing. */
+const dateFormatter = new Intl.DateTimeFormat('en', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
   timeZone: INSTITUTION_TIME_ZONE,
 });
 
@@ -93,13 +102,17 @@ export function EventsTable({
           identity={(item) => (
             <RecordIdentity
               title={item.title}
-              detail={<span className="tabular">{dateTimeFormatter.format(item.eventDate)}</span>}
+              detail={
+                <span className="tabular">
+                  {(item.showTime ? dateTimeFormatter : dateFormatter).format(item.eventDate)}
+                </span>
+              }
             />
           )}
           statusHeader="Timing"
           // Derived from the date, never stored — the same reading the public tab makes.
           status={(item) =>
-            item.eventDate.getTime() >= now
+            isUpcoming(item, new Date(now))
               ? { tone: 'ok', label: 'Upcoming', icon: CalendarClock }
               : { tone: 'neutral', label: 'Past', icon: History }
           }

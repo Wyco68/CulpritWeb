@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/modules/shared/lib/prisma';
 import { auditLogData } from '@/modules/shared/lib/audit';
 import { parseCoverCrop, type CoverCrop } from '@/modules/shared/lib/cover-crop.schema';
+import { startOfInstitutionDay } from '@/modules/shared/lib/timezone';
 import type {
   Event as PrismaEvent,
   EventParticipant as PrismaEventParticipant,
@@ -97,6 +98,7 @@ function toDomain(row: PrismaEvent & { participants?: ParticipantRow[] }): Event
     description: row.description,
     content: row.content,
     eventDate: row.eventDate,
+    showTime: row.showTime,
     photoUrls: row.photoUrls,
     videoUrls: row.videoUrls,
     coverPhotoUrl: row.coverPhotoUrl,
@@ -139,8 +141,14 @@ export class PrismaEventRepository implements EventRepository {
   }
 
   async stats(now: Date): Promise<EventStats> {
-    // `gte`, not `gt`: an event starting exactly now is upcoming, matching splitByTiming.
-    const upcomingWhere = { eventDate: { gte: now } };
+    // The same boundary `isUpcoming` applies in memory: `gte`, so an event starting exactly now is
+    // upcoming, and a date-only event stays upcoming until its day at the institution is over.
+    const upcomingWhere = {
+      OR: [
+        { showTime: true, eventDate: { gte: now } },
+        { showTime: false, eventDate: { gte: startOfInstitutionDay(now) } },
+      ],
+    };
     // Batched into one round trip; all three ride the eventDate index.
     const [total, upcoming, next] = await prisma.$transaction([
       prisma.event.count(),
@@ -162,6 +170,7 @@ export class PrismaEventRepository implements EventRepository {
           description: input.data.description,
           content: input.data.content ?? null,
           eventDate: input.data.eventDate,
+          showTime: input.data.showTime ?? false,
           photoUrls: input.data.photoUrls ?? [],
           videoUrls: input.data.videoUrls ?? [],
           coverPhotoUrl: input.data.coverPhotoUrl ?? null,
@@ -189,6 +198,7 @@ export class PrismaEventRepository implements EventRepository {
           description: input.data.description,
           content: input.data.content,
           eventDate: input.data.eventDate,
+          showTime: input.data.showTime,
           // A media array is replaced wholesale when present — `set` says so explicitly, so a PUT
           // carrying `photoUrls: []` clears the gallery rather than reading as "no change".
           photoUrls: input.data.photoUrls === undefined ? undefined : { set: input.data.photoUrls },

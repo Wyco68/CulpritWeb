@@ -329,6 +329,9 @@ model Event {
   /// height no matter how much has been written here.
   content       String?            @db.Text
   eventDate     DateTime           @map("event_date")
+  /// Whether the time of day in `eventDate` is known and shown. Off, the event is date-only: the
+  /// pages show the day alone, and it counts as upcoming for the whole of that day.
+  showTime      Boolean            @default(false) @map("show_time")
   /// Public R2 URLs, uploaded through POST /api/admin/events/photo. Stored uncropped — the
   /// detail dialog shows each at its own aspect ratio.
   photoUrls     String[]           @map("photo_urls")

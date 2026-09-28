@@ -11,6 +11,7 @@ const event = (id: string, eventDate: Date): Event => ({
   description: 'x',
   content: null,
   eventDate,
+  showTime: true,
   photoUrls: [],
   videoUrls: [],
   coverPhotoUrl: null,
