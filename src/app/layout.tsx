@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Newsreader, Schibsted_Grotesk } from 'next/font/google';
+import { DEFAULT_LAB_NAME, getProfileCached } from '@/modules/profile';
 import { SITE_URL } from '@/modules/shared/lib/site-url';
 import './globals.css';
 
@@ -29,29 +30,26 @@ const schibsted = Schibsted_Grotesk({
   variable: '--font-schibsted',
 });
 
-const SITE_DESCRIPTION =
-  'The Culprit of Privacy Technologies — an information-security research lab.';
+const FALLBACK_DESCRIPTION = 'An information-security research lab.';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: 'The Culprit',
-    template: '%s · The Culprit',
-  },
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    title: 'The Culprit',
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    siteName: 'The Culprit',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'The Culprit',
-    description: SITE_DESCRIPTION,
-  },
-};
+// The lab's own name and tagline, from the profile, so a tab title and a shared link's preview say
+// what the masthead says. A profile edit revalidates `('/', 'layout')`, which refreshes these too.
+export async function generateMetadata(): Promise<Metadata> {
+  const result = await getProfileCached();
+  const profile = result.ok ? result.data : null;
+  const labName = profile?.labName || DEFAULT_LAB_NAME;
+  const description =
+    [profile?.labTagline, profile?.positionAffiliation].filter(Boolean).join(' — ') ||
+    FALLBACK_DESCRIPTION;
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: labName, template: `%s · ${labName}` },
+    description,
+    openGraph: { title: labName, description, url: SITE_URL, siteName: labName, type: 'website' },
+    twitter: { card: 'summary_large_image', title: labName, description },
+  };
+}
 
 // Paints the browser's own chrome — Chrome/Edge on Android, and Safari's toolbars on iOS 15+ — in
 // the masthead's pale green, so the band at the top of every page runs straight into the URL bar.
