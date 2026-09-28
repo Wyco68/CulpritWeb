@@ -1,6 +1,6 @@
 // Prefetches on hover/focus rather than on sight — see intent-link.tsx.
 import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
-import type { Profile } from '@/modules/profile';
+import { DEFAULT_LAB_NAME, type Profile } from '@/modules/profile';
 import { Guilloche } from '@/modules/shared/ui/guilloche';
 import { MobileMenu, NavSidebar, type NavItem } from '@/modules/shared/ui/site-nav';
 import { AppointmentAction } from './appointment-action';
@@ -15,7 +15,7 @@ import { AppointmentAction } from './appointment-action';
 // `--ring` is re-pointed at `--accent-on-band` inside both — plain `--accent` measures only 4.19:1
 // on the band — so every `focus-ring` passes without a second focus style.
 
-export const DEFAULT_LAB_NAME = 'The Culprit';
+export { DEFAULT_LAB_NAME };
 
 // "Make Appointment" is not in this list: it is the visitor's main action (AppointmentAction),
 // shown in the header on desktop and at the foot of the menu sheet on mobile.

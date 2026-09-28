@@ -9,7 +9,7 @@ export {
   type PatchProfileInput,
 } from './profile.schema';
 
-export type { Profile, AuditContext } from './profile.types';
+export { DEFAULT_LAB_NAME, type Profile, type AuditContext } from './profile.types';
 
 export {
   createProfileService,

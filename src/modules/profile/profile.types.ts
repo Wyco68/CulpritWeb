@@ -4,6 +4,9 @@
 // The lab's singleton (ADR-016). The professor's name, photo, bio, citation name and links moved to
 // her team-member row (the director); her CV lines are `cv_entry` rows on that member (ADR-012).
 
+/** Shown wherever the lab's name is, until an admin sets one. */
+export const DEFAULT_LAB_NAME = 'The Culprit';
+
 export type Profile = {
   id: string;
   /** "The Culprit of Privacy Technologies" — the site header's h1. */
