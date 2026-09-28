@@ -1,34 +1,44 @@
 import type { NextConfig } from 'next';
 
+// The bucket public URLs images may be served from. R2_PUBLIC_URL is the current bucket;
+// R2_LEGACY_PUBLIC_URL is only set by `npm run dev:prod`, which points local uploads at the
+// production bucket while rows in the shared database still reference the staging one — without
+// it, dev-mode next/image throws on those rows instead of falling back.
+function r2PublicUrls(): { name: string; value: string }[] {
+  return (['R2_PUBLIC_URL', 'R2_LEGACY_PUBLIC_URL'] as const)
+    .map((name) => ({ name, value: process.env[name] ?? '' }))
+    .filter(({ value }) => value !== '');
+}
+
 // Best-effort host derivation for next/image's allow-list. R2_PUBLIC_URL may be unset for a
 // contributor who hasn't configured R2 yet, or a CI step that doesn't need it — fall back to no
 // allow-listed host rather than crashing config eval.
 function r2RemotePatterns(): NonNullable<NextConfig['images']>['remotePatterns'] {
-  const publicUrl = process.env.R2_PUBLIC_URL;
-  if (!publicUrl) return [];
-  try {
-    const { protocol, hostname } = new URL(publicUrl);
-    if (protocol !== 'http:' && protocol !== 'https:') {
-      console.warn(`R2_PUBLIC_URL has unsupported protocol "${protocol}" — ignoring.`);
+  return r2PublicUrls().flatMap(({ name, value }) => {
+    try {
+      const { protocol, hostname } = new URL(value);
+      if (protocol !== 'http:' && protocol !== 'https:') {
+        console.warn(`${name} has unsupported protocol "${protocol}" — ignoring.`);
+        return [];
+      }
+      return [{ protocol: protocol.slice(0, -1) as 'http' | 'https', hostname }];
+    } catch {
+      console.warn(`${name} "${value}" is not a valid URL — ignoring.`);
       return [];
     }
-    return [{ protocol: protocol.slice(0, -1) as 'http' | 'https', hostname }];
-  } catch {
-    console.warn(`R2_PUBLIC_URL "${publicUrl}" is not a valid URL — ignoring.`);
-    return [];
-  }
+  });
 }
 
-// The public R2 host, if configured, needs to appear in img-src alongside the app's own origin —
-// same derivation as r2RemotePatterns() above, kept separate since CSP wants a bare host string.
-function r2ImgSrc(): string {
-  const publicUrl = process.env.R2_PUBLIC_URL;
-  if (!publicUrl) return '';
-  try {
-    return new URL(publicUrl).origin;
-  } catch {
-    return '';
-  }
+// The public R2 hosts, if configured, need to appear in img-src alongside the app's own origin —
+// same derivation as r2RemotePatterns() above, kept separate since CSP wants bare origins.
+function r2ImgSrc(): string[] {
+  return r2PublicUrls().flatMap(({ value }) => {
+    try {
+      return [new URL(value).origin];
+    } catch {
+      return [];
+    }
+  });
 }
 
 // Third-party embeds are the only reason this isn't a same-origin-only policy: the Calendly widget
@@ -67,7 +77,7 @@ function r2ImgSrc(): string {
 // (dynamic widths/heights) are used across the UI, and CSP has no practical hash/nonce story for
 // those.
 function buildCsp(): string {
-  const r2Origin = r2ImgSrc();
+  const r2Origins = r2ImgSrc();
   // Dev mode needs 'unsafe-eval' on top of the shared 'unsafe-inline': Fast Refresh eval()-wraps
   // modules and injects the hot-update runtime as dynamically-created inline scripts.
   const isDev = process.env.NODE_ENV !== 'production';
@@ -86,7 +96,7 @@ function buildCsp(): string {
     // `blob:` covers the photo-crop preview: the admin picks a file and it is shown via a local
     // `URL.createObjectURL` blob before upload. Same-origin and created in the page — no network
     // fetch, so it widens img-src no further than the app's own memory.
-    'img-src': [`'self'`, 'data:', 'blob:', ...(r2Origin ? [r2Origin] : [])],
+    'img-src': [`'self'`, 'data:', 'blob:', ...r2Origins],
     'font-src': [`'self'`, 'data:'],
     'connect-src': [
       `'self'`,
