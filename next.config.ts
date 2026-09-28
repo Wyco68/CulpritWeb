@@ -126,6 +126,12 @@ const nextConfig: NextConfig = {
   // Docker image copies only .next/standalone instead of the full node_modules tree. Irrelevant to
   // the existing Vercel deploy (Vercel ignores `output` and always uses its own build output).
   output: 'standalone',
+  // The link-preview card reads its fonts from disk at render time (src/app/opengraph-image.tsx);
+  // a path built from `process.cwd()` isn't traced, so the files are listed for the bundle here.
+  outputFileTracingIncludes: {
+    '/opengraph-image': ['./src/app/_og/fonts/*.ttf'],
+    '/twitter-image': ['./src/app/_og/fonts/*.ttf'],
+  },
   experimental: {
     // Client-side Router Cache lifetimes. Next's default for dynamic segments is 0, so clicking
     // back to a tab you were just on re-fetches its whole RSC payload — a full server round trip

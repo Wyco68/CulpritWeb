@@ -34,6 +34,23 @@ function wavePath({ radius, amplitude, petals }: Ring): string {
 
 const PATHS = RINGS.map(wavePath);
 
+/** The rotation of one copy of a ring's wave, in degrees. */
+function copyRotation(ring: Ring, copy: number): string {
+  return ((360 / ring.petals / ring.copies) * copy).toFixed(2);
+}
+
+/**
+ * Every stroke of the rosette spelled out, in the same -200…200 coordinate space, for renderers
+ * without `<use>` support — the link-preview card (src/app/opengraph-image.tsx) draws with these.
+ */
+export const GUILLOCHE_STROKES: readonly { d: string; rotate: string }[] = RINGS.flatMap(
+  (ring, index) =>
+    Array.from({ length: ring.copies }, (_, copy) => ({
+      d: PATHS[index],
+      rotate: copyRotation(ring, copy),
+    })),
+);
+
 export function Guilloche({ id = 'guilloche', className }: { id?: string; className?: string }) {
   return (
     <svg
@@ -55,7 +72,7 @@ export function Guilloche({ id = 'guilloche', className }: { id?: string; classN
             <use
               key={`${index}-${copy}`}
               href={`#${id}-${index}`}
-              transform={`rotate(${((360 / ring.petals / ring.copies) * copy).toFixed(2)})`}
+              transform={`rotate(${copyRotation(ring, copy)})`}
             />
           )),
         )}
