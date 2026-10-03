@@ -1,26 +1,11 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import Script from 'next/script';
+import { useEffect, useId, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { apiSend } from '@/modules/shared/lib/api-client';
 import { publicEnv } from '@/modules/shared/lib/env';
 import { cn } from '@/modules/shared/lib/utils';
-
-const TURNSTILE_WIDGET_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-
-type TurnstileGlobal = {
-  render: (
-    container: HTMLElement,
-    options: { sitekey: string; callback: (token: string) => void; 'error-callback'?: () => void },
-  ) => string;
-};
-
-declare global {
-  interface Window {
-    turnstile?: TurnstileGlobal;
-  }
-}
+import { TurnstileWidget } from './turnstile-widget';
 
 export interface TurnstileChallengeProps {
   /** Called once the visitor passes the challenge AND the server has confirmed the token. */
@@ -41,10 +26,8 @@ export interface TurnstileChallengeProps {
  * configured) so local work is never blocked.
  */
 export function TurnstileChallenge({ onVerified, className }: TurnstileChallengeProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [verifying, setVerifying] = useState(false);
   const [failed, setFailed] = useState(false);
-  const rendered = useRef(false);
   const regionLabelId = useId();
 
   const siteKey = publicEnv.turnstileSiteKey;
@@ -75,17 +58,6 @@ export function TurnstileChallenge({ onVerified, className }: TurnstileChallenge
     }
   }
 
-  function renderWidget() {
-    const container = containerRef.current;
-    if (!container || rendered.current || !window.turnstile) return;
-    rendered.current = true;
-    window.turnstile.render(container, {
-      sitekey: siteKey,
-      callback: (token) => void handleToken(token),
-      'error-callback': () => setFailed(true),
-    });
-  }
-
   return (
     <section
       aria-labelledby={regionLabelId}
@@ -98,14 +70,17 @@ export function TurnstileChallenge({ onVerified, className }: TurnstileChallenge
       <h2 id={regionLabelId} className="text-sm font-medium text-foreground">
         Confirming you&apos;re not a bot before loading the scheduling calendar…
       </h2>
-      <div ref={containerRef} />
+      <TurnstileWidget
+        siteKey={siteKey}
+        onToken={(token) => void handleToken(token)}
+        onError={() => setFailed(true)}
+      />
       {verifying && <p className="text-xs text-muted-foreground">Checking…</p>}
       {failed && (
         <p role="alert" className="text-xs font-medium text-destructive">
           Verification failed. Please try again.
         </p>
       )}
-      <Script src={TURNSTILE_WIDGET_SRC} strategy="afterInteractive" onReady={renderWidget} />
     </section>
   );
 }

@@ -16,9 +16,10 @@
 // domain wiring. It is what the Events tab plays its videos through: an event stores a parsed
 // video ID, never an uploaded video file.
 //
-// EmailClient (Resend) is reserved for admin-facing features (e.g. login-adjacent email). No
-// scheduling email is ever sent by this app — a Calendly booking gets Calendly's own
-// confirmation, directly to the visitor, outside this app.
+// EmailClient (Resend) is reserved for admin-facing features. Its one caller is the admin's
+// emailed sign-in and password-reset codes (modules/auth, ADR-022). No scheduling email is ever
+// sent by this app — a Calendly booking gets Calendly's own confirmation, directly to the visitor,
+// outside this app.
 
 export { CalendlyEmbed, type CalendlyEmbedProps } from './calendly/calendly-embed';
 
@@ -28,6 +29,7 @@ export {
   NoopEmailClient,
   ResendEmailClient,
   getEmailClient,
+  isEmailDeliveryConfigured,
 } from './email/email-client';
 
 export {
@@ -37,6 +39,7 @@ export {
   getTurnstileVerifier,
 } from './turnstile/turnstile-verifier';
 export { TurnstileChallenge, type TurnstileChallengeProps } from './turnstile/turnstile-challenge';
+export { TurnstileWidget, type TurnstileWidgetProps } from './turnstile/turnstile-widget';
 
 export {
   type RateLimiter,

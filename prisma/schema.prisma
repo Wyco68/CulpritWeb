@@ -441,15 +441,19 @@ model ResearchContributor {
 // from domain code — only the auth module hands the Prisma client to the adapter.
 
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false) @map("email_verified")
-  image         String?
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  sessions      Session[]
-  accounts      Account[]
+  id               String      @id
+  name             String
+  email            String      @unique
+  emailVerified    Boolean     @default(false) @map("email_verified")
+  image            String?
+  /// Set by Better Auth's two-factor plugin once the admin confirms an emailed code — never by a
+  /// form (ADR-022).
+  twoFactorEnabled Boolean     @default(false) @map("two_factor_enabled")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  sessions         Session[]
+  accounts         Account[]
+  twoFactors       TwoFactor[]
 
   @@map("user")
 }
@@ -496,6 +500,26 @@ model Verification {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("verification")
+}
+
+/// Better Auth two-factor plugin state (ADR-022). The second factor is an 8-digit code emailed to the
+/// admin; the codes themselves live hashed in `verification`, not here. `secret` is the plugin's
+/// encrypted TOTP seed — generated on enable but unused, because the TOTP endpoints are switched
+/// off. `backupCodes` is the encrypted list of one-time recovery codes. `failedVerificationCount`
+/// and `lockedUntil` are the plugin's account-level lockout across sign-in challenges.
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String    @map("backup_codes")
+  userId                  String    @map("user_id")
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0) @map("failed_verification_count")
+  lockedUntil             DateTime? @map("locked_until")
+
+  @@index([secret])
+  @@index([userId])
+  @@map("two_factor")
 }
 
 model AuditLog {

@@ -4,7 +4,7 @@ import { logger } from '@/modules/shared/lib/logger';
 import { IntegrationError } from '@/modules/shared/lib/errors';
 import { err, ok, type Result } from '@/modules/shared/lib/result';
 
-// Transport-only edge. Templates + status->template mapping live in the notifications module.
+// Transport-only edge. Templates live with the feature that sends them (e.g. modules/auth/emails).
 export interface SendEmailInput {
   to: string;
   subject: string;
@@ -56,6 +56,15 @@ export class ResendEmailClient implements EmailClient {
 }
 
 let cached: EmailClient | undefined;
+
+/**
+ * True when a real transport is configured (RESEND_API_KEY + EMAIL_FROM), i.e. getEmailClient()
+ * returns the Resend client rather than the no-op. A feature that is unsafe without delivery —
+ * the admin's emailed sign-in codes (ADR-022) — checks this instead of trusting a no-op "success".
+ */
+export function isEmailDeliveryConfigured(): boolean {
+  return Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+}
 
 /** Factory: real Resend client when configured, else a logging no-op. Cached per process. */
 export function getEmailClient(): EmailClient {
