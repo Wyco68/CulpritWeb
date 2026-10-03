@@ -53,4 +53,6 @@ through a public form.
 
 ## Supersedes / Superseded by
 
-N/A.
+Extended by [ADR-022](ADR-022-admin-2fa-and-password-reset-otp.md) (2026-10-03): an optional
+second factor by emailed code, and forgot-password by emailed code. The "no password reset"
+consequence above no longer holds — there is a reset, by code, still no magic link.

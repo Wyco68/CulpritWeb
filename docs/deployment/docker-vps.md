@@ -1,9 +1,9 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-11
-related_modules: [shared]
-related_decisions: []
+last_updated: 2026-10-03
+related_modules: [shared, auth]
+related_decisions: [ADR-008, ADR-022]
 ---
 
 # Docker / VPS deployment
@@ -39,12 +39,12 @@ culprit-web:3000 }` block appended to `~/server/caddy/Caddyfile`. Each app lives
 
 ## What runs where
 
-| Operation | Runs in |
-|---|---|
-| `npm ci`, lint, typecheck, unit tests | GitHub Actions (`test` job) |
-| `prisma migrate deploy` | GitHub Actions (`migrate` job), against `DIRECT_URL` |
+| Operation                                           | Runs in                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| `npm ci`, lint, typecheck, unit tests               | GitHub Actions (`test` job)                                  |
+| `prisma migrate deploy`                             | GitHub Actions (`migrate` job), against `DIRECT_URL`         |
 | `prisma generate`, `next build`, Docker image build | GitHub Actions (`build-and-push` job), inside `docker build` |
-| `docker pull`, `docker compose up -d`, healthcheck | VPS (`scripts/deploy.sh`) |
+| `docker pull`, `docker compose up -d`, healthcheck  | VPS (`scripts/deploy.sh`)                                    |
 
 Migrations run in CI, not on the VPS and not inside the image's entrypoint — the production image
 is intentionally trimmed to Next's standalone output and doesn't carry the Prisma CLI or
@@ -95,6 +95,75 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-username> --password-stdin
 The CI deploy job does this automatically with its own short-lived `GITHUB_TOKEN`; only needed by
 hand here for a manual/local deploy.
 
+## Client IP behind Cloudflare — manual follow-up (not yet applied)
+
+**Status: pending, by hand on the VPS.** Staging is behind Cloudflare's proxy (orange cloud —
+responses carry `server: cloudflare`) and then the shared Caddy. Every per-IP rate limit
+(`src/middleware.ts`, ADR-008/ADR-022), Better Auth's own rate limiter, and the `remoteip` sent to
+Turnstile key on the client IP, which the app reads from the **first `X-Forwarded-For` entry**
+(`getClientIp`). With the Caddyfile above, that value is **not the visitor's IP**:
+
+- Caddy trusts no proxies by default, so it discards the incoming `X-Forwarded-For` and sets it to
+  the address that connected to it — a **Cloudflare edge IP**. Per-IP limits are therefore really
+  per-edge-node: unrelated visitors share a bucket, and an attacker spread across edges gets many.
+- Trusting Cloudflare naively (passing its `X-Forwarded-For` through) would be worse: Cloudflare
+  _appends_ the real IP to whatever `X-Forwarded-For` the client sent, so the first entry — what
+  the app reads — would be attacker-chosen.
+
+The fix is in Caddy, not the app: trust Cloudflare's ranges only, take the client IP from
+`Cf-Connecting-Ip` (a single value Cloudflare sets and overwrites), and forward exactly that one
+value upstream.
+
+1. Global options block at the **top** of `~/server/caddy/Caddyfile` (merge into an existing `{ }`
+   block if there is one). It applies to every site on the shared Caddy, but only changes anything
+   for requests that genuinely arrive from a Cloudflare address — a direct hit on the origin keeps
+   its own connection IP, so `Cf-Connecting-Ip` can't be spoofed by bypassing Cloudflare. Ranges
+   from <https://www.cloudflare.com/ips/> (fetched 2026-10-03; re-check them occasionally):
+
+   ```caddyfile
+   {
+   	servers {
+   		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+   		client_ip_headers Cf-Connecting-Ip
+   	}
+   }
+   ```
+
+   With this, Caddy's `{client_ip}` placeholder is the visitor's IP when the peer is Cloudflare, and
+   the connecting IP otherwise.
+
+2. This app's site block — overwrite the forwarded headers with that one trustworthy value, so the
+   app's "first `X-Forwarded-For` entry" _is_ the client IP (no app change needed):
+
+   ```caddyfile
+   culprit.wyco-dev.com {
+   	reverse_proxy culprit-web:3000 {
+   		header_up X-Forwarded-For {client_ip}
+   		header_up X-Real-IP {client_ip}
+   	}
+   }
+   ```
+
+3. Validate and reload (zero downtime for the other apps):
+
+   ```bash
+   docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+   docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+   ```
+
+4. Verify. Temporarily add `log` to the site block, load the site from your own connection, and
+   check that the access log's `client_ip` is your public IP (not a Cloudflare address). Then send
+   `curl -H 'X-Forwarded-For: 6.6.6.6' https://culprit.wyco-dev.com/api/auth/ok` and confirm
+   `client_ip` is still your IP — a client-sent `X-Forwarded-For` must not win. Remove `log` again.
+
+**What the app reads afterwards:** unchanged — `X-Forwarded-For` (first entry), falling back to
+`X-Real-IP` (`src/middleware.ts#getClientIp`, `shared/lib/request.ts`); Better Auth reads
+`X-Forwarded-For` by default. After step 2 both headers carry exactly `{client_ip}`.
+
+Optional hardening, separate from the above: restrict the VPS firewall's 80/443 to Cloudflare's
+ranges (or use Cloudflare Authenticated Origin Pulls), so the origin can't be reached around
+Cloudflare at all. Mind the other apps on the shared box before doing that.
+
 ## Runtime config from Doppler
 
 Optional, per box, and off unless you turn it on. With it, the VPS pulls its own `.env.production`
@@ -137,23 +206,23 @@ Application config comes from Doppler (`culprit` → `stg`), fetched per job by
 read-only service token. GitHub stores only what CI needs to reach the box
 (**Settings → Secrets and variables → Actions**):
 
-| Name | Kind | Notes |
-|---|---|---|
-| `DOPPLER_TOKEN` | Secret | Read-only Doppler service token for `culprit/stg`. The only application credential in GitHub — every value below is fetched with it |
-| `DEPLOY_SSH_KEY` | Secret | Private key for the VPS `deploy` user. Stays here on purpose: it is how the pipeline reaches the box, not config the app reads, and a multi-line private key is the value log masking handles least well |
-| `DEPLOY_HOST` / `DEPLOY_USER` | Variable | SSH target — not secret, but scoped as repo config rather than hardcoded in the workflow |
+| Name                          | Kind     | Notes                                                                                                                                                                                                    |
+| ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DOPPLER_TOKEN`               | Secret   | Read-only Doppler service token for `culprit/stg`. The only application credential in GitHub — every value below is fetched with it                                                                      |
+| `DEPLOY_SSH_KEY`              | Secret   | Private key for the VPS `deploy` user. Stays here on purpose: it is how the pipeline reaches the box, not config the app reads, and a multi-line private key is the value log masking handles least well |
+| `DEPLOY_HOST` / `DEPLOY_USER` | Variable | SSH target — not secret, but scoped as repo config rather than hardcoded in the workflow                                                                                                                 |
 
 Fetched from Doppler at run time:
 
-| Name | Used by | Notes |
-|---|---|---|
-| `DIRECT_URL` | `db:generate`, `db:deploy`, image build | Unpooled — `migrate deploy` cannot run through pgbouncer |
-| `DATABASE_URL` | image build | Same pooled Supabase URL the container uses at runtime |
-| `BETTER_AUTH_SECRET` | image build | Same value used at runtime |
-| `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_CALENDLY_URL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | image build | Public by design — inlined into the client bundle |
-| `R2_PUBLIC_URL` | image build | Public (the R2 bucket's public dev URL). Not a `NEXT_PUBLIC_*` var, but still required at build time: `next.config.ts`'s `images.remotePatterns` is computed from it and baked into `.next/required-server-files.json` — the standalone runner never re-reads `next.config.ts`, so setting this only in `.env.production` (runtime) has no effect on image optimization |
+| Name                                                                                | Used by                                 | Notes                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DIRECT_URL`                                                                        | `db:generate`, `db:deploy`, image build | Unpooled — `migrate deploy` cannot run through pgbouncer                                                                                                                                                                                                                                                                                                                |
+| `DATABASE_URL`                                                                      | image build                             | Same pooled Supabase URL the container uses at runtime                                                                                                                                                                                                                                                                                                                  |
+| `BETTER_AUTH_SECRET`                                                                | image build                             | Same value used at runtime                                                                                                                                                                                                                                                                                                                                              |
+| `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_CALENDLY_URL`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | image build                             | Public by design — inlined into the client bundle                                                                                                                                                                                                                                                                                                                       |
+| `R2_PUBLIC_URL`                                                                     | image build                             | Public (the R2 bucket's public dev URL). Not a `NEXT_PUBLIC_*` var, but still required at build time: `next.config.ts`'s `images.remotePatterns` is computed from it and baked into `.next/required-server-files.json` — the standalone runner never re-reads `next.config.ts`, so setting this only in `.env.production` (runtime) has no effect on image optimization |
 
-`DATABASE_URL`/`DIRECT_URL`/`BETTER_AUTH_SECRET` are needed at *build* time only because
+`DATABASE_URL`/`DIRECT_URL`/`BETTER_AUTH_SECRET` are needed at _build_ time only because
 `next build` traces every route handler, including ones that import the Zod-validated
 `env.server.ts` module — no database connection is actually opened during the build. They're
 passed to `docker build` as BuildKit secrets (`--mount=type=secret`), not `ARG`/`ENV`, so they
