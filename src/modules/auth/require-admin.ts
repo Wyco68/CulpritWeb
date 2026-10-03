@@ -7,6 +7,8 @@ export type AdminSession = {
   userId: string;
   email: string;
   name: string;
+  /** Whether sign-in asks for an emailed code after the password (ADR-022). */
+  twoFactorEnabled: boolean;
 };
 
 /**
@@ -20,5 +22,10 @@ export type AdminSession = {
 export async function requireAdmin(): Promise<Result<AdminSession, UnauthorizedError>> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return err(new UnauthorizedError());
-  return ok({ userId: session.user.id, email: session.user.email, name: session.user.name });
+  return ok({
+    userId: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+    twoFactorEnabled: session.user.twoFactorEnabled === true,
+  });
 }
