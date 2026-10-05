@@ -20,16 +20,28 @@ import { TwoFactorChallenge } from './two-factor-challenge';
 // sentence, and redirects on success. The admin layout's server-side `requireAdmin()` check is the
 // actual gate — this form is UX, not the security boundary.
 //
-// With two-step verification on (ADR-022) a correct password answers `twoFactorRedirect` and no
-// session. The form then requests the first emailed code itself — here, in the submit handler, so
-// exactly one send happens per password submit — and swaps to the code step in place, without a
-// page load, keeping the email for the step's copy.
+// Two-step verification is mandatory (ADR-022, ADR-023): a correct password always answers
+// `twoFactorRedirect` and no session. The form then requests the first emailed code itself — here,
+// in the submit handler, so exactly one send happens per password submit — and swaps to the code
+// step in place, without a page load. A password step that answers anything else is unexpected and
+// shown as a failure: the server never signs in on a password alone, so this form never treats one
+// as a sign-in.
 
-type Challenge = { email: string; sendError: string | null };
+export interface LoginFormProps {
+  /**
+   * Where codes are emailed, already masked (ADMIN_EMAIL_MASKED), for the code step's copy. Passed
+   * from the Server Component page so the full address never reaches the browser bundle.
+   */
+  maskedEmail: string;
+}
+
+type Challenge = { sendError: string | null };
 
 const SIGN_IN_FAILED = 'Could not sign in. Check your credentials and try again.';
+/** The password step answered without a two-step challenge, which the server never does. */
+const UNEXPECTED_RESPONSE = "Sign-in couldn't be completed. Please try again.";
 
-export function LoginForm() {
+export function LoginForm({ maskedEmail }: LoginFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
@@ -64,29 +76,24 @@ export function LoginForm() {
       signIn.email({ email: values.email, password: values.password }),
     );
 
-    if (error) {
-      const message = authErrorMessage(error, SIGN_IN_FAILED);
-      setFormError(message);
-      toast.error(message);
-      return;
-    }
+    if (error) return fail(authErrorMessage(error, SIGN_IN_FAILED));
 
     // Not in the client's type: the two-factor plugin answers this in place of a session.
-    if ('twoFactorRedirect' in data && data.twoFactorRedirect) {
-      const sent = await runAuthRequest(() => twoFactor.sendOtp());
-      setChallenge({
-        email: values.email,
-        sendError: sent.error
-          ? authErrorMessage(
-              sent.error,
-              "We couldn't send the code. Use “Resend code” to try again.",
-            )
-          : null,
-      });
-      return;
+    if (!('twoFactorRedirect' in data) || data.twoFactorRedirect !== true) {
+      return fail(UNEXPECTED_RESPONSE);
     }
 
-    finishSignIn();
+    const sent = await runAuthRequest(() => twoFactor.sendOtp());
+    setChallenge({
+      sendError: sent.error
+        ? authErrorMessage(sent.error, "We couldn't send the code. Use “Resend code” to try again.")
+        : null,
+    });
+  }
+
+  function fail(message: string) {
+    setFormError(message);
+    toast.error(message);
   }
 
   function restart(reason: string | null) {
@@ -99,7 +106,7 @@ export function LoginForm() {
   if (challenge) {
     return (
       <TwoFactorChallenge
-        email={challenge.email}
+        maskedEmail={maskedEmail}
         initialSendError={challenge.sendError}
         onVerified={finishSignIn}
         onRestart={restart}

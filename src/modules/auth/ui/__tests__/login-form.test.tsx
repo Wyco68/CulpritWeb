@@ -3,6 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LoginForm } from '../login-form';
 
+const MASKED = 'cu•••••••••@gmail.com';
+
 const pushMock = vi.fn();
 const refreshMock = vi.fn();
 const signInEmailMock = vi.fn();
@@ -15,6 +17,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
+function renderForm() {
+  return render(<LoginForm maskedEmail={MASKED} />);
+}
 
 vi.mock('../../auth-client', () => ({
   signIn: { email: (...args: unknown[]) => signInEmailMock(...args) },
@@ -49,7 +55,7 @@ describe('LoginForm', () => {
 
   it('shows validation errors and never calls signIn for an empty submit', async () => {
     const user = userEvent.setup();
-    render(<LoginForm />);
+    renderForm();
 
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
@@ -60,7 +66,7 @@ describe('LoginForm', () => {
 
   it('wires the email input to its label and validates format', async () => {
     const user = userEvent.setup();
-    render(<LoginForm />);
+    renderForm();
 
     const email = screen.getByLabelText('Email', { exact: false });
     await user.type(email, 'not-an-email');
@@ -72,33 +78,50 @@ describe('LoginForm', () => {
   });
 
   it('links to the forgot-password page', () => {
-    render(<LoginForm />);
+    renderForm();
     expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute(
       'href',
       '/login/forgot-password',
     );
   });
 
-  it('submits credentials and redirects to /admin on success', async () => {
-    signInEmailMock.mockResolvedValue(ok({ user: {} }));
+  it.each([
+    ['a session', { redirect: false, token: 't', user: {} }],
+    ['twoFactorRedirect: false', { twoFactorRedirect: false }],
+  ])('never signs in on a password alone: %s is shown as a failure', async (_label, data) => {
+    signInEmailMock.mockResolvedValue(ok(data));
     const user = userEvent.setup();
-    render(<LoginForm />);
+    renderForm();
 
     await submitPassword(user);
 
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/admin'));
-    expect(signInEmailMock).toHaveBeenCalledWith({
-      email: 'admin@example.com',
-      password: 'correct-password',
-    });
-    expect(refreshMock).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Sign-in couldn't be completed. Please try again.",
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(refreshMock).not.toHaveBeenCalled();
     expect(sendOtpMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('maps a failed automatic enrolment to a generic retry', async () => {
+    signInEmailMock.mockResolvedValue(fail(500, 'TWO_FACTOR_SETUP_FAILED'));
+    const user = userEvent.setup();
+    renderForm();
+
+    await submitPassword(user);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("Sign-in couldn't be completed. Please try again.");
+    expect(alert).not.toHaveTextContent('raw server text');
+    expect(sendOtpMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it('maps a wrong password to friendly copy without redirecting', async () => {
     signInEmailMock.mockResolvedValue(fail(401, 'INVALID_EMAIL_OR_PASSWORD'));
     const user = userEvent.setup();
-    render(<LoginForm />);
+    renderForm();
 
     await submitPassword(user);
 
@@ -111,7 +134,7 @@ describe('LoginForm', () => {
   it('reports the rate limit when the middleware answers 429 without a code', async () => {
     signInEmailMock.mockResolvedValue(fail(429));
     const user = userEvent.setup();
-    render(<LoginForm />);
+    renderForm();
 
     await submitPassword(user);
 
@@ -120,7 +143,7 @@ describe('LoginForm', () => {
     );
   });
 
-  describe('with two-step verification on', () => {
+  describe('the code step, after every correct password', () => {
     beforeEach(() => {
       signInEmailMock.mockResolvedValue(ok({ twoFactorRedirect: true, twoFactorMethods: ['otp'] }));
       sendOtpMock.mockResolvedValue(ok({ status: true }));
@@ -128,7 +151,7 @@ describe('LoginForm', () => {
 
     it('sends one code and moves to the code step in place, focused on the code field', async () => {
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
 
       await submitPassword(user);
 
@@ -137,7 +160,9 @@ describe('LoginForm', () => {
       await waitFor(() => expect(code).toHaveFocus());
       expect(code).toHaveAttribute('autocomplete', 'one-time-code');
       expect(code).toHaveAttribute('inputmode', 'numeric');
-      expect(code).toHaveAccessibleDescription(/admin@example\.com/);
+      expect(code).toHaveAccessibleDescription(
+        `We sent an 8-digit code to ${MASKED}. It expires 5 minutes after it was sent.`,
+      );
       expect(sendOtpMock).toHaveBeenCalledTimes(1);
       expect(pushMock).not.toHaveBeenCalled();
       // The resend waits out its cooldown after the first send.
@@ -147,7 +172,7 @@ describe('LoginForm', () => {
     it('verifies the code (spaces dropped) and redirects to /admin', async () => {
       verifyOtpMock.mockResolvedValue(ok({ token: 't', user: {} }));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.type(
@@ -163,7 +188,7 @@ describe('LoginForm', () => {
 
     it('validates the code locally before spending an attempt', async () => {
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.type(await screen.findByLabelText('Verification code', { exact: false }), '123');
@@ -176,7 +201,7 @@ describe('LoginForm', () => {
     it('shows a wrong code as friendly copy and stays on the code step', async () => {
       verifyOtpMock.mockResolvedValue(fail(401, 'INVALID_CODE'));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       const code = await screen.findByLabelText('Verification code', { exact: false });
@@ -192,7 +217,7 @@ describe('LoginForm', () => {
     it('returns to the password step with a message when the challenge has expired', async () => {
       verifyOtpMock.mockResolvedValue(fail(401, 'INVALID_TWO_FACTOR_COOKIE'));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.type(
@@ -211,7 +236,7 @@ describe('LoginForm', () => {
     it('reports the account lock specifically', async () => {
       verifyOtpMock.mockResolvedValue(fail(429, 'ACCOUNT_TEMPORARILY_LOCKED'));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.type(
@@ -226,7 +251,7 @@ describe('LoginForm', () => {
     it('still opens the code step when the first send fails, with the reason', async () => {
       sendOtpMock.mockResolvedValue(fail(503, 'EMAIL_DELIVERY_FAILED'));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't send the code.");
@@ -234,10 +259,27 @@ describe('LoginForm', () => {
       expect(screen.getByRole('button', { name: /Resend code/ })).toBeEnabled();
     });
 
+    it('resends a code and says where it went, masked', async () => {
+      sendOtpMock
+        .mockResolvedValueOnce(fail(503, 'EMAIL_DELIVERY_FAILED'))
+        .mockResolvedValueOnce(ok({ status: true }));
+      const user = userEvent.setup();
+      renderForm();
+      await submitPassword(user);
+
+      await user.click(await screen.findByRole('button', { name: /Resend code/ }));
+
+      expect(await screen.findByText(`A new code is on its way to ${MASKED}.`)).toBeInTheDocument();
+      expect(sendOtpMock).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Verification code', { exact: false })).toHaveFocus();
+      expect(screen.getByRole('button', { name: /Resend code/ })).toBeDisabled();
+    });
+
     it('accepts a backup code instead', async () => {
       verifyBackupCodeMock.mockResolvedValue(ok({ token: 't', user: {} }));
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.click(await screen.findByRole('button', { name: 'Use a backup code instead' }));
@@ -255,7 +297,7 @@ describe('LoginForm', () => {
 
     it('goes back to the password step on request', async () => {
       const user = userEvent.setup();
-      render(<LoginForm />);
+      renderForm();
       await submitPassword(user);
 
       await user.click(await screen.findByRole('button', { name: 'Back' }));

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ShieldCheck } from 'lucide-react';
 import { redirect } from 'next/navigation';
-import { LoginForm, requireAdmin } from '@/modules/auth';
+import { ADMIN_EMAIL_MASKED, LoginForm, requireAdmin } from '@/modules/auth';
 import { AuthCardShell } from './_components/auth-card-shell';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,8 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
 // passes through the guarded admin layout to reach it. Already-authenticated admins are bounced
 // straight to the dashboard — no point showing a login form to someone with a live session.
 //
-// With two-step verification on, the form's code step replaces the password step inside this same
-// card (ADR-022); there is no separate page for it.
+// Every sign-in asks for an emailed code after the password (ADR-023); the form's code step replaces
+// the password step inside this same card, with no separate page. The masked mailbox is passed from
+// here, on the server, so the full address never reaches the browser bundle.
 export default async function LoginPage() {
   const session = await requireAdmin();
   if (session.ok) redirect('/admin');
@@ -27,7 +28,7 @@ export default async function LoginPage() {
       backHref="/"
       backLabel="Back to the site"
     >
-      <LoginForm />
+      <LoginForm maskedEmail={ADMIN_EMAIL_MASKED} />
     </AuthCardShell>
   );
 }

@@ -8,7 +8,7 @@ import {
   resetRequestErrorMessage,
   runAuthRequest,
 } from '../auth-error-message';
-import { EMAIL_DELIVERY_FAILED, EMAIL_NOT_CONFIGURED } from '../../auth-policy';
+import { EMAIL_DELIVERY_FAILED, TWO_FACTOR_SETUP_FAILED } from '../../auth-policy';
 
 const FALLBACK = 'Something went wrong.';
 
@@ -25,7 +25,7 @@ describe('authErrorMessage', () => {
     ['TOO_MANY_ATTEMPTS', 403, 'Request a new code'],
     ['PASSWORD_TOO_SHORT', 400, 'Use at least 8 characters.'],
     ['PASSWORD_TOO_LONG', 400, 'Use at most 128 characters.'],
-    ['TWO_FACTOR_SETUP_REQUIRED', 400, 'Enter your password to start turning on'],
+    ['TWO_FACTOR_SIGN_IN_ONLY', 400, "You're already signed in. Reload the page"],
     ['MISSING_RESPONSE', 400, "Couldn't verify you're human. Please try again."],
     ['VERIFICATION_FAILED', 403, "Couldn't verify you're human. Please try again."],
     ['UNKNOWN_ERROR', 500, 'Please try again later.'],
@@ -36,13 +36,19 @@ describe('authErrorMessage', () => {
     expect(message).not.toContain('raw server text');
   });
 
-  it('uses the shared policy copy for the email delivery codes', () => {
+  it('uses the shared policy copy for a failed code send and a failed enrolment', () => {
     expect(authErrorMessage({ code: 'EMAIL_DELIVERY_FAILED', status: 503 }, FALLBACK)).toBe(
       EMAIL_DELIVERY_FAILED.message,
     );
-    expect(authErrorMessage({ code: 'EMAIL_NOT_CONFIGURED', status: 400 }, FALLBACK)).toBe(
-      EMAIL_NOT_CONFIGURED.message,
+    expect(authErrorMessage({ code: 'TWO_FACTOR_SETUP_FAILED', status: 500 }, FALLBACK)).toBe(
+      TWO_FACTOR_SETUP_FAILED.message,
     );
+  });
+
+  it('no longer maps the codes of the removed turn-on flow', () => {
+    for (const code of ['EMAIL_NOT_CONFIGURED', 'TWO_FACTOR_SETUP_REQUIRED']) {
+      expect(authErrorMessage({ code, status: 400 }, FALLBACK)).toBe(FALLBACK);
+    }
   });
 
   it('reports the account lock specifically, even though it is a 429', () => {
@@ -141,6 +147,12 @@ describe('resetRequestErrorMessage', () => {
     );
     expect(resetRequestErrorMessage({ status: 429 }, FALLBACK)).toBe(
       'Too many requests. Please try again later.',
+    );
+  });
+
+  it('words a failed reset email for the reset form, not the sign-in code', () => {
+    expect(resetRequestErrorMessage({ status: 503, code: 'EMAIL_DELIVERY_FAILED' }, FALLBACK)).toBe(
+      "We couldn't send the email. Try again in a few minutes.",
     );
   });
 

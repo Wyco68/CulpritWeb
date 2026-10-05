@@ -61,3 +61,6 @@ Thumbs.db
 # Local-only production secrets and hand-written deployment guides.
 env.production
 /*-Guide.pdf
+
+# Saved admin sessions for the authenticated Playwright specs — live cookies, never commit.
+tests/e2e/.auth/
