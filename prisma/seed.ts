@@ -1,14 +1,18 @@
 import { config as loadEnv } from 'dotenv';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
+// No imports of its own, so it is safe to load before the env files below.
+import { ADMIN_EMAIL } from '../src/modules/auth/auth-policy';
 
-// Provisions the single admin account from ADMIN_EMAIL/ADMIN_INITIAL_PASSWORD (PROJECT_SPEC
-// §5.3/FR-13: "Better Auth secure cookie sessions, single admin"). The app's own
-// `auth` instance (src/modules/auth/auth.ts) has `disableSignUp: true` — sign-up is deliberately
-// unreachable from any route. This script builds a throwaway instance with sign-up enabled,
-// purely to call Better Auth's own password-hashing/account-creation path instead of
-// hand-rolling one, then never touches it again. Idempotent: does nothing if the email already
-// has an account.
+// Provisions the single admin account (PROJECT_SPEC §5.3/FR-13: "Better Auth secure cookie
+// sessions, single admin") with the fixed admin address — ADMIN_EMAIL in
+// src/modules/auth/auth-policy.ts, where every sign-in and reset code is sent (ADR-023) — and the
+// password from ADMIN_INITIAL_PASSWORD. The app's own `auth` instance (src/modules/auth/auth.ts)
+// has `disableSignUp: true` — sign-up is deliberately unreachable from any route. This script
+// builds a throwaway instance with sign-up enabled, purely to call Better Auth's own
+// password-hashing/account-creation path instead of hand-rolling one, then never touches it again.
+// Idempotent: does nothing once ANY user exists, so it can never create a second admin. Two-step
+// verification is enrolled automatically at the first sign-in, not here.
 
 loadEnv({ path: '.env.local' });
 loadEnv();
@@ -158,17 +162,25 @@ const DIRECTOR_CV: Record<
 };
 
 async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL;
+  const email = ADMIN_EMAIL;
   const password = process.env.ADMIN_INITIAL_PASSWORD;
 
-  if (!email || !password) {
-    console.log('ADMIN_EMAIL / ADMIN_INITIAL_PASSWORD not set — skipping admin seed.');
+  // The env var used to choose the login email. It no longer does (ADR-023); say so rather than
+  // silently ignore a value someone set on purpose.
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_EMAIL.toLowerCase() !== ADMIN_EMAIL) {
+    console.log(`ADMIN_EMAIL env is ignored — the admin login email is fixed to ${ADMIN_EMAIL}.`);
+  }
+
+  // Single admin: if any account exists — whatever its email — there is nothing to provision.
+  // (Keyed on the email alone, a changed address would make this create a second admin.)
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log('An admin account already exists — skipping.');
     return;
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    console.log(`Admin account for ${email} already exists — skipping.`);
+  if (!password) {
+    console.log('ADMIN_INITIAL_PASSWORD not set — skipping admin seed.');
     return;
   }
 
