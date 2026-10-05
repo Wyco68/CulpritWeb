@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from '@/modules/shared/lib/prisma';
@@ -52,6 +53,19 @@ if (env.TURNSTILE_SECRET_KEY && !publicEnv.turnstileSiteKey) {
   });
 }
 
+// The reset-code email is sent after the response (see createPasswordResetOtpSender). Next's
+// `after()` keeps it alive on a serverless host (Vercel), where a floating promise would be frozen
+// with the function; on the VPS's long-running server it simply runs. Outside a request scope
+// (`after()` throws there) the task just floats.
+function runInBackground(task: () => Promise<void>): void {
+  const run = () => task().catch(() => {});
+  try {
+    after(run);
+  } catch {
+    void run();
+  }
+}
+
 export const auth = betterAuth({
   appName: 'The Culprit',
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -63,6 +77,7 @@ export const auth = betterAuth({
   ...adminAuthSecurityOptions({
     codeSender,
     isEmailDeliveryConfigured,
+    runInBackground,
     // Keys the stored-code HMAC. The env schema makes the secret mandatory in production; the
     // fallback only ever applies to a local dev server without one (Better Auth itself falls back
     // to a built-in dev secret in that case too).

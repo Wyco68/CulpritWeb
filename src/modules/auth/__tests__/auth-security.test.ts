@@ -78,6 +78,26 @@ describe('createPasswordResetOtpSender', () => {
     settle(ok(undefined));
   });
 
+  it('hands the send to the injected background runner instead of floating it', async () => {
+    const { sender, send } = makeSender();
+    const tasks: Array<() => Promise<void>> = [];
+
+    await createPasswordResetOtpSender(sender, (task) => tasks.push(task))({
+      email: 'admin@example.com',
+      otp: '12345678',
+      type: 'forget-password',
+    });
+
+    expect(send).not.toHaveBeenCalled();
+    expect(tasks).toHaveLength(1);
+    await tasks[0]!();
+    expect(send).toHaveBeenCalledWith({
+      to: 'admin@example.com',
+      code: '12345678',
+      purpose: 'password-reset',
+    });
+  });
+
   it('swallows an unexpected rejection from the sender (no unhandled rejection)', async () => {
     const send = vi.fn<VerificationCodeSender['send']>().mockRejectedValue(new Error('boom'));
 

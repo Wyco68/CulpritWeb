@@ -87,8 +87,9 @@ This is the `emailOTP` plugin, used for **this one flow only**.
   `x-captcha-response` header (Better Auth's `captcha` plugin, scoped to this one endpoint).
 - **Uniform response.** It answers `{ success: true }` whether or not the address has an account,
   and whether or not the email went out.
-  - The send is **not awaited**, so a real address doesn't wait on the email provider. This relies
-    on a long-running Node server; a serverless host would need `waitUntil`.
+  - The send is **not awaited**, so a real address doesn't wait on the email provider. It is
+    handed to Next's `after()`, which keeps it running past the response on a serverless host
+    (Vercel production) as well as on the VPS's long-running server.
     `advanced.backgroundTasks` must stay unset, because it would also stop the two-factor send from
     being awaited and break the 503 below.
   - The two paths still differ (an unknown address costs an extra database delete), so the
@@ -246,7 +247,10 @@ A production secret rejects the test widget's dummy token.
   production for the reset request to work at all.
 - **Resend's free tier fits only because of the site-wide caps.** Normal use is a handful of codes
   a month; the caps above keep abuse from consuming the daily allowance.
-- **Rate-limit state is in-process** (ADR-008), so it resets when the container restarts.
+- **Rate-limit state is in-process** (ADR-008), so it resets when the container restarts. On
+  Vercel each function instance keeps its own counters, so the site-wide reset caps are per
+  instance there, not truly global; Turnstile on every reset request is the control that still
+  holds. A shared store (e.g. Upstash Redis, free tier) would make the caps exact.
 - **Changing `BETTER_AUTH_SECRET`** invalidates outstanding codes (5-minute lifetime, so harmless)
   and makes stored backup codes undecryptable. Regenerate backup codes after rotating it.
 - **No `AuditLog` rows are written for sign-ins, 2FA changes or resets.** Better Auth owns those

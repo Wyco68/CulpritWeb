@@ -140,14 +140,29 @@ export function createTwoFactorOtpSender(sender: VerificationCodeSender) {
  * Fire-and-forget, deliberately. `/email-otp/request-password-reset` answers `{ success: true }`
  * whether or not the address has an account; awaiting a real send only for the real address would
  * make that response measurably slower and so reveal which address is the admin's. For the same
- * reason a failed send is never surfaced (the sender has already logged it). This relies on a
- * long-running Node server (the VPS) — on a serverless host the promise would need `waitUntil`.
+ * reason a failed send is never surfaced (the sender has already logged it).
+ *
+ * `runInBackground` keeps the send alive after the response: a long-running Node server (the VPS)
+ * would finish a floating promise anyway, but a serverless function (Vercel) is frozen once it has
+ * answered — ./auth.ts passes Next's `after()`, which registers the task with the platform.
  */
-export function createPasswordResetOtpSender(sender: VerificationCodeSender) {
+export function createPasswordResetOtpSender(
+  sender: VerificationCodeSender,
+  runInBackground: BackgroundRunner = floatTask,
+) {
   return async ({ email, otp, type }: EmailOtpPayload): Promise<void> => {
     if (type !== 'forget-password') return;
-    void sender.send({ to: email, code: otp, purpose: 'password-reset' }).catch(() => {});
+    runInBackground(async () => {
+      await sender.send({ to: email, code: otp, purpose: 'password-reset' });
+    });
   };
+}
+
+/** Runs a task without awaiting it. Must never throw, and must swallow the task's rejection. */
+export type BackgroundRunner = (task: () => Promise<void>) => void;
+
+function floatTask(task: () => Promise<void>): void {
+  void task().catch(() => {});
 }
 
 export type AdminAuthGuardDeps = {
@@ -355,6 +370,8 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
 
 export type AdminAuthPluginDeps = AdminAuthGuardDeps & {
   codeSender: VerificationCodeSender;
+  /** Keeps the fire-and-forget reset send alive past the response (see createPasswordResetOtpSender). */
+  runInBackground?: BackgroundRunner;
   /** BETTER_AUTH_SECRET — keys the stored-code hash (createOtpHasher). */
   otpHashSecret: string;
 };
@@ -405,7 +422,7 @@ export function adminAuthPlugins(
       allowedAttempts: RESET_CODE_ATTEMPTS,
       storeOTP: otpHasher,
       disableSignUp: true,
-      sendVerificationOTP: createPasswordResetOtpSender(deps.codeSender),
+      sendVerificationOTP: createPasswordResetOtpSender(deps.codeSender, deps.runInBackground),
     }),
     adminAuthGuards(deps),
     resetCaptcha(deps),
