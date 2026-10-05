@@ -37,7 +37,11 @@ npm run lint       # ESLint CLI (eslint .)
   behavior).
 - **API/route tests**: `research.route.test.ts` (`src/app/api/admin/research/__tests__/`).
 - **E2E**: `tests/e2e/appointment.spec.ts` (the public Calendly tab, which still exists),
-  `tests/e2e/login.spec.ts`.
+  `tests/e2e/login.spec.ts` (login validation, the forgot-password first step),
+  `tests/e2e/navigation.spec.ts`, and `tests/e2e/admin-member-profile.spec.ts`. The admin spec
+  can't complete the emailed sign-in code (ADR-023), so it loads a session saved once by hand —
+  `E2E_ADMIN_STORAGE_STATE`, recorded as described in `tests/e2e/support/admin-session.ts` — and
+  skips without one.
 
 Only `research` has API-route-level tests today. The other admin CRUD routes (`profile`,
 `publications`, `groups`, `team-members`, `events`) do not yet have route-level tests —

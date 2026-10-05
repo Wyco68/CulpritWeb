@@ -1,12 +1,13 @@
 import {
   CAPTCHA_NOT_CONFIGURED,
   EMAIL_DELIVERY_FAILED,
-  EMAIL_NOT_CONFIGURED,
   PASSWORD_POLICY,
-  TWO_FACTOR_SETUP_REQUIRED,
+  TWO_FACTOR_SETUP_FAILED,
+  TWO_FACTOR_SIGN_IN_ONLY,
 } from '../auth-policy';
 
-// One place that turns a Better Auth client error into the sentence the admin reads (ADR-022).
+// One place that turns a Better Auth client error into the sentence the admin reads (ADR-022,
+// ADR-023).
 //
 // The client answers `{ data, error }` with `error = { status, statusText, code?, message? }`.
 // `code` is Better Auth's own (or ours, from ./auth-security.ts); the raw `message` is never shown
@@ -35,6 +36,8 @@ const MESSAGES: Readonly<Record<string, string>> = {
   [NETWORK_ERROR_CODE]: "Couldn't reach the server. Check your connection and try again.",
   // Password sign-in.
   INVALID_EMAIL_OR_PASSWORD: 'That email and password combination is incorrect.',
+  // The password was right but the two-step challenge couldn't be set up. No session exists.
+  [TWO_FACTOR_SETUP_FAILED.code]: TWO_FACTOR_SETUP_FAILED.message,
   // Password confirmation on the security settings, which also need a live session.
   INVALID_PASSWORD: "That password isn't right.",
   UNAUTHORIZED: 'Your session has ended. Sign in again to continue.',
@@ -47,12 +50,11 @@ const MESSAGES: Readonly<Record<string, string>> = {
   ACCOUNT_TEMPORARILY_LOCKED:
     'Too many failed attempts, so sign-in is locked for 15 minutes. Please try again later.',
   INVALID_BACKUP_CODE: "That backup code isn't valid, or it has already been used.",
-  // Turning two-step verification on: the code step was reached without the password step.
-  [TWO_FACTOR_SETUP_REQUIRED.code]:
-    "Setup didn't finish. Enter your password to start turning on two-step verification again.",
-  // Code delivery.
+  // A code was sent or checked while this browser already holds a session (signed in in another
+  // tab). Reloading /login takes the admin to the dashboard.
+  [TWO_FACTOR_SIGN_IN_ONLY.code]: "You're already signed in. Reload the page to continue.",
+  // Code delivery. The password-reset request words its own (see resetRequestErrorMessage).
   [EMAIL_DELIVERY_FAILED.code]: EMAIL_DELIVERY_FAILED.message,
-  [EMAIL_NOT_CONFIGURED.code]: EMAIL_NOT_CONFIGURED.message,
   // The human check (Turnstile) in front of the password-reset request.
   MISSING_RESPONSE: "Couldn't verify you're human. Please try again.",
   VERIFICATION_FAILED: "Couldn't verify you're human. Please try again.",
@@ -95,12 +97,16 @@ export function formatWait(seconds: number): string {
   return hours === 1 ? 'about an hour' : `about ${hours} hours`;
 }
 
+/** A reset request whose email failed — or found no admin account — answers 503 with this code. */
+const RESET_EMAIL_FAILED = "We couldn't send the email. Try again in a few minutes.";
+
 /**
  * The message for a failed password-reset code request. Unlike sign-in, its 429 may be a site-wide
  * cap that lasts up to a day, so "a few minutes" would be wrong: the wait comes from `Retry-After`
  * when the server sent one, and is left open otherwise.
  */
 export function resetRequestErrorMessage(error: AuthClientError, fallback: string): string {
+  if (error.code === EMAIL_DELIVERY_FAILED.code) return RESET_EMAIL_FAILED;
   if (error.status !== 429) return authErrorMessage(error, fallback);
   return error.retryAfterSeconds !== undefined
     ? `Too many requests. Please try again in ${formatWait(error.retryAfterSeconds)}.`

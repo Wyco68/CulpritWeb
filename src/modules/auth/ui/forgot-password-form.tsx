@@ -1,28 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/modules/shared/ui/button';
 import { Input } from '@/modules/shared/ui/input';
 import { FormField } from '@/modules/shared/ui/form-field';
 import { emailOtp } from '../auth-client';
 import { CAPTCHA_HEADER, CODE_DIGITS, CODE_TTL_MINUTES, PASSWORD_POLICY } from '../auth-policy';
-import {
-  requestPasswordResetSchema,
-  resetPasswordSchema,
-  type RequestPasswordResetInput,
-} from '../password-reset.schema';
+import { resetPasswordSchema } from '../password-reset.schema';
 import {
   authErrorMessage,
   parseRetryAfter,
   resetRequestErrorMessage,
   runAuthRequest,
-  type AuthClientError,
 } from './auth-error-message';
 import { CodeField } from './code-field';
 import { FormAlert, FormNotice } from './form-alert';
@@ -30,13 +24,13 @@ import { HumanCheck } from './human-check';
 import { ResendCodeButton } from './resend-code-button';
 import { useResendCooldown } from './use-resend-cooldown';
 
-// "Forgot password" by emailed 8-digit code (ADR-022), in two steps on one page: ask for a code,
-// then enter it with the new password.
+// "Forgot password" by emailed 8-digit code (ADR-022, ADR-023), in two steps on one page: ask for a
+// code, then enter it with the new password.
 //
-// The server answers a request the same way whether or not the address is the admin's, and the
-// copy here does too — "if that email belongs to the admin" — so the page can't be used to find
-// out which address is. Only a failure that has nothing to do with the address (human check, rate
-// limit, server, connection) keeps the visitor on the first step.
+// There is no email field. The site has one admin and every code goes to its fixed mailbox, so the
+// server ignores any address a client sends (the form sends `email: ''`) and reports honestly
+// whether the email went out: `{ success: true }` means sent, `503 EMAIL_DELIVERY_FAILED` means
+// not. Every failure therefore keeps the visitor on the first step, with the reason.
 //
 // Every code request — the first and each "Resend code" — carries a fresh Cloudflare Turnstile
 // token in the `x-captcha-response` header. Tokens are single-use, so the check is started over
@@ -44,32 +38,19 @@ import { useResendCooldown } from './use-resend-cooldown';
 // the server skips it too outside production.
 //
 // A completed reset signs out every session and does not sign in. The admin is sent to /login and
-// signs in with the new password, passing two-step verification if it is on.
-
-/** Human-check failures: about the request, never about the address. */
-const CAPTCHA_ERROR_CODES = new Set([
-  'MISSING_RESPONSE',
-  'VERIFICATION_FAILED',
-  'UNKNOWN_ERROR',
-  'CAPTCHA_NOT_CONFIGURED',
-]);
-
-/** Errors that are about the request itself, not the address — the only ones a request reports. */
-export function isRequestFailure(error: AuthClientError): boolean {
-  if (error.code && CAPTCHA_ERROR_CODES.has(error.code)) return true;
-  return error.status === 429 || error.status === undefined || (error.status ?? 0) >= 500;
-}
+// signs in with the new password, then the emailed code.
 
 /**
  * One code request. A 429 here may be the per-IP limit or a site-wide cap lasting up to a day, so
  * the response's `Retry-After` is read (through the client's `onError` hook — the only place it
  * exposes the response) and carried on the error for the message.
  */
-async function requestResetCode(email: string, captchaToken: string | null) {
+async function requestResetCode(captchaToken: string | null) {
   let retryAfterSeconds: number | undefined;
   const result = await runAuthRequest(() =>
     emailOtp.requestPasswordReset(
-      { email },
+      // The server fills in the admin's address; an empty one satisfies the client's types.
+      { email: '' },
       {
         ...(captchaToken ? { headers: { [CAPTCHA_HEADER]: captchaToken } } : {}),
         onError: ({ response }) => {
@@ -83,106 +64,84 @@ async function requestResetCode(email: string, captchaToken: string | null) {
 }
 
 export interface ForgotPasswordFormProps {
+  /**
+   * Where the code is emailed, already masked (ADMIN_EMAIL_MASKED). Passed from the Server
+   * Component page so the full address never reaches the browser bundle.
+   */
+  maskedEmail: string;
   /** NEXT_PUBLIC_TURNSTILE_SITE_KEY. Absent: no human check is shown. */
   turnstileSiteKey?: string;
 }
 
-export function ForgotPasswordForm({ turnstileSiteKey }: ForgotPasswordFormProps) {
-  const [email, setEmail] = useState<string | null>(null);
-  // The first step takes focus only when the admin comes back to it, not on page load, so a screen
-  // reader still starts at the page's heading.
-  const [returned, setReturned] = useState(false);
+export function ForgotPasswordForm({ maskedEmail, turnstileSiteKey }: ForgotPasswordFormProps) {
+  const [requested, setRequested] = useState(false);
 
-  if (email === null) {
+  if (!requested) {
     return (
       <RequestCodeStep
-        onRequested={setEmail}
-        focusOnMount={returned}
+        maskedEmail={maskedEmail}
         turnstileSiteKey={turnstileSiteKey}
+        onRequested={() => setRequested(true)}
       />
     );
   }
-  return (
-    <ResetPasswordStep
-      email={email}
-      turnstileSiteKey={turnstileSiteKey}
-      onChangeEmail={() => {
-        setReturned(true);
-        setEmail(null);
-      }}
-    />
-  );
+  return <ResetPasswordStep maskedEmail={maskedEmail} turnstileSiteKey={turnstileSiteKey} />;
 }
 
-type RequestOutput = z.output<typeof requestPasswordResetSchema>;
-
-function RequestCodeStep({
-  onRequested,
-  focusOnMount,
-  turnstileSiteKey,
-}: {
-  onRequested: (email: string) => void;
-  focusOnMount: boolean;
+interface StepProps {
+  maskedEmail: string;
   turnstileSiteKey?: string;
-}) {
+}
+
+/**
+ * Step 1 — no input to fill in, only the human check and a button. Still a form, so Enter submits
+ * it. Nothing takes focus on page load, so a screen reader starts at the page's heading.
+ */
+function RequestCodeStep({
+  maskedEmail,
+  turnstileSiteKey,
+  onRequested,
+}: StepProps & { onRequested: () => void }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   // Bumped after every attempt: remounts the check, since the token it gave is now spent.
   const [captchaRound, setCaptchaRound] = useState(0);
   const needsCheck = Boolean(turnstileSiteKey);
   const checkStatusId = 'reset-human-check-status';
+  const explanationId = 'reset-request-explanation';
 
-  const {
-    register,
-    handleSubmit,
-    setFocus,
-    formState: { errors, isSubmitting },
-  } = useForm<RequestPasswordResetInput, unknown, RequestOutput>({
-    resolver: zodResolver(requestPasswordResetSchema),
-  });
-
-  useEffect(() => {
-    if (focusOnMount) setFocus('email');
-  }, [focusOnMount, setFocus]);
-
-  async function onSubmit({ email }: RequestOutput) {
-    if (needsCheck && !captchaToken) return;
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting || (needsCheck && !captchaToken)) return;
     setFormError(null);
+    setSubmitting(true);
     const token = captchaToken;
     setCaptchaToken(null);
     setCaptchaRound((round) => round + 1);
 
-    const { error } = await requestResetCode(email, token);
-    if (error && isRequestFailure(error)) {
-      setFormError(resetRequestErrorMessage(error, "Couldn't request a code. Please try again."));
+    const { error } = await requestResetCode(token);
+    setSubmitting(false);
+    if (error) {
+      setFormError(
+        resetRequestErrorMessage(error, "Couldn't send a reset code. Please try again."),
+      );
       return;
     }
-    onRequested(email);
+    onRequested();
   }
 
   const waiting = needsCheck && !captchaToken;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {formError && <FormAlert>{formError}</FormAlert>}
 
-      <FormField
-        label="Email"
-        htmlFor="reset-email"
-        description={`We'll email an ${CODE_DIGITS}-digit code to the admin address.`}
-        error={errors.email?.message}
-        required
-      >
-        {(fieldProps) => (
-          <Input
-            {...fieldProps}
-            {...register('email')}
-            type="email"
-            autoComplete="username"
-            placeholder="you@example.com"
-          />
-        )}
-      </FormField>
+      <p id={explanationId} className="text-pretty text-sm leading-relaxed text-muted-foreground">
+        We&apos;ll email an {CODE_DIGITS}-digit code to the admin mailbox,{' '}
+        <span className="font-medium text-foreground">{maskedEmail}</span>. Enter it on the next
+        step with your new password.
+      </p>
 
       {turnstileSiteKey && (
         <HumanCheck
@@ -197,12 +156,12 @@ function RequestCodeStep({
       <Button
         type="submit"
         size="lg"
-        loading={isSubmitting}
+        loading={submitting}
         disabled={waiting}
-        aria-describedby={needsCheck ? checkStatusId : undefined}
+        aria-describedby={needsCheck ? `${explanationId} ${checkStatusId}` : explanationId}
         className="mt-1"
       >
-        Send code
+        Send reset code
       </Button>
     </form>
   );
@@ -211,15 +170,8 @@ function RequestCodeStep({
 type ResetInput = z.input<typeof resetPasswordSchema>;
 type ResetOutput = z.output<typeof resetPasswordSchema>;
 
-function ResetPasswordStep({
-  email,
-  onChangeEmail,
-  turnstileSiteKey,
-}: {
-  email: string;
-  onChangeEmail: () => void;
-  turnstileSiteKey?: string;
-}) {
+/** Step 2 — the code from the email, and the new password twice. */
+function ResetPasswordStep({ maskedEmail, turnstileSiteKey }: StepProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -243,10 +195,10 @@ function ResetPasswordStep({
     formState: { errors, isSubmitting },
   } = useForm<ResetInput, unknown, ResetOutput>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { email, otp: '', password: '', confirmPassword: '' },
+    defaultValues: { otp: '', password: '', confirmPassword: '' },
   });
 
-  // Entering this step lands on the code field; its description carries the uniform message.
+  // Entering this step lands on the code field; its description says where the code went.
   useEffect(() => {
     setFocus('otp');
   }, [setFocus]);
@@ -258,9 +210,10 @@ function ResetPasswordStep({
 
   async function onSubmit(values: ResetOutput) {
     setFormError(null);
-    // `confirmPassword` is the form's own check and never leaves the browser.
+    // `confirmPassword` is the form's own check and never leaves the browser. The server fills in
+    // the admin's address.
     const { error } = await runAuthRequest(() =>
-      emailOtp.resetPassword({ email: values.email, otp: values.otp, password: values.password }),
+      emailOtp.resetPassword({ email: '', otp: values.otp, password: values.password }),
     );
     if (error) {
       setNotice(null);
@@ -290,19 +243,17 @@ function ResetPasswordStep({
       setResendToken(null);
       setResendCheckRound((round) => round + 1);
     }
-    const { error } = await requestResetCode(email, captchaToken);
+    const { error } = await requestResetCode(captchaToken);
     setResending(false);
-    if (error && isRequestFailure(error)) {
+    if (error) {
       setNotice(null);
-      setFormError(
-        resetRequestErrorMessage(error, "Couldn't request a new code. Please try again."),
-      );
+      setFormError(resetRequestErrorMessage(error, "Couldn't send a new code. Please try again."));
       return;
     }
     setResendCheckOpen(false);
     setResendToken(null);
     cooldown.start();
-    setNotice('If that email belongs to the admin, a new code is on its way.');
+    setNotice(`A new code is on its way to ${maskedEmail}.`);
     setFocus('otp');
   }
 
@@ -323,26 +274,11 @@ function ResetPasswordStep({
       {formError && <FormAlert>{formError}</FormAlert>}
       <FormNotice message={notice} />
 
-      {/* Read-only, but a real field: it names the account for a password manager saving the new
-          password, and keeps the address visible while the admin finds the email. */}
-      <FormField label="Email" htmlFor="reset-email-sent">
-        {(fieldProps) => (
-          <Input
-            {...fieldProps}
-            {...register('email')}
-            type="email"
-            autoComplete="username"
-            readOnly
-            className="bg-muted"
-          />
-        )}
-      </FormField>
-
       <CodeField
         id="reset-code"
         registration={register('otp')}
         error={errors.otp?.message}
-        description={`If that email belongs to the admin, a code is on its way. It expires ${CODE_TTL_MINUTES} minutes after it was sent.`}
+        description={`We sent a code to ${maskedEmail}. It expires ${CODE_TTL_MINUTES} minutes after it was sent.`}
       />
 
       <FormField
@@ -382,11 +318,7 @@ function ResetPasswordStep({
         <Button type="submit" size="lg" loading={busy} className="mt-1">
           Set new password
         </Button>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onChangeEmail} disabled={busy}>
-            <ArrowLeft className="size-3.5" aria-hidden="true" />
-            Use a different email
-          </Button>
+        <div className="flex justify-center">
           <ResendCodeButton
             onResend={startResend}
             remaining={cooldown.remaining}

@@ -14,8 +14,9 @@ import { publicEnv } from '@/modules/shared/lib/env';
 // During server rendering there is no window; the configured URL is only a placeholder there,
 // since nothing signs in during SSR.
 //
-// Plugins (ADR-022): `twoFactor` (emailed sign-in code, backup codes) and `emailOtp` (forgot
-// password by emailed code only — the server disables every other email-otp endpoint). No
+// Plugins (ADR-022, ADR-023): `twoFactor` (mandatory emailed sign-in code, backup codes) and
+// `emailOtp` (forgot password by emailed code only — the server disables every other email-otp
+// endpoint, and fills in the admin's email itself). No
 // `onTwoFactorRedirect`/`twoFactorPage`: the login form reads `twoFactorRedirect` off the
 // `signIn.email` result itself and moves to its code step without a page reload.
 export const authClient = createAuthClient({
@@ -30,7 +31,14 @@ export const authClient = createAuthClient({
 export const signIn = authClient.signIn;
 export const signOut = authClient.signOut;
 export const useSession = authClient.useSession;
-/** `sendOtp`, `verifyOtp`, `verifyBackupCode`, `enable`, `disable`, `generateBackupCodes`. */
+/**
+ * Served: `sendOtp`, `verifyOtp`, `verifyBackupCode` (only while answering a sign-in challenge — a
+ * signed-in session gets 400 TWO_FACTOR_SIGN_IN_ONLY) and `generateBackupCodes` (signed in, with
+ * the password). `enable` and `disable` answer 404: 2FA is mandatory (ADR-023).
+ */
 export const twoFactor = authClient.twoFactor;
-/** Only `requestPasswordReset` and `resetPassword` are served; the rest answer 404. */
+/**
+ * Only `requestPasswordReset` and `resetPassword` are served; the rest answer 404. Both always act
+ * on the admin account: the server overwrites `email`, so send `email: ''` (ADR-023).
+ */
 export const emailOtp = authClient.emailOtp;

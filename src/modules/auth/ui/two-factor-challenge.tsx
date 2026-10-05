@@ -15,16 +15,17 @@ import { FormAlert, FormNotice } from './form-alert';
 import { ResendCodeButton } from './resend-code-button';
 import { useResendCooldown } from './use-resend-cooldown';
 
-// The second step of signing in when two-step verification is on (ADR-022). The password step has
-// already been accepted and the first code requested — by the password form's submit handler, not
-// from an effect here, since a remount (React's development double-run, a fast refresh) would
-// spend one of the five sends allowed per ten minutes.
+// The second step of every sign-in — two-step verification is mandatory (ADR-022, ADR-023). The
+// password step has already been accepted and the first code requested — by the password form's
+// submit handler, not from an effect here, since a remount (React's development double-run, a fast
+// refresh) would spend one of the five sends allowed per ten minutes.
 //
 // Two ways to answer: the emailed code, or a one-time backup code when the mailbox is out of reach.
 // No "trust this browser" — the server overrides it, so it is not offered.
 
 export interface TwoFactorChallengeProps {
-  email: string;
+  /** Where the code went, already masked (ADMIN_EMAIL_MASKED). */
+  maskedEmail: string;
   /** Why the first code could not be sent, or null when it went out. */
   initialSendError: string | null;
   /** The challenge was answered and the session cookie is set. */
@@ -36,7 +37,7 @@ export interface TwoFactorChallengeProps {
 type Mode = 'code' | 'backup';
 
 export function TwoFactorChallenge({
-  email,
+  maskedEmail,
   initialSendError,
   onVerified,
   onRestart,
@@ -52,8 +53,8 @@ export function TwoFactorChallenge({
         </h2>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
           {mode === 'code'
-            ? 'Two-step verification is on for this account.'
-            : 'Each backup code works once. Enter one of the codes you saved when you turned on two-step verification.'}
+            ? 'Every sign-in needs a code from the admin mailbox as well as your password.'
+            : 'Each backup code works once. Use one you saved from the Security page when the mailbox is out of reach.'}
         </p>
       </div>
 
@@ -63,7 +64,7 @@ export function TwoFactorChallenge({
       <div hidden={mode !== 'code'}>
         <EmailedCodeForm
           active={mode === 'code'}
-          email={email}
+          maskedEmail={maskedEmail}
           initialSendError={initialSendError}
           onVerified={onVerified}
           onRestart={onRestart}
@@ -100,7 +101,7 @@ type FormProps = { active: boolean };
 
 function EmailedCodeForm({
   active,
-  email,
+  maskedEmail,
   initialSendError,
   onVerified,
   onRestart,
@@ -157,7 +158,7 @@ function EmailedCodeForm({
       return;
     }
     cooldown.start();
-    setNotice(`A new code is on its way to ${email}.`);
+    setNotice(`A new code is on its way to ${maskedEmail}.`);
     setFocus('code');
   }
 
@@ -170,7 +171,7 @@ function EmailedCodeForm({
         id="two-factor-code"
         registration={register('code')}
         error={errors.code?.message}
-        description={`We emailed an ${CODE_DIGITS}-digit code to ${email}. It expires ${CODE_TTL_MINUTES} minutes after it was sent.`}
+        description={`We sent an ${CODE_DIGITS}-digit code to ${maskedEmail}. It expires ${CODE_TTL_MINUTES} minutes after it was sent.`}
       />
 
       <div className="flex flex-col gap-3">

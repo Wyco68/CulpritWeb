@@ -56,3 +56,7 @@ through a public form.
 Extended by [ADR-022](ADR-022-admin-2fa-and-password-reset-otp.md) (2026-10-03): an optional
 second factor by emailed code, and forgot-password by emailed code. The "no password reset"
 consequence above no longer holds — there is a reset, by code, still no magic link.
+
+Extended again by [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md) (2026-10-05): the
+second factor is mandatory, and every code goes to the fixed admin mailbox `culpritteam@gmail.com`,
+which is also the admin's login email.

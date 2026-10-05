@@ -11,22 +11,19 @@ export type RateLimitRule = { key: string; limit: number; windowSeconds: number 
 
 const TEN_MINUTES = 10 * 60;
 
-// Emailed-code endpoints (ADR-022), per IP. Paths that share a bucket share a budget: the two ways
-// to answer a sign-in challenge can't be alternated to double the guesses, and the three
-// password-checking 2FA settings endpoints count together.
-//  - a reset request emails an address a stranger typed: 3 per 10 minutes;
-//  - a 2FA send: 5 per 10 minutes. It already needs the password (a pending challenge) or a
-//    signed-in session, so it isn't an anonymous flood vector; 3 was tight for turning 2FA on
-//    and signing in within the same window, plus a resend or two;
-//  - checking a code: 10 per 10 minutes, on top of the plugins' own per-code attempt limits.
+// Emailed-code endpoints (ADR-022, ADR-023), per IP. Paths that share a bucket share a budget: the
+// two ways to answer a sign-in challenge can't be alternated to double the guesses.
+//  - a reset request emails the admin on a stranger's say-so: 3 per 10 minutes;
+//  - a 2FA send: 5 per 10 minutes. It already needs the password (a pending challenge), so it isn't
+//    an anonymous flood vector; room for a sign-in plus a resend or two;
+//  - checking a code: 10 per 10 minutes, on top of the plugins' own per-code attempt limits;
+//  - replacing the backup codes (password-checked): 10 per 10 minutes.
 const AUTH_CODE_RULES = new Map<string, { bucket: string; limit: number }>([
   ['/api/auth/two-factor/send-otp', { bucket: 'auth-2fa-send', limit: 5 }],
   ['/api/auth/email-otp/request-password-reset', { bucket: 'auth-reset-request', limit: 3 }],
   ['/api/auth/two-factor/verify-otp', { bucket: 'auth-2fa-verify', limit: 10 }],
   ['/api/auth/two-factor/verify-backup-code', { bucket: 'auth-2fa-verify', limit: 10 }],
   ['/api/auth/email-otp/reset-password', { bucket: 'auth-reset', limit: 10 }],
-  ['/api/auth/two-factor/enable', { bucket: 'auth-2fa-settings', limit: 10 }],
-  ['/api/auth/two-factor/disable', { bucket: 'auth-2fa-settings', limit: 10 }],
   ['/api/auth/two-factor/generate-backup-codes', { bucket: 'auth-2fa-settings', limit: 10 }],
 ]);
 

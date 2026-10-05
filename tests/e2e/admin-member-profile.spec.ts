@@ -1,21 +1,21 @@
 import { test, expect, type Page } from '@playwright/test';
+import {
+  adminSessionSkipReason,
+  adminStorageState,
+  expectAdminSession,
+} from './support/admin-session';
 
 // Authenticated walk through a member's profile editor (courses and CV entries belong to a team
-// member since ADR-016; the old /admin/teaching screen is a redirect). Sign in, add a course and a
-// CV entry to the director's profile, see them on the public profile page, then delete them.
+// member since ADR-016; the old /admin/teaching screen is a redirect). Add a course and a CV entry
+// to the director's profile, see them on the public profile page, then delete them.
 //
-// Credentials are read from the environment and never committed. Set them before running:
-//
-//   E2E_ADMIN_EMAIL=...  E2E_ADMIN_PASSWORD=...  npm run test:e2e
-//
-// In CI they come from repository Secrets of the same names. Without them the whole file skips,
-// so a contributor with no admin account still gets a green suite rather than a confusing failure.
+// Every admin sign-in needs a code from the admin mailbox (ADR-023), so this spec doesn't sign in
+// itself: it loads a session a person saved once. See ./support/admin-session.ts for how to record
+// one; without E2E_ADMIN_STORAGE_STATE the whole file skips, so a contributor with no admin access
+// still gets a green suite rather than a confusing failure.
 //
 // This spec WRITES to whatever database the app under test is pointed at. It cleans up after
 // itself, but the fixture titles below are deliberately unmistakable so a stray row is obvious.
-const EMAIL = process.env.E2E_ADMIN_EMAIL;
-const PASSWORD = process.env.E2E_ADMIN_PASSWORD;
-
 const COURSE_TITLE = 'E2E fixture course - delete me';
 const COURSE_LEVEL = 'E2E fixture level';
 
@@ -27,21 +27,13 @@ async function directorId(page: Page): Promise<string> {
 }
 
 test.describe('Admin member profile editor', () => {
-  test.skip(
-    !EMAIL || !PASSWORD,
-    'Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to run the authenticated specs.',
-  );
+  test.skip(adminSessionSkipReason !== null, adminSessionSkipReason ?? '');
   // Desktop only: the mobile project covers the public navigation.
   test.skip(({ isMobile }) => isMobile, 'Admin editing is exercised at desktop width.');
+  test.use({ storageState: adminStorageState });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.getByLabel('Email', { exact: false }).fill(EMAIL!);
-    await page.getByLabel('Password', { exact: false }).fill(PASSWORD!);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-
-    // Better Auth sets a session cookie and the admin layout's requireAdmin() lets us through.
-    await expect(page).toHaveURL(/\/admin/, { timeout: 15_000 });
+    await expectAdminSession(page);
   });
 
   test('adds a course to the director, shows it publicly, then deletes it', async ({ page }) => {

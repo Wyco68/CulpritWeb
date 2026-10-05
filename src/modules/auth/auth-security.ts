@@ -1,28 +1,36 @@
 import { createHmac } from 'node:crypto';
 import type { BetterAuthOptions, BetterAuthPlugin, GenericEndpointContext } from 'better-auth';
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from 'better-auth/api';
+import { deleteSessionCookie, expireCookie } from 'better-auth/cookies';
+import { generateRandomString, symmetricEncrypt } from 'better-auth/crypto';
 import { captcha, emailOTP, twoFactor } from 'better-auth/plugins';
 import {
+  ADMIN_EMAIL,
   CAPTCHA_NOT_CONFIGURED,
   CODE_DIGITS,
   CODE_TTL_MINUTES,
   EMAIL_DELIVERY_FAILED,
-  EMAIL_NOT_CONFIGURED,
   PASSWORD_POLICY,
   RESET_BUDGET_EXHAUSTED,
   RESET_CODE_ATTEMPTS,
   TWO_FACTOR_CODE_ATTEMPTS,
-  TWO_FACTOR_SETUP_REQUIRED,
+  TWO_FACTOR_SETUP_FAILED,
+  TWO_FACTOR_SIGN_IN_ONLY,
 } from './auth-policy';
 import type { RateLimiter } from '@/modules/integrations';
+import type { Logger } from '@/modules/shared/lib/logger';
 import type { VerificationCodeSender } from './verification-code-sender';
 
-// Admin sign-in hardening on Better Auth's own plugins (ADR-022):
-//  - two-factor: after the password, an 8-digit code emailed to the admin. Email codes only — the
-//    TOTP (authenticator-app) endpoints are switched off. Backup codes are the recovery path.
-//  - email-otp: used for ONE thing — "forgot password" by emailed 8-digit code. Every other
-//    email-otp endpoint is switched off, above all `/sign-in/email-otp`, which would let a mailbox
-//    alone sign in, skipping both the password and the second factor.
+// Admin sign-in hardening on Better Auth's own plugins (ADR-022, ADR-023):
+//  - two-factor: MANDATORY. Every password sign-in is answered with a challenge, and only an
+//    8-digit code emailed to ADMIN_EMAIL (or a backup code) turns it into a session. There is no
+//    opt-in and no off switch: `/two-factor/enable` and `/two-factor/disable` are disabled, and an
+//    account without 2FA is enrolled automatically at its first password sign-in. Email codes only
+//    — the TOTP (authenticator-app) endpoints are switched off. Backup codes are the recovery path.
+//  - email-otp: used for ONE thing — "forgot password" by emailed 8-digit code, always for the admin
+//    account and always to ADMIN_EMAIL, whatever email a client sends. Every other email-otp
+//    endpoint is switched off, above all `/sign-in/email-otp`, which would let a mailbox alone sign
+//    in, skipping both the password and the second factor.
 //  - captcha: Cloudflare Turnstile in front of the password-reset request only.
 // Kept free of env/Prisma imports so the exact plugin set can be exercised in tests against an
 // in-memory adapter; ./auth.ts supplies the real dependencies. The numbers live in ./auth-policy.ts,
@@ -34,6 +42,10 @@ import type { VerificationCodeSender } from './verification-code-sender';
  * spelling the router doesn't normalise can't reach them either.
  */
 export const DISABLED_AUTH_PATHS = [
+  // Two-step verification is mandatory (ADR-023): it can't be switched off, and switching it on is
+  // automatic at the first password sign-in.
+  '/two-factor/enable',
+  '/two-factor/disable',
   // TOTP — authenticator apps are deferred; the second factor is an emailed code.
   '/two-factor/get-totp-uri',
   '/two-factor/verify-totp',
@@ -58,26 +70,33 @@ export const DISABLED_AUTH_PATHS = [
 /** The one endpoint behind Turnstile (token in the `x-captcha-response` header). */
 export const CAPTCHA_PROTECTED_PATH = '/email-otp/request-password-reset';
 
-/** Endpoints whose `trustDevice` flag would set a 30-day "skip 2FA on this browser" cookie. */
-const TRUST_DEVICE_PATHS = new Set([
+/** The reset endpoints: both act on the admin account, whatever `email` the client sends. */
+const PASSWORD_RESET_PATHS = new Set([CAPTCHA_PROTECTED_PATH, '/email-otp/reset-password']);
+
+/**
+ * Endpoints that answer a pending sign-in challenge. Without a session they are the second step of
+ * signing in; with one they have no use left (there is no enable step to confirm), so they're
+ * refused. Their `trustDevice` flag would also set a 30-day "skip 2FA on this browser" cookie.
+ */
+const SIGN_IN_CHALLENGE_PATHS = new Set([
   '/two-factor/send-otp',
   '/two-factor/verify-otp',
   '/two-factor/verify-backup-code',
 ]);
 
+const SIGN_IN_PATH = '/sign-in/email';
+
 // Per-request markers, keyed on the request's own context object — the same object the endpoint,
 // its before-hooks and its after-hooks all receive (verified against better-auth 1.6.25, which is
 // pinned; the flow tests fail if that ever stops holding). WeakSets, so a finished request's entry
 // can't outlive it.
-//  - failedCodeDeliveries: Better Auth's two-factor endpoint awaits `sendOTP` but swallows a
-//    rejection (it only logs), so a failed delivery would still answer 200 and leave the admin
-//    waiting for an email that never comes. The after-hook turns the marker into a 503.
-//  - enablingRequests: a verify-otp that is confirming "turn 2FA on" (signed in, 2FA still off),
-//    as opposed to answering a sign-in challenge. Only that one revokes the other sessions.
-//  - resetRequestStarts: when a reset request entered the hook pipeline, for the response floor.
+//  - failedCodeDeliveries: a code send failed. Both plugins swallow a rejected send (they only log
+//    it), so a failed delivery would still answer 200 and leave the admin waiting for an email that
+//    never comes. The after-hooks turn the marker into a 503.
+//  - deliveredResetCodes: a reset code really went out. A reset request that ends without this
+//    marker sent nothing — a failure, or no account under ADMIN_EMAIL — and answers 503 as well.
 const failedCodeDeliveries = new WeakSet<object>();
-const enablingRequests = new WeakSet<object>();
-const resetRequestStarts = new WeakMap<object, number>();
+const deliveredResetCodes = new WeakSet<object>();
 
 /**
  * Site-wide budget for reset requests, across all IPs (per-IP limits live in src/middleware.ts).
@@ -91,15 +110,9 @@ export const RESET_REQUEST_GLOBAL_BUDGETS = [
   { key: 'auth-reset-request:global:day', limit: 10, windowSeconds: 24 * 60 * 60 },
 ] as const;
 
-/**
- * Every reset-request response is padded to at least this long after it reaches the hooks. The
- * unknown-address path does an extra database delete and the real-address path fires the email and
- * returns; without a floor either difference is measurable and tells an attacker which address is
- * the admin's. Padding, not constant time: a path slower than the floor still shows.
- */
-export const RESET_REQUEST_RESPONSE_FLOOR_MS = 400;
+/** Backup codes issued per account — the two-factor plugin's default, matched at enrolment. */
+const BACKUP_CODE_COUNT = 10;
 
-type TwoFactorOtpUser = { email: string; twoFactorEnabled?: boolean | null };
 type EmailOtpPayload = { email: string; otp: string; type: string };
 
 /**
@@ -116,16 +129,14 @@ export function createOtpHasher(secret: string): { hash: (code: string) => Promi
   };
 }
 
-/** two-factor `otpOptions.sendOTP`: the sign-in code, or the code that confirms turning 2FA on. */
+/**
+ * two-factor `otpOptions.sendOTP`: the sign-in code. The user record the plugin passes is ignored —
+ * the sender always mails ADMIN_EMAIL (ADR-023). A failure is marked for the 503 after-hook and
+ * rethrown (the plugin catches and logs it).
+ */
 export function createTwoFactorOtpSender(sender: VerificationCodeSender) {
-  return async (
-    { user, otp }: { user: TwoFactorOtpUser; otp: string },
-    ctx?: GenericEndpointContext,
-  ): Promise<void> => {
-    // A sign-in challenge only exists once 2FA is on, so a code for a user without it is the one
-    // that confirms switching it on (POST /two-factor/send-otp from a signed-in session).
-    const purpose = user.twoFactorEnabled ? 'sign-in' : 'enable-two-factor';
-    const result = await sender.send({ to: user.email, code: otp, purpose });
+  return async ({ otp }: { otp: string }, ctx?: GenericEndpointContext): Promise<void> => {
+    const result = await sender.send({ code: otp, purpose: 'sign-in' });
     if (!result.ok) {
       if (ctx) failedCodeDeliveries.add(ctx.context);
       throw result.error;
@@ -134,40 +145,136 @@ export function createTwoFactorOtpSender(sender: VerificationCodeSender) {
 }
 
 /**
- * email-otp `sendVerificationOTP`: sends ONLY the password-reset code. Any other type is dropped —
- * those endpoints are disabled, so reaching here with one means something bypassed that.
+ * email-otp `sendVerificationOTP`: sends ONLY the password-reset code, to ADMIN_EMAIL (the payload's
+ * `email` is ignored). Any other type is dropped — those endpoints are disabled, so reaching here
+ * with one means something bypassed that.
  *
- * Fire-and-forget, deliberately. `/email-otp/request-password-reset` answers `{ success: true }`
- * whether or not the address has an account; awaiting a real send only for the real address would
- * make that response measurably slower and so reveal which address is the admin's. For the same
- * reason a failed send is never surfaced (the sender has already logged it).
- *
- * `runInBackground` keeps the send alive after the response: a long-running Node server (the VPS)
- * would finish a floating promise anyway, but a serverless function (Vercel) is frozen once it has
- * answered — ./auth.ts passes Next's `after()`, which registers the task with the platform.
+ * Awaited, and the outcome is marked on the request so the after-hook can answer 503 when nothing
+ * went out. (Until ADR-023 the send was fire-and-forget behind a uniform response, to hide which
+ * address was the admin's. The recipient is now fixed, so there is no such secret left, and a
+ * silently missing email was the bigger problem.)
  */
-export function createPasswordResetOtpSender(
-  sender: VerificationCodeSender,
-  runInBackground: BackgroundRunner = floatTask,
-) {
-  return async ({ email, otp, type }: EmailOtpPayload): Promise<void> => {
+export function createPasswordResetOtpSender(sender: VerificationCodeSender) {
+  return async ({ otp, type }: EmailOtpPayload, ctx?: GenericEndpointContext): Promise<void> => {
     if (type !== 'forget-password') return;
-    runInBackground(async () => {
-      await sender.send({ to: email, code: otp, purpose: 'password-reset' });
-    });
+    const result = await sender.send({ code: otp, purpose: 'password-reset' });
+    if (!ctx) return;
+    if (result.ok) deliveredResetCodes.add(ctx.context);
+    else failedCodeDeliveries.add(ctx.context);
   };
 }
 
-/** Runs a task without awaiting it. Must never throw, and must swallow the task's rejection. */
-export type BackgroundRunner = (task: () => Promise<void>) => void;
+/** Ten `xxxxx-xxxxx` codes from [a-zA-Z0-9] — the two-factor plugin's own backup-code generator. */
+function generateBackupCodeList(): string[] {
+  return Array.from({ length: BACKUP_CODE_COUNT }, () => {
+    const code = generateRandomString(10, 'a-z', '0-9', 'A-Z');
+    return `${code.slice(0, 5)}-${code.slice(5)}`;
+  });
+}
 
-function floatTask(task: () => Promise<void>): void {
-  void task().catch(() => {});
+/**
+ * The stored form of a backup-code list with `storeBackupCodes: 'encrypted'`: the JSON array,
+ * encrypted with the auth secret. Mirrors the two-factor plugin's (non-exported) `encodeBackupCodes`
+ * in better-auth 1.6.25 — the flow tests prove the round trip through the plugin's own
+ * `verify-backup-code` and `generate-backup-codes`.
+ */
+export async function encodeBackupCodes(
+  codes: string[],
+  key: GenericEndpointContext['context']['secretConfig'],
+): Promise<string> {
+  return symmetricEncrypt({ key, data: JSON.stringify(codes) });
+}
+
+type SignedInUser = { id: string; twoFactorEnabled?: boolean | null };
+
+/**
+ * Makes sure the account that just proved its password has two-step verification on: a
+ * `two_factor` row (the sign-in challenge and backup codes need one) and the user flag (the
+ * two-factor plugin only challenges when it is set). Written the way `/two-factor/enable` +
+ * verification would, through Better Auth's adapters. Marks the in-flight session's user as enabled,
+ * so the two-factor plugin's own after-hook — which runs next — turns this sign-in into a challenge.
+ * Returns whether anything had to be written.
+ */
+async function ensureTwoFactorEnrolled(
+  ctx: GenericEndpointContext,
+  user: SignedInUser,
+): Promise<boolean> {
+  let changed = false;
+  const row = await ctx.context.adapter.findOne({
+    model: 'twoFactor',
+    where: [{ field: 'userId', value: user.id }],
+  });
+  if (!row) {
+    const key = ctx.context.secretConfig;
+    try {
+      await ctx.context.adapter.create({
+        model: 'twoFactor',
+        data: {
+          // An unused TOTP seed, created exactly as `/two-factor/enable` does. `verified: false`
+          // keeps TOTP from ever being offered against it (see ADR-022 on adding TOTP later).
+          secret: await symmetricEncrypt({ key, data: generateRandomString(32) }),
+          // Never shown to anyone: the admin replaces them from the Security page to get usable ones.
+          backupCodes: await encodeBackupCodes(generateBackupCodeList(), key),
+          userId: user.id,
+          verified: false,
+        },
+      });
+      changed = true;
+    } catch (cause) {
+      // `two_factor.user_id` is unique: a concurrent first sign-in may have inserted the row a
+      // moment ago. If a row exists now, the account is enrolled — carry on to the challenge. Any
+      // other failure leaves no row, and is rethrown (fail closed). Checked by re-reading rather
+      // than by the driver's error code, so it holds on every adapter.
+      const winner = await ctx.context.adapter.findOne({
+        model: 'twoFactor',
+        where: [{ field: 'userId', value: user.id }],
+      });
+      if (!winner) throw cause;
+    }
+  }
+  if (user.twoFactorEnabled !== true) {
+    await ctx.context.internalAdapter.updateUser(user.id, { twoFactorEnabled: true });
+    changed = true;
+  }
+  user.twoFactorEnabled = true;
+  return changed;
+}
+
+/**
+ * Undoes the session a password sign-in just created, so a failure after the password can never
+ * leave a password-only session behind. Best effort on each step — it runs on error paths — but the
+ * cookie expiry always goes out.
+ */
+async function discardNewSession(ctx: GenericEndpointContext, token: string): Promise<void> {
+  deleteSessionCookie(ctx, true);
+  ctx.context.setNewSession(null);
+  await ctx.context.internalAdapter.deleteSession(token).catch(() => {});
+}
+
+/** The two-factor plugin's "trust this browser" cookie and verification-row prefix (1.6.25). */
+const TRUST_DEVICE_COOKIE = 'trust_device';
+const TRUST_DEVICE_IDENTIFIER_PREFIX = 'trust-device-';
+
+/**
+ * Revokes every "trust this browser" record of `userId` and expires the cookie. The app never issues
+ * one, but a valid one is the only way the two-factor plugin skips its challenge — and the plugin
+ * rotates it on use, so the record named by the request cookie is already gone and a fresh one has
+ * been written. Hence by user, not by the cookie's id.
+ */
+async function revokeTrustedDevices(ctx: GenericEndpointContext, userId: string): Promise<void> {
+  expireCookie(ctx, ctx.context.createAuthCookie(TRUST_DEVICE_COOKIE));
+  await ctx.context.adapter
+    .deleteMany({
+      model: 'verification',
+      where: [
+        { field: 'identifier', operator: 'starts_with', value: TRUST_DEVICE_IDENTIFIER_PREFIX },
+        { field: 'value', value: userId },
+      ],
+    })
+    .catch(() => {});
 }
 
 export type AdminAuthGuardDeps = {
-  /** Whether a real email transport is configured — see integrations' isEmailDeliveryConfigured. */
-  isEmailDeliveryConfigured: () => boolean;
   /**
    * Turnstile for the password-reset request. With a secret key, Better Auth's captcha plugin
    * verifies the token. Without one: if `required` (production) the request fails closed with 503;
@@ -176,26 +283,20 @@ export type AdminAuthGuardDeps = {
   captcha: { secretKey: string | undefined; required: boolean };
   /** Rate limiter per {limit, window} — integrations' getRateLimiter in production. */
   rateLimiterFor: (options: { limit: number; windowSeconds: number }) => RateLimiter;
-  /** Clock and sleep for the reset response floor; injectable so tests don't wait. */
-  responseFloor: { ms: number; now: () => number; sleep: (ms: number) => Promise<void> };
+  /** Structured logger for the enrolment and delivery events. Never given a code or an address. */
+  logger: Logger;
 };
 
 function bodyRecord(body: unknown): Record<string, unknown> {
   return body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
 }
 
-/** Signs out every session of `userId` except `keepToken` — through Better Auth, not Prisma. */
-async function revokeOtherSessions(
-  ctx: GenericEndpointContext,
-  userId: string,
-  keepToken: string,
-): Promise<void> {
-  const sessions = await ctx.context.internalAdapter.listSessions(userId);
-  const others = sessions.map((session) => session.token).filter((token) => token !== keepToken);
-  if (others.length > 0) await ctx.context.internalAdapter.deleteSessions(others);
-}
-
-/** Project-specific guards around the stock plugins. No route handler involved — Better Auth's own. */
+/**
+ * Project-specific guards around the stock plugins. No route handler involved — Better Auth's own.
+ * MUST come before `twoFactor` in the plugin list: plugin after-hooks run in plugin order
+ * (better-auth 1.6.25 `getHooks`), and the enrolment hook has to run before the two-factor plugin's
+ * sign-in hook reads the user's flag.
+ */
 export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
   const disabled = new Set<string>(DISABLED_AUTH_PATHS);
 
@@ -210,46 +311,31 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
           }),
         },
         {
-          // Lockout guard: with no way to deliver a code, switching 2FA on would lock the single
-          // admin out at the next sign-in (staging and production share one database and one
-          // config, so "just in development" isn't a safe exception).
-          matcher: (ctx) => ctx.path === '/two-factor/enable',
-          handler: createAuthMiddleware(async () => {
-            if (!deps.isEmailDeliveryConfigured()) {
-              throw new APIError('BAD_REQUEST', { ...EMAIL_NOT_CONFIGURED });
-            }
-          }),
-        },
-        {
-          // The confirm-2FA step (signed in, 2FA still off). The plugin's verify-otp flips
-          // `twoFactorEnabled` for ANY signed-in user who verifies a code — it never checks that
-          // `/two-factor/enable` ran first. Without this guard, send-otp + verify-otp alone would
-          // switch 2FA on with no `two_factor` row (no backup codes) and lock the admin out, since
-          // the sign-in challenge needs that row. A sign-in challenge (no session) passes through.
-          matcher: (ctx) =>
-            ctx.path === '/two-factor/send-otp' || ctx.path === '/two-factor/verify-otp',
+          // Codes only answer a sign-in challenge. From a signed-in session, the plugin would treat
+          // a verified code as "confirm turning 2FA on" (and a backup code as a no-op that burns
+          // one) — neither is a thing any more, so refuse rather than leave the path reachable.
+          matcher: (ctx) => SIGN_IN_CHALLENGE_PATHS.has(ctx.path ?? ''),
           handler: createAuthMiddleware(async (ctx) => {
-            const session = await getSessionFromCtx(ctx);
-            if (!session) return;
-            const user = session.user as { id: string; twoFactorEnabled?: boolean | null };
-            if (user.twoFactorEnabled) return;
-            if (!deps.isEmailDeliveryConfigured()) {
-              throw new APIError('BAD_REQUEST', { ...EMAIL_NOT_CONFIGURED });
+            if (await getSessionFromCtx(ctx)) {
+              throw new APIError('BAD_REQUEST', { ...TWO_FACTOR_SIGN_IN_ONLY });
             }
-            const row = await ctx.context.adapter.findOne({
-              model: 'twoFactor',
-              where: [{ field: 'userId', value: user.id }],
-            });
-            if (!row) throw new APIError('BAD_REQUEST', { ...TWO_FACTOR_SETUP_REQUIRED });
-            if (ctx.path === '/two-factor/verify-otp') enablingRequests.add(ctx.context);
           }),
         },
         {
           // No "trust this browser": a client-sent `trustDevice: true` is overwritten, so every
           // sign-in asks for a code.
-          matcher: (ctx) => TRUST_DEVICE_PATHS.has(ctx.path ?? ''),
+          matcher: (ctx) => SIGN_IN_CHALLENGE_PATHS.has(ctx.path ?? ''),
           handler: createAuthMiddleware(async (ctx) => ({
             context: { body: { ...bodyRecord(ctx.body), trustDevice: false } },
+          })),
+        },
+        {
+          // The reset is always for the admin account: whatever `email` the client sent (none, an
+          // empty string, another address) is replaced before the endpoint validates its body, so
+          // the client doesn't need to know the address at all.
+          matcher: (ctx) => PASSWORD_RESET_PATHS.has(ctx.path ?? ''),
+          handler: createAuthMiddleware(async (ctx) => ({
+            context: { body: { ...bodyRecord(ctx.body), email: ADMIN_EMAIL } },
           })),
         },
         {
@@ -283,16 +369,12 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
           }),
         },
         {
-          // Reset request: start the response-floor clock, then spend the site-wide budget. Both
-          // after Turnstile (the plugin's onRequest runs before any hook), so neither costs a
-          // tokenless bot anything. The hour budget is checked first and stops the day budget
-          // being spent on a request it already refuses.
+          // Reset request: spend the site-wide budget. After Turnstile (the plugin's onRequest runs
+          // before any hook), so it costs a tokenless bot nothing. The hour budget is checked first
+          // and stops the day budget being spent on a request it already refuses. Every request
+          // that gets here sends an email (the body can't fail validation — `email` is ours).
           matcher: (ctx) => ctx.path === CAPTCHA_PROTECTED_PATH,
-          handler: createAuthMiddleware(async (ctx) => {
-            resetRequestStarts.set(ctx.context, deps.responseFloor.now());
-            // Hooks run before the endpoint's body validation: a body that will be rejected with
-            // a 400 sends no email, so it mustn't spend a budget slot.
-            if (typeof bodyRecord(ctx.body).email !== 'string') return;
+          handler: createAuthMiddleware(async () => {
             for (const budget of RESET_REQUEST_GLOBAL_BUDGETS) {
               const limiter = deps.rateLimiterFor({
                 limit: budget.limit,
@@ -300,7 +382,6 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
               });
               const { success, reset } = await limiter.limit(budget.key);
               if (!success) {
-                resetRequestStarts.delete(ctx.context);
                 const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
                 throw new APIError(
                   'TOO_MANY_REQUESTS',
@@ -314,14 +395,24 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
       ],
       after: [
         {
-          // Pad every reset-request response — success or error — to the floor (see above).
-          matcher: (ctx) => ctx.path === CAPTCHA_PROTECTED_PATH,
+          // Mandatory 2FA: a correct password enrols an account that isn't enrolled yet, then the
+          // two-factor plugin's own hook (next in line) swaps the session for a challenge. If the
+          // enrolment fails, the session the password created is thrown away — fail closed.
+          matcher: (ctx) => ctx.path === SIGN_IN_PATH,
           handler: createAuthMiddleware(async (ctx) => {
-            const start = resetRequestStarts.get(ctx.context);
-            resetRequestStarts.delete(ctx.context);
-            if (start === undefined) return;
-            const remaining = deps.responseFloor.ms - (deps.responseFloor.now() - start);
-            if (remaining > 0) await deps.responseFloor.sleep(remaining);
+            const signedIn = ctx.context.newSession;
+            if (!signedIn) return; // wrong password, or any other refused sign-in
+            try {
+              if (await ensureTwoFactorEnrolled(ctx, signedIn.user)) {
+                deps.logger.info('two_factor_auto_enrolled');
+              }
+            } catch (cause) {
+              await discardNewSession(ctx, signedIn.session.token);
+              deps.logger.error('two_factor_enrolment_failed', {
+                error: cause instanceof Error ? cause.message : String(cause),
+              });
+              throw new APIError('INTERNAL_SERVER_ERROR', { ...TWO_FACTOR_SETUP_FAILED });
+            }
           }),
         },
         {
@@ -334,33 +425,54 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
           }),
         },
         {
-          // `/two-factor/enable` also returns a TOTP provisioning URI — the TOTP secret itself.
-          // TOTP is switched off, so it is useless to the client and is not sent.
-          matcher: (ctx) => ctx.path === '/two-factor/enable',
+          // A reset request that answered success but sent nothing becomes a 503: either the send
+          // failed (already logged by the sender), or there is no account under ADMIN_EMAIL — the
+          // endpoint then skips the send silently, so that case is logged here.
+          matcher: (ctx) => ctx.path === CAPTCHA_PROTECTED_PATH,
           handler: createAuthMiddleware(async (ctx) => {
-            const returned = ctx.context.returned;
-            if (returned && typeof returned === 'object' && 'backupCodes' in returned) {
-              return ctx.json({ backupCodes: (returned as { backupCodes: string[] }).backupCodes });
+            const delivered = deliveredResetCodes.has(ctx.context);
+            const failed = failedCodeDeliveries.has(ctx.context);
+            deliveredResetCodes.delete(ctx.context);
+            failedCodeDeliveries.delete(ctx.context);
+            if (delivered || isAPIError(ctx.context.returned)) return;
+            if (!failed) {
+              deps.logger.error('password_reset_account_missing', {
+                reason: 'no user has the admin email — has the admin-email migration run?',
+              });
             }
+            throw new APIError('SERVICE_UNAVAILABLE', { ...EMAIL_DELIVERY_FAILED });
           }),
         },
+      ],
+    },
+  };
+}
+
+/**
+ * Backstop for mandatory 2FA, placed AFTER `twoFactor`: when a password sign-in is about to answer
+ * with a live session — i.e. the two-factor plugin did not turn it into a challenge, for whatever
+ * reason — the session is destroyed and the sign-in refused. Nothing lets a password alone in.
+ */
+export function signInChallengeBackstop(
+  deps: Pick<AdminAuthGuardDeps, 'logger'>,
+): BetterAuthPlugin {
+  return {
+    id: 'culprit-sign-in-challenge-backstop',
+    hooks: {
+      after: [
         {
-          // Turning 2FA on or off signs out every other session. On: a session opened before the
-          // second factor existed shouldn't outlive it — that is the security reason. Off: for
-          // consistency, so every change to the sign-in requirements starts from one session. It
-          // does NOT protect against an attacker who disables 2FA — it would sign the real admin
-          // out, not them. Both endpoints have already rotated the caller's own session into
-          // `newSession`, which is the one kept.
-          matcher: (ctx) =>
-            ctx.path === '/two-factor/verify-otp' || ctx.path === '/two-factor/disable',
+          matcher: (ctx) => ctx.path === SIGN_IN_PATH,
           handler: createAuthMiddleware(async (ctx) => {
-            const enabling = enablingRequests.has(ctx.context);
-            enablingRequests.delete(ctx.context);
-            if (ctx.path === '/two-factor/verify-otp' && !enabling) return;
+            const leaked = ctx.context.newSession;
+            if (!leaked) return;
+            // Always destroyed, even when the response is already an error: a live session must
+            // never outlive a sign-in that wasn't challenged.
+            await discardNewSession(ctx, leaked.session.token);
+            await revokeTrustedDevices(ctx, leaked.user.id);
+            deps.logger.error('sign_in_without_challenge_blocked');
+            // An error response stays as it is; only a would-be success is turned into a 500.
             if (isAPIError(ctx.context.returned)) return;
-            const current = ctx.context.newSession;
-            if (!current) return;
-            await revokeOtherSessions(ctx, current.user.id, current.session.token);
+            throw new APIError('INTERNAL_SERVER_ERROR', { ...TWO_FACTOR_SETUP_FAILED });
           }),
         },
       ],
@@ -370,8 +482,6 @@ export function adminAuthGuards(deps: AdminAuthGuardDeps): BetterAuthPlugin {
 
 export type AdminAuthPluginDeps = AdminAuthGuardDeps & {
   codeSender: VerificationCodeSender;
-  /** Keeps the fire-and-forget reset send alive past the response (see createPasswordResetOtpSender). */
-  runInBackground?: BackgroundRunner;
   /** BETTER_AUTH_SECRET — keys the stored-code hash (createOtpHasher). */
   otpHashSecret: string;
 };
@@ -383,7 +493,7 @@ function resetCaptcha(deps: AdminAuthGuardDeps): BetterAuthPlugin {
     provider: 'cloudflare-turnstile',
     secretKey: deps.captcha.secretKey,
     // Only the reset request. NOT sign-in (yet) — the plugin's default list includes
-    // /sign-in/email, which is deliberately left out of this change.
+    // /sign-in/email, which is deliberately left out.
     endpoints: [CAPTCHA_PROTECTED_PATH],
   });
 }
@@ -392,19 +502,21 @@ function resetCaptcha(deps: AdminAuthGuardDeps): BetterAuthPlugin {
 export function adminAuthPlugins(
   deps: AdminAuthPluginDeps,
 ): [
+  ReturnType<typeof adminAuthGuards>,
   ReturnType<typeof twoFactor>,
   ReturnType<typeof emailOTP>,
-  ReturnType<typeof adminAuthGuards>,
   BetterAuthPlugin,
+  ReturnType<typeof signInChallengeBackstop>,
 ] {
   const otpHasher = createOtpHasher(deps.otpHashSecret);
   // An explicit tuple, not the inferred `(A | B | C)[]`: Better Auth infers the session's user
   // fields (e.g. `twoFactorEnabled`) per plugin, which a widened array loses.
+  //
+  // ORDER MATTERS. Plugin after-hooks run in this order: the guards' enrolment hook must run before
+  // the two-factor plugin's sign-in hook, and the backstop after it.
   return [
+    adminAuthGuards(deps),
     twoFactor({
-      issuer: 'The Culprit',
-      // Enabling only takes effect once an emailed code is verified (verify-otp flips the flag).
-      skipVerificationOnEnable: false,
       totpOptions: { disable: true },
       otpOptions: {
         digits: CODE_DIGITS,
@@ -413,7 +525,8 @@ export function adminAuthPlugins(
         storeOTP: otpHasher,
         sendOTP: createTwoFactorOtpSender(deps.codeSender),
       },
-      // Encrypted with a key derived from BETTER_AUTH_SECRET (the plugin's symmetricEncrypt).
+      // Encrypted with a key derived from BETTER_AUTH_SECRET (the plugin's symmetricEncrypt). The
+      // enrolment hook writes the same format (encodeBackupCodes) — keep the two in step.
       backupCodeOptions: { storeBackupCodes: 'encrypted' },
     }),
     emailOTP({
@@ -422,10 +535,10 @@ export function adminAuthPlugins(
       allowedAttempts: RESET_CODE_ATTEMPTS,
       storeOTP: otpHasher,
       disableSignUp: true,
-      sendVerificationOTP: createPasswordResetOtpSender(deps.codeSender, deps.runInBackground),
+      sendVerificationOTP: createPasswordResetOtpSender(deps.codeSender),
     }),
-    adminAuthGuards(deps),
     resetCaptcha(deps),
+    signInChallengeBackstop(deps),
   ];
 }
 
@@ -437,11 +550,11 @@ export function adminAuthSecurityOptions(deps: AdminAuthPluginDeps) {
   return {
     emailAndPassword: {
       enabled: true,
-      // Single admin only — no public registration. The credential is seeded from env, never a form.
+      // Single admin only — no public registration. The credential is seeded, never a form.
       disableSignUp: true,
       ...PASSWORD_POLICY,
       // A completed reset signs out every existing session. The email-otp reset path checks this
-      // same option. The admin then signs in again — through 2FA, if it's on.
+      // same option. The admin then signs in again — through 2FA, as always.
       revokeSessionsOnPasswordReset: true,
     },
     disabledPaths: [...DISABLED_AUTH_PATHS],

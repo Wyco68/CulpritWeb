@@ -72,12 +72,11 @@ describe('resolveRateLimitRule', () => {
       );
     });
 
-    it('shares one budget across the password-checking 2FA settings endpoints', () => {
-      const keys = ['enable', 'disable', 'generate-backup-codes'].map((action) =>
-        key(`/api/auth/two-factor/${action}`),
-      );
-
-      expect(new Set(keys)).toEqual(new Set(['auth-2fa-settings:1.2.3.4']));
+    it('limits replacing the backup codes, and no longer rate-limits the disabled enable/disable', () => {
+      expect(key('/api/auth/two-factor/generate-backup-codes')).toBe('auth-2fa-settings:1.2.3.4');
+      // 404 since ADR-023 — Better Auth refuses them before any work is done.
+      expect(resolveRateLimitRule('/api/auth/two-factor/enable', 'POST', '1.2.3.4')).toBeNull();
+      expect(resolveRateLimitRule('/api/auth/two-factor/disable', 'POST', '1.2.3.4')).toBeNull();
     });
 
     it('keys every rule by IP', () => {

@@ -8,7 +8,7 @@ import {
   type VerificationCodePurpose,
 } from '../emails/verification-code-email';
 
-const PURPOSES: VerificationCodePurpose[] = ['sign-in', 'enable-two-factor', 'password-reset'];
+const PURPOSES: VerificationCodePurpose[] = ['sign-in', 'password-reset'];
 
 describe('VerificationCodeEmail', () => {
   it.each(PURPOSES)('renders the code and its expiry (%s)', async (purpose) => {
@@ -50,9 +50,6 @@ describe('verificationCodeSubject', () => {
     expect(verificationCodeSubject('sign-in')).toBe('Your sign-in code — The Culprit');
     expect(verificationCodeSubject('password-reset')).toBe(
       'Your password reset code — The Culprit',
-    );
-    expect(verificationCodeSubject('enable-two-factor')).toBe(
-      'Confirm two-step verification — The Culprit',
     );
   });
 });

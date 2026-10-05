@@ -4,6 +4,7 @@ import type { EmailClient } from '@/modules/integrations';
 import { IntegrationError } from '@/modules/shared/lib/errors';
 import type { Logger } from '@/modules/shared/lib/logger';
 import { err, ok } from '@/modules/shared/lib/result';
+import { ADMIN_EMAIL } from '../auth-policy';
 import {
   createVerificationCodeSender,
   type VerificationCodeSenderDeps,
@@ -32,7 +33,7 @@ function makeSender(overrides: Partial<VerificationCodeSenderDeps> = {}) {
   return { sender: createVerificationCodeSender(deps), send: email.send, logger };
 }
 
-const INPUT = { to: 'admin@example.com', code: '12345678', purpose: 'sign-in' as const };
+const INPUT = { code: '12345678', purpose: 'sign-in' as const };
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -47,7 +48,7 @@ describe('createVerificationCodeSender', () => {
     expect(result.ok).toBe(true);
     expect(send).toHaveBeenCalledTimes(1);
     const message = send.mock.calls[0]![0];
-    expect(message.to).toBe('admin@example.com');
+    expect(message.to).toBe('culpritteam@gmail.com');
     expect(message.subject).toBe('Your sign-in code — The Culprit');
     expect(message.text).toContain('12345678');
     expect(message.text).toContain('expires in 5 minutes');
@@ -56,6 +57,15 @@ describe('createVerificationCodeSender', () => {
       purpose: 'sign-in',
       expiresInMinutes: 5,
     });
+  });
+
+  it('always mails the fixed admin address, for every purpose (ADR-023)', async () => {
+    const { sender, send } = makeSender();
+
+    await sender.send({ code: '11111111', purpose: 'sign-in' });
+    await sender.send({ code: '22222222', purpose: 'password-reset' });
+
+    expect(send.mock.calls.map(([message]) => message.to)).toEqual([ADMIN_EMAIL, ADMIN_EMAIL]);
   });
 
   it('returns the transport error, and logs neither the code nor the address', async () => {
@@ -70,7 +80,7 @@ describe('createVerificationCodeSender', () => {
       purpose: 'sign-in',
     });
     expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain('12345678');
-    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain('admin@example.com');
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain(ADMIN_EMAIL);
   });
 
   it('outside production, with no transport, logs the code instead of sending', async () => {

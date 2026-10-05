@@ -9,14 +9,17 @@ import {
   verificationCodeText,
   type VerificationCodePurpose,
 } from './emails/verification-code-email';
+import { ADMIN_EMAIL } from './auth-policy';
 
-// Delivers the 8-digit codes Better Auth generates (two-factor sign-in, confirming 2FA, password
-// reset — ADR-022). Framework-agnostic: Better Auth's callbacks are thin adapters over this
-// (see ./auth-security.ts), and every edge (transport, config, logger) is injected so it is
-// unit-testable without env or network.
+// Delivers the 8-digit codes Better Auth generates (two-factor sign-in, password reset — ADR-022).
+// Framework-agnostic: Better Auth's callbacks are thin adapters over this (see ./auth-security.ts),
+// and every edge (transport, config, logger) is injected so it is unit-testable without env or
+// network.
+//
+// There is deliberately no recipient parameter: every code goes to ADMIN_EMAIL, the single admin's
+// mailbox, whatever address the user row holds (ADR-023). A caller can't send a code elsewhere.
 
 export type SendVerificationCodeInput = {
-  to: string;
   code: string;
   purpose: VerificationCodePurpose;
 };
@@ -43,7 +46,7 @@ export function createVerificationCodeSender(
   deps: VerificationCodeSenderDeps,
 ): VerificationCodeSender {
   return {
-    async send({ to, code, purpose }) {
+    async send({ code, purpose }) {
       if (!deps.emailDeliveryConfigured) {
         if (deps.logCodesWhenUnconfigured && process.env.NODE_ENV !== 'production') {
           deps.logger.info('verification_code_dev_only', { purpose, code });
@@ -58,7 +61,7 @@ export function createVerificationCodeSender(
 
       const props = { code, purpose, expiresInMinutes: deps.expiresInMinutes };
       const result = await deps.emailClient.send({
-        to,
+        to: ADMIN_EMAIL,
         subject: verificationCodeSubject(purpose),
         react: createElement(VerificationCodeEmail, props),
         text: verificationCodeText(props),

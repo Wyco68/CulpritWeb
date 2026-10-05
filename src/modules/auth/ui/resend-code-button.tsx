@@ -1,7 +1,7 @@
 import { RotateCw } from 'lucide-react';
 import { Button } from '@/modules/shared/ui/button';
 
-// "Resend code", shared by the sign-in, password-reset and turn-on flows. Disabled while the
+// "Resend code", shared by the sign-in and password-reset flows. Disabled while the
 // cooldown runs; the seconds left are shown but hidden from assistive technology, so a screen
 // reader isn't read a new label every second while the button has focus.
 export function ResendCodeButton({

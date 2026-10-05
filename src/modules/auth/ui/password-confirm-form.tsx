@@ -10,16 +10,13 @@ import { Input } from '@/modules/shared/ui/input';
 import { confirmPasswordSchema, type ConfirmPasswordInput } from '../two-factor.schema';
 import { FormAlert } from './form-alert';
 
-// "Enter your password to continue" — the first step of turning two-step verification on or off
-// and of replacing the backup codes. Lives inside a Dialog; the caller performs the request and
-// answers with an error sentence, or null to move on.
+// "Enter your password to continue" — the first step of generating backup codes (ADR-023). Lives
+// inside a Dialog; the caller performs the request and answers with an error sentence, or null to
+// move on.
 
 export interface PasswordConfirmFormProps {
   id: string;
   submitLabel: string;
-  variant?: 'default' | 'destructive';
-  /** Shown above the field on mount, e.g. why a flow came back to this step. */
-  initialError?: string | null;
   onConfirm: (password: string) => Promise<string | null>;
   onCancel: () => void;
 }
@@ -27,12 +24,10 @@ export interface PasswordConfirmFormProps {
 export function PasswordConfirmForm({
   id,
   submitLabel,
-  variant = 'default',
-  initialError = null,
   onConfirm,
   onCancel,
 }: PasswordConfirmFormProps) {
-  const [formError, setFormError] = useState<string | null>(initialError);
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -67,7 +62,7 @@ export function PasswordConfirmForm({
       <FormField
         label="Current password"
         htmlFor={id}
-        description="Confirm it's you before changing how you sign in."
+        description="Confirm it's you before changing your backup codes."
         error={errors.password?.message}
         required
       >
@@ -84,7 +79,7 @@ export function PasswordConfirmForm({
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button type="submit" variant={variant} loading={isSubmitting}>
+        <Button type="submit" loading={isSubmitting}>
           {submitLabel}
         </Button>
       </DialogFooter>
