@@ -6,10 +6,28 @@ import { getClientIp, rateLimitExceededResponse, resolveRateLimitRule } from './
 // Edge Middleware test harness for.
 
 describe('resolveRateLimitRule', () => {
-  it('applies the auth sign-in rule to POST /api/auth/sign-in/email', () => {
-    const rule = resolveRateLimitRule('/api/auth/sign-in/email', 'POST', '1.2.3.4');
+  const TEN_MINUTES = 600;
+  const key = (pathname: string, method = 'POST', ip = '1.2.3.4') =>
+    resolveRateLimitRule(pathname, method, ip)?.key;
 
-    expect(rule).toEqual({ key: 'auth-signin:1.2.3.4', limit: 5, windowSeconds: 60 });
+  it('applies the auth sign-in rule to POST /api/auth/sign-in/email', () => {
+    expect(resolveRateLimitRule('/api/auth/sign-in/email', 'POST', '1.2.3.4')).toEqual({
+      key: 'auth-signin:1.2.3.4',
+      limit: 5,
+      windowSeconds: 60,
+    });
+  });
+
+  it('normalises a trailing slash for every rule, sign-in included', () => {
+    expect(resolveRateLimitRule('/api/auth/sign-in/email/', 'POST', '1.2.3.4')).toEqual(
+      resolveRateLimitRule('/api/auth/sign-in/email', 'POST', '1.2.3.4'),
+    );
+    expect(resolveRateLimitRule('/api/auth/two-factor/send-otp//', 'POST', '1.2.3.4')).toEqual(
+      resolveRateLimitRule('/api/auth/two-factor/send-otp', 'POST', '1.2.3.4'),
+    );
+    expect(key('/api/admin/research/', 'POST', '5.6.7.8')).toBe(
+      'admin:5.6.7.8:/api/admin/research',
+    );
   });
 
   it('does not rate-limit other auth routes (e.g. sign-out, session)', () => {
@@ -21,11 +39,62 @@ describe('resolveRateLimitRule', () => {
     expect(resolveRateLimitRule('/api/auth/sign-in/email', 'GET', '1.2.3.4')).toBeNull();
   });
 
+  describe('emailed-code endpoints (ADR-022)', () => {
+    it('allows 3 reset requests and 5 two-factor sends per 10 minutes per IP', () => {
+      expect(resolveRateLimitRule('/api/auth/two-factor/send-otp', 'POST', '1.2.3.4')).toEqual({
+        key: 'auth-2fa-send:1.2.3.4',
+        limit: 5,
+        windowSeconds: TEN_MINUTES,
+      });
+      expect(
+        resolveRateLimitRule('/api/auth/email-otp/request-password-reset', 'POST', '1.2.3.4'),
+      ).toEqual({ key: 'auth-reset-request:1.2.3.4', limit: 3, windowSeconds: TEN_MINUTES });
+    });
+
+    it('keeps the site-wide reset budget out of middleware (it runs after Turnstile instead)', () => {
+      expect(key('/api/auth/email-otp/request-password-reset')).not.toMatch(/global/);
+    });
+
+    it('allows 10 code checks per 10 minutes per IP', () => {
+      expect(resolveRateLimitRule('/api/auth/two-factor/verify-otp', 'POST', '1.2.3.4')).toEqual({
+        key: 'auth-2fa-verify:1.2.3.4',
+        limit: 10,
+        windowSeconds: TEN_MINUTES,
+      });
+      expect(resolveRateLimitRule('/api/auth/email-otp/reset-password', 'POST', '1.2.3.4')).toEqual(
+        { key: 'auth-reset:1.2.3.4', limit: 10, windowSeconds: TEN_MINUTES },
+      );
+    });
+
+    it('shares one budget between the sign-in code and a backup code', () => {
+      expect(key('/api/auth/two-factor/verify-backup-code')).toBe(
+        key('/api/auth/two-factor/verify-otp'),
+      );
+    });
+
+    it('shares one budget across the password-checking 2FA settings endpoints', () => {
+      const keys = ['enable', 'disable', 'generate-backup-codes'].map((action) =>
+        key(`/api/auth/two-factor/${action}`),
+      );
+
+      expect(new Set(keys)).toEqual(new Set(['auth-2fa-settings:1.2.3.4']));
+    });
+
+    it('keys every rule by IP', () => {
+      expect(key('/api/auth/two-factor/send-otp', 'POST', '1.1.1.1')).not.toBe(
+        key('/api/auth/two-factor/send-otp', 'POST', '2.2.2.2'),
+      );
+    });
+
+    it('only limits POST', () => {
+      expect(resolveRateLimitRule('/api/auth/two-factor/send-otp', 'GET', '1.2.3.4')).toBeNull();
+    });
+  });
+
   it('applies the admin rule to mutating methods under /api/admin/**', () => {
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
-      const rule = resolveRateLimitRule('/api/admin/research', method, '5.6.7.8');
-      expect(rule).toEqual({
-        key: `admin:5.6.7.8:/api/admin/research`,
+      expect(resolveRateLimitRule('/api/admin/research', method, '5.6.7.8')).toEqual({
+        key: 'admin:5.6.7.8:/api/admin/research',
         limit: 30,
         windowSeconds: 60,
       });
@@ -37,10 +106,9 @@ describe('resolveRateLimitRule', () => {
   });
 
   it('keys the admin rule by pathname so different admin routes track independently', () => {
-    const research = resolveRateLimitRule('/api/admin/research', 'POST', '5.6.7.8');
-    const publications = resolveRateLimitRule('/api/admin/publications', 'POST', '5.6.7.8');
-
-    expect(research?.key).not.toBe(publications?.key);
+    expect(key('/api/admin/research', 'POST', '5.6.7.8')).not.toBe(
+      key('/api/admin/publications', 'POST', '5.6.7.8'),
+    );
   });
 
   it('ignores unrelated public routes', () => {

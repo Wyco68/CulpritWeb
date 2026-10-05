@@ -12,7 +12,7 @@ import { MobileMenu, NavSidebar, type NavItem } from '@/modules/shared/ui/site-n
 // own.
 
 // Each entry mirrors one public tab, so the admin edits a page by going to the screen of the same
-// name.
+// name — except the last, Security, which is about the admin's own sign-in, not the site.
 const TABS: readonly NavItem[] = [
   { href: '/admin', label: 'Dashboard', exact: true },
   { href: '/admin/about', label: 'About' },
@@ -21,6 +21,7 @@ const TABS: readonly NavItem[] = [
   { href: '/admin/team', label: 'Team' },
   { href: '/admin/events', label: 'Events' },
   { href: '/admin/appointment', label: 'Appointment' },
+  { href: '/admin/security', label: 'Security' },
 ];
 
 export function AdminHeader() {
