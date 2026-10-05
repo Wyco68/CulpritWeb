@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: false
-last_updated: 2026-08-08
+last_updated: 2026-10-05
 related_modules: [shared]
 related_decisions: []
 ---
@@ -15,7 +15,10 @@ related_decisions: []
    gitignored). Only `DATABASE_URL` is strictly required to boot; everything else has a graceful
    no-op fallback (see below).
 3. `npm run db:migrate` — applies migrations to your dev database (`prisma migrate dev`).
-4. `npm run db:seed` — provisions the single admin from `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD`.
+4. `npm run db:seed` — provisions the single admin as `culpritteam@gmail.com` (fixed in code,
+   ADR-023) with `ADMIN_INITIAL_PASSWORD`, only if no user exists yet. Sign-in always asks for an
+   emailed code; with no `RESEND_API_KEY` locally, the code is printed in the dev server log
+   (`verification_code_dev_only`).
    `npm run db:seed:demo` additionally seeds demo public content.
 5. `npm run dev` — runs `prisma migrate deploy` first (`predev` script), then `next dev`.
 
@@ -27,8 +30,8 @@ Grouped by concern in `.env.example` (the committed template — no secrets):
 |---|---|---|
 | App | `NEXT_PUBLIC_APP_URL` | Recommended |
 | Database | `DATABASE_URL` (pooled), `DIRECT_URL` (direct, for migrations) | `DATABASE_URL` required |
-| Auth | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_INITIAL_PASSWORD` | Secret required in production (≥32 chars); optional in dev |
-| Email | `RESEND_API_KEY`, `EMAIL_FROM` | Optional — not wired to any feature today |
+| Auth | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_INITIAL_PASSWORD` (`ADMIN_EMAIL` is no longer read — ADR-023) | Secret required in production (≥32 chars); optional in dev |
+| Email | `RESEND_API_KEY`, `EMAIL_FROM` | **Required in production** — admin sign-in codes (2FA is mandatory, ADR-023). Optional in dev: codes are logged instead |
 | Bot defense | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional — no-ops (always passes) when unset |
 | Storage | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` | Optional — no-op (logs + returns an error Result) when unset |
 | Calendly | `NEXT_PUBLIC_CALENDLY_URL` | Optional — embed shows a graceful empty state when unset |

@@ -147,6 +147,7 @@ for the history.
   `20260808044253_appointment_embed_only_no_calendly_sync` document the 2026-08-08 rewrite, and
   `20260901120000_events_replace_appointments` the removal, at the SQL level. That last one is
   **destructive and has no down path** — it drops `appointment` and every row in it.
-- `prisma/seed.ts` provisions the single admin from `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD`;
+- `prisma/seed.ts` provisions the single admin as `culpritteam@gmail.com` (fixed in code, ADR-023)
+  with `ADMIN_INITIAL_PASSWORD`, and skips once any user exists;
   `prisma/seed-demo.ts` adds demo content for local dev. Guard seed scripts so they never run
   destructively in production.

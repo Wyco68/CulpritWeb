@@ -1,14 +1,21 @@
 ---
-status: current
+status: superseded
 source_of_truth: true
-last_updated: 2026-10-03
+last_updated: 2026-10-05
 related_modules: [auth, integrations]
-related_decisions: [ADR-003, ADR-008, ADR-013, ADR-021]
+related_decisions: [ADR-003, ADR-008, ADR-013, ADR-021, ADR-023]
 ---
 
 # ADR-022: Admin two-step verification and password reset by emailed 8-digit code
 
 ## Status
+
+**Superseded in part by [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md) (2026-10-05).**
+Two-step verification is now mandatory: an account is enrolled automatically at its first password
+sign-in, and `/two-factor/enable` and `/two-factor/disable` are disabled. Every code goes to the
+fixed mailbox `culpritteam@gmail.com`. The password reset takes no email address, awaits the send,
+and answers 503 when it fails. The uniform response, its time floor and the background send are
+gone. The sections below carry a dated note where this applies; everything else here still holds.
 
 Accepted. Revised the same day after a security review: keyed code hashing, site-wide reset
 budgets, Turnstile on the reset request, a padded reset response time, session revocation on 2FA
@@ -42,6 +49,12 @@ several guards below depend on how its hook pipeline behaves. A test lists every
 fails when an upgrade adds one.
 
 ### Two-step verification
+
+> **Superseded in part 2026-10-05 — [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md):**
+> 2FA is mandatory, with no opt-in and no off switch. The "Turning it on", "Enable-step guard" and
+> "Session revocation" points below no longer apply. Enrolment is automatic at the first password
+> sign-in; enable/disable answer 404; codes are refused from a signed-in session
+> (`TWO_FACTOR_SIGN_IN_ONLY`). Codes go to `ADMIN_EMAIL`, not to the user row's address.
 
 This is the `twoFactor` plugin with **email codes only**.
 
@@ -79,6 +92,11 @@ This is the `twoFactor` plugin with **email codes only**.
   sign-in asks for a code.
 
 ### Forgot password
+
+> **Superseded in part 2026-10-05 — [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md):**
+> both endpoints ignore the client's `email` and act on `ADMIN_EMAIL`. The "Uniform response" point
+> below no longer applies: the send is awaited, a failure answers `503 EMAIL_DELIVERY_FAILED`, and
+> the 400 ms floor and the `after()` background send are removed.
 
 This is the `emailOTP` plugin, used for **this one flow only**.
 
@@ -179,6 +197,10 @@ the Caddy fix, applied by hand.
 
 ### Delivery failures and the lockout guard
 
+> **Superseded in part 2026-10-05 — [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md):**
+> the lockout guard is gone, because 2FA can no longer be turned on by hand. The 503 now applies to
+> reset requests too.
+
 **Lockout guard.** With no email transport configured, `/two-factor/enable` is refused with
 `EMAIL_NOT_CONFIGURED`. Otherwise the admin could switch on a factor that can never be delivered.
 This applies in every environment, because staging, production and local development share one
@@ -239,6 +261,11 @@ A production secret rejects the test widget's dummy token.
 - **Email delivery becomes a dependency of signing in.** If Resend is down or misconfigured while
   2FA is on, the admin signs in with a **backup code**. If those are lost too, the last resort is a
   direct database update: `UPDATE "user" SET two_factor_enabled = false WHERE email = '…'`.
+
+  _(2026-10-05: now unconditionally, since 2FA is mandatory. The `UPDATE` last resort no longer
+  works — the next sign-in re-enrols. See
+  [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md) for the break-glass path.)_
+
 - **New required secrets for this feature:** `RESEND_API_KEY` and `EMAIL_FROM` in the Doppler
   `culprit/stg` config (ADR-013). `EMAIL_FROM` must be an address on a domain verified in Resend;
   without a verified domain Resend only delivers to the account owner's own address. Until both are
@@ -258,6 +285,10 @@ A production secret rejects the test widget's dummy token.
   separate decision.
 
 ## Deploy checklist
+
+> **2026-10-05:** [ADR-023](ADR-023-mandatory-admin-2fa-fixed-recipient.md) adds its own deploy
+> prerequisites. `RESEND_API_KEY` and `EMAIL_FROM` are now required before deploying, in both
+> Doppler `culprit/stg` and Vercel production, because sign-in fails closed without them.
 
 Before this ships to an environment people use:
 
