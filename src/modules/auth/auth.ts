@@ -1,4 +1,3 @@
-import { after } from 'next/server';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from '@/modules/shared/lib/prisma';
@@ -7,13 +6,14 @@ import { publicEnv } from '@/modules/shared/lib/env';
 import { logger } from '@/modules/shared/lib/logger';
 import { getEmailClient, getRateLimiter, isEmailDeliveryConfigured } from '@/modules/integrations';
 import { CODE_TTL_MINUTES } from './auth-policy';
-import { RESET_REQUEST_RESPONSE_FLOOR_MS, adminAuthSecurityOptions } from './auth-security';
+import { adminAuthSecurityOptions } from './auth-security';
 import { createVerificationCodeSender } from './verification-code-sender';
 
 // Better Auth: DB-backed, cookie-identified sessions (httpOnly, secure, sameSite=lax, signed with
-// BETTER_AUTH_SECRET) — NOT JWT. Single admin: email/password with public sign-up disabled, an
-// optional second factor by emailed 8-digit code, and "forgot password" by emailed 8-digit code
-// (ADR-022 — the plugin set and its guards live in ./auth-security.ts).
+// BETTER_AUTH_SECRET) — NOT JWT. Single admin: email/password with public sign-up disabled, a
+// MANDATORY second factor by 8-digit code emailed to the fixed admin address, and "forgot password"
+// by emailed 8-digit code (ADR-022, ADR-023 — the plugin set and its guards live in
+// ./auth-security.ts).
 // NOTE: this is the one sanctioned place besides repositories that touches the Prisma client —
 // it only hands the client to Better Auth's adapter (which owns the user/session/account tables);
 // no domain query runs here.
@@ -33,9 +33,9 @@ const trustedOrigins = [
   process.env.NODE_ENV !== 'production' ? LOCAL_DEV_ORIGIN : undefined,
 ].filter((value): value is string => Boolean(value));
 
-// The one EmailClient caller. With no transport configured, a code is written to the server log in
-// development only; in production it is undelivered and logged as an error (a two-factor send then
-// answers 503; a reset request still answers its uniform success).
+// The one EmailClient caller; every code goes to ADMIN_EMAIL. With no transport configured, a code
+// is written to the server log in development only; in production it is undelivered, logged as an
+// error, and the request answers 503 EMAIL_DELIVERY_FAILED.
 const codeSender = createVerificationCodeSender({
   emailClient: getEmailClient(),
   emailDeliveryConfigured: isEmailDeliveryConfigured(),
@@ -53,17 +53,13 @@ if (env.TURNSTILE_SECRET_KEY && !publicEnv.turnstileSiteKey) {
   });
 }
 
-// The reset-code email is sent after the response (see createPasswordResetOtpSender). Next's
-// `after()` keeps it alive on a serverless host (Vercel), where a floating promise would be frozen
-// with the function; on the VPS's long-running server it simply runs. Outside a request scope
-// (`after()` throws there) the task just floats.
-function runInBackground(task: () => Promise<void>): void {
-  const run = () => task().catch(() => {});
-  try {
-    after(run);
-  } catch {
-    void run();
-  }
+// Two-step verification is mandatory (ADR-023), so a production server that can't send email can't
+// sign the admin in at all — only a backup code still works. Shout at boot rather than at sign-in.
+if (process.env.NODE_ENV === 'production' && !isEmailDeliveryConfigured()) {
+  logger.error('email_delivery_unconfigured', {
+    reason:
+      'RESEND_API_KEY / EMAIL_FROM are not set — admin sign-in codes and reset codes cannot be sent',
+  });
 }
 
 export const auth = betterAuth({
@@ -72,12 +68,11 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL ?? (publicEnv.appUrl || undefined),
   trustedOrigins,
-  // Email/password (sign-up disabled), the emailed-code second factor, forgot-password by code,
-  // Turnstile on the reset request, and the endpoints switched off — see ./auth-security.ts.
+  // Email/password (sign-up disabled), the mandatory emailed-code second factor, forgot-password by
+  // code, Turnstile on the reset request, and the endpoints switched off — see ./auth-security.ts.
   ...adminAuthSecurityOptions({
     codeSender,
-    isEmailDeliveryConfigured,
-    runInBackground,
+    logger,
     // Keys the stored-code HMAC. The env schema makes the secret mandatory in production; the
     // fallback only ever applies to a local dev server without one (Better Auth itself falls back
     // to a built-in dev secret in that case too).
@@ -89,11 +84,6 @@ export const auth = betterAuth({
     },
     // Site-wide reset budget — the same in-process limiter the middleware uses (ADR-008).
     rateLimiterFor: getRateLimiter,
-    responseFloor: {
-      ms: RESET_REQUEST_RESPONSE_FLOOR_MS,
-      now: () => performance.now(),
-      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    },
   }),
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
@@ -101,10 +91,10 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: 'culprit',
-    // DO NOT set `backgroundTasks` here. With a background handler Better Auth stops awaiting
-    // `sendOTP`, so a failed two-factor email can no longer be reported as 503
+    // DO NOT set `backgroundTasks` here. With a background handler Better Auth stops awaiting the
+    // code sends, so a failed email (two-factor or reset) can no longer be reported as 503
     // EMAIL_DELIVERY_FAILED (see auth-security.ts) — the admin would be told a code was sent when
-    // it wasn't. The password-reset send is already fire-and-forget on its own, for timing.
+    // it wasn't.
   },
 });
 

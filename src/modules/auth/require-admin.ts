@@ -7,8 +7,6 @@ export type AdminSession = {
   userId: string;
   email: string;
   name: string;
-  /** Whether sign-in asks for an emailed code after the password (ADR-022). */
-  twoFactorEnabled: boolean;
 };
 
 /**
@@ -26,6 +24,5 @@ export async function requireAdmin(): Promise<Result<AdminSession, UnauthorizedE
     userId: session.user.id,
     email: session.user.email,
     name: session.user.name,
-    twoFactorEnabled: session.user.twoFactorEnabled === true,
   });
 }

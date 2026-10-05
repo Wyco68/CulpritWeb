@@ -1,22 +1,18 @@
 import { z } from 'zod';
 import { CODE_DIGITS, PASSWORD_POLICY } from './auth-policy';
 
-// Client-side UX validation for "forgot password" by emailed code (ADR-022). The source of truth is
-// Better Auth's /api/auth/email-otp/* handlers plus the length check in ./auth-security.ts, which
-// runs before the code is spent. Same numbers on both sides, from ./auth-policy.ts.
+// Client-side UX validation for "forgot password" by emailed code (ADR-022, ADR-023). The source of
+// truth is Better Auth's /api/auth/email-otp/* handlers plus the length check in ./auth-security.ts,
+// which runs before the code is spent. Same numbers on both sides, from ./auth-policy.ts.
+//
+// There is no email field: the server always acts on ADMIN_EMAIL, whatever a client sends, so the
+// form sends `email: ''` itself. Asking for a code takes no input at all — only the human check.
 
 const CODE_PATTERN = new RegExp(`^\\d{${CODE_DIGITS}}$`);
 
-const email = z.string().trim().min(1, 'Email is required.').email('Enter a valid email address.');
-
-/** Step 1 — ask for a code. The server answers the same whether or not the address has an account. */
-export const requestPasswordResetSchema = z.object({ email });
-export type RequestPasswordResetInput = z.input<typeof requestPasswordResetSchema>;
-
-/** Step 2 — the code from the email and the new password. `confirmPassword` never leaves the form. */
+/** The code from the email and the new password. `confirmPassword` never leaves the form. */
 export const resetPasswordSchema = z
   .object({
-    email,
     otp: z
       .string()
       .transform((value) => value.replace(/\s+/g, ''))

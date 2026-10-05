@@ -10,11 +10,11 @@ import {
   Text,
 } from '@react-email/components';
 
-// The one email the admin app sends: an 8-digit code, for a sign-in, for confirming that two-step
-// verification should be switched on, or for a password reset (ADR-022). Literal English strings —
-// the site has no i18n. Inline styles only: mail clients ignore stylesheets.
+// The one email the admin app sends: an 8-digit code, for a sign-in or for a password reset
+// (ADR-022, ADR-023). Literal English strings — the site has no i18n. Inline styles only: mail
+// clients ignore stylesheets.
 
-export type VerificationCodePurpose = 'sign-in' | 'enable-two-factor' | 'password-reset';
+export type VerificationCodePurpose = 'sign-in' | 'password-reset';
 
 export type VerificationCodeEmailProps = {
   code: string;
@@ -38,13 +38,6 @@ const COPY: Record<VerificationCodePurpose, PurposeCopy> = {
     lead: `Enter this code to finish signing in to ${LAB_NAME}.`,
     notYou:
       "If you didn't just sign in, ignore this email and change your password — someone else knows it.",
-  },
-  'enable-two-factor': {
-    subject: 'Confirm two-step verification',
-    heading: 'Confirm two-step verification',
-    lead: `Enter this code to turn on two-step verification for your ${LAB_NAME} account.`,
-    notYou:
-      "If you didn't ask to turn on two-step verification, ignore this email and change your password.",
   },
   'password-reset': {
     subject: 'Your password reset code',
