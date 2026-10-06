@@ -47,6 +47,15 @@ Supabase stays the only database the app reads or writes. `.github/workflows/neo
 - runs only against a Neon database it marked itself (the `standby` schema), and never against a
   URL that matches the source.
 
+A second keep-alive is independent of GitHub. Vercel Cron (`vercel.json`) calls
+`/api/cron/keep-alive` on production once a day. The route reads the lab profile and returns
+nothing from it. It only answers Vercel's `Authorization: Bearer $CRON_SECRET` header, and refuses
+every request where `CRON_SECRET` is unset. GitHub disables a public repository's scheduled
+workflows after 60 days without a commit. The usual workaround, re-enabling the workflow from
+inside itself, was not used: the best-known tool for it has been disabled by GitHub for breaking
+its terms of service. If that ever happens, the Neon copy goes stale, but Supabase still gets a
+daily read.
+
 ## Consequences
 
 - The copy is at most about 6 hours behind Supabase. Neon Free keeps 6 hours of restore history
@@ -57,6 +66,11 @@ Supabase stays the only database the app reads or writes. `.github/workflows/neo
 - A run that starts after a migration merges but before CI's `migrate` job reaches Supabase fails
   on a schema mismatch. The next run succeeds. Supabase was still read, so the keep-alive still
   worked.
-- GitHub disables scheduled workflows on a public repository after 60 days without a commit.
+- If GitHub disables the sync after 60 quiet days, re-enable it from the Actions tab. The Vercel
+  cron keeps Supabase awake in the meantime.
+- `CRON_SECRET` is set by hand in Vercel's production environment. Cron jobs only run on a
+  production deployment, so the keep-alive starts with the first manual deploy after the merge.
+- Vercel cost: Hobby allows only daily crons. That is about 30 calls a month, each a single read
+  capped at 10 seconds (`maxDuration`), out of the plan's included function usage.
 - Costs: about 310 rows a run. Neon wakes for each run and sleeps again after 5 minutes, which is
   about 2.5 of the Free plan's 100 CU-hours a month. Storage is about 12 MB of Neon's 1 GB.
