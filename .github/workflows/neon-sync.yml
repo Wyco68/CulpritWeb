@@ -1,0 +1,54 @@
+name: Sync database to Neon
+
+# Every 6 hours, copies the Supabase database — the one Vercel production uses — into a Neon
+# Postgres standby with scripts/sync-supabase-to-neon.ts. Reading Supabase on every run is also
+# what keeps the Free project from pausing after a week without database activity, so this job
+# matters even in a week nobody edits anything. See ADR-024.
+#
+# Config from Doppler (culprit/stg), fetched with the same read-only DOPPLER_TOKEN as docker.yml:
+#   DIRECT_URL       — Supabase, read in one read-only snapshot
+#   NEON_DIRECT_URL  — Neon's direct (non-pooled) connection string for the standby database
+#
+# GitHub disables scheduled workflows on a public repository after 60 days without a commit. If
+# the repo goes quiet that long, re-enable this workflow from the Actions tab.
+#
+# Repository guard: gated on `github.repository` like every other job — see docker.yml.
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neon-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync Supabase → Neon
+    if: github.repository == 'Wyco68/CulpritWeb'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Fetch config from Doppler
+        id: doppler
+        uses: dopplerhq/secrets-fetch-action@v2.0.0
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+
+      - run: npx tsx scripts/sync-supabase-to-neon.ts
+        env:
+          DIRECT_URL: ${{ steps.doppler.outputs.DIRECT_URL }}
+          NEON_DIRECT_URL: ${{ steps.doppler.outputs.NEON_DIRECT_URL }}
