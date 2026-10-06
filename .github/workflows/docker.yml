@@ -43,6 +43,14 @@ name: Docker build & publish
 on:
   push:
     branches: [main]
+    # A docs-only merge changes nothing in the image, so it would rebuild, redeploy and add one
+    # more image to the VPS disk for no effect. Any other file still triggers the full pipeline.
+    paths-ignore:
+      - 'docs/**'
+      - 'docs-site/**'
+      - '**/*.md'
+      - '.github/workflows/deploy-spec-pages.yml'
+      - '.github/workflows/neon-sync.yml'
   workflow_dispatch:
     inputs:
       no_cache:
