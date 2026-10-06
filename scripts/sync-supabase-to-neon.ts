@@ -30,6 +30,7 @@
 // Neon's pgbouncer pooler).
 
 import { execFileSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import { config as loadEnv } from 'dotenv';
 import pg from 'pg';
 
@@ -68,6 +69,22 @@ async function hasSchema(client: pg.Client, schema: string): Promise<boolean> {
     [schema],
   );
   return (rowCount ?? 0) > 0;
+}
+
+/**
+ * Migrations in this checkout that Supabase hasn't applied yet. Non-empty only in the window
+ * between a merge to main and CI's `migrate` job reaching Supabase — syncing then would put Neon
+ * ahead of its source, so the run stops early instead of failing.
+ */
+async function migrationsPendingOn(source: pg.Client): Promise<string[]> {
+  const inRepo = readdirSync('prisma/migrations', { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+  const { rows } = await source.query<{ migration_name: string }>(
+    'SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL',
+  );
+  const applied = new Set(rows.map((r) => r.migration_name));
+  return inRepo.filter((name) => !applied.has(name));
 }
 
 // ─── Table shapes ────────────────────────────────────────────────────────────────────────────
@@ -145,11 +162,9 @@ function assertSameShape(source: Map<string, string[]>, target: Map<string, stri
     }
   }
   if (problems.length > 0) {
-    // Usually a run that started between a merge to main and CI's `migrate` job reaching
-    // Supabase. The snapshot read already counted as Supabase activity; the next run catches up.
-    throw new Error(
-      `Supabase and Neon schemas differ (a migration not applied to Supabase yet?): ${problems.join('; ')}.`,
-    );
+    // Not the post-merge window (main() skips that before getting here) — real drift, e.g. a
+    // hand-made change on one side. Worth a failed run and its email.
+    throw new Error(`Supabase and Neon schemas differ: ${problems.join('; ')}.`);
   }
 }
 
@@ -274,6 +289,15 @@ async function main(): Promise<void> {
          INSERT INTO ${META_SCHEMA}.sync_meta VALUES ('standby_of', '${sourceLabel}');`,
       );
       console.log(`Marked ${targetLabel} as the standby copy.`);
+    }
+
+    const pending = await migrationsPendingOn(source);
+    if (pending.length > 0) {
+      console.log(
+        `Supabase hasn't applied ${pending.join(', ')} yet — CI's migrate job runs after a merge. ` +
+          'Skipping this sync; Supabase was still read, so the keep-alive counts.',
+      );
+      return;
     }
 
     // prisma.config.ts reads DIRECT_URL; an explicit env var wins over its dotenv files.
