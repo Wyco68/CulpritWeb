@@ -30,6 +30,9 @@ const serverSchema = z.object({
   R2_BUCKET_NAME: z.string().min(1).optional(),
   /** Public base URL for the bucket — a custom domain, or the `pub-<hash>.r2.dev` dev URL. */
   R2_PUBLIC_URL: z.string().url().optional(),
+  // Vercel Cron sends it as `Authorization: Bearer …` to /api/cron/keep-alive (ADR-024). Set on
+  // Vercel production only; unset anywhere else, which leaves that route refusing every request.
+  CRON_SECRET: z.string().min(32).optional(),
   // No CALENDLY_* server vars: the app has no server-side Calendly integration at all (embed
   // only — see modules/integrations). The public scheduling link is NEXT_PUBLIC_CALENDLY_URL.
 });
