@@ -10,7 +10,8 @@ name: Sync database to Neon
 #   NEON_DIRECT_URL  — Neon's direct (non-pooled) connection string for the standby database
 #
 # GitHub disables scheduled workflows on a public repository after 60 days without a commit. If
-# the repo goes quiet that long, re-enable this workflow from the Actions tab.
+# the repo goes quiet that long, re-enable this workflow from the Actions tab. Supabase stays awake
+# meanwhile through the daily Vercel cron (/api/cron/keep-alive).
 #
 # Repository guard: gated on `github.repository` like every other job — see docker.yml.
 
