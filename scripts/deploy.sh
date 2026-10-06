@@ -32,6 +32,26 @@ die() {
   exit 1
 }
 
+disk_free() { df -h / | awk 'NR == 2 { print $4 " free of " $2 }'; }
+
+# Removes this app's tagged images except the ones named in "$@". Scoped to $IMAGE_REPO: the VPS is
+# shared (carpart and others run here), and no other app's images are ever listed or touched.
+# Plain `docker image rm`, never -f, so an image a container still uses is refused, not deleted.
+remove_old_images() {
+  local ref keep
+  docker image ls "$IMAGE_REPO" --format '{{.Repository}}:{{.Tag}}' | while read -r ref; do
+    [ "${ref##*:}" = "<none>" ] && continue
+    for keep in "$@"; do
+      [ "$ref" = "$keep" ] && continue 2
+    done
+    if docker image rm "$ref" >/dev/null 2>&1; then
+      log "removed old image $ref"
+    else
+      log "kept $ref (still in use)"
+    fi
+  done
+}
+
 # ---- 1. Validate input ---------------------------------------------------------------------
 IMAGE_TAG="${1:-}"
 [ -n "$IMAGE_TAG" ] || die "usage: $0 <image-tag>  (e.g. sha-abc1234 or latest)"
@@ -90,6 +110,14 @@ else
   log "no currently running container found (first deploy) — nothing to roll back to"
 fi
 
+# ---- 3b. Make room for the pull ---------------------------------------------------------------
+# Every deploy used to leave its image behind, until the disk filled and pulls failed with "no
+# space left on device" (2026-10-06). Before pulling, drop every older image of this app except
+# the running one (the rollback target) and the target itself, if it's already here.
+log "disk before cleanup: $(disk_free)"
+remove_old_images "$TARGET_IMAGE" ${PREVIOUS_IMAGE_TAG:+"$PREVIOUS_IMAGE_TAG"}
+log "disk after cleanup: $(disk_free)"
+
 # ---- 4. Pull the requested image ------------------------------------------------------------
 log "pulling $TARGET_IMAGE"
 if ! IMAGE_TAG="$IMAGE_TAG" IMAGE_REPO="$IMAGE_REPO" docker compose -f "$COMPOSE_FILE" pull "$SERVICE"; then
@@ -133,10 +161,13 @@ fi
 log "deploy succeeded: $TARGET_IMAGE is healthy"
 
 # ---- 9. Safe image cleanup ------------------------------------------------------------------
-# Removes only dangling (untagged) layers. Deliberately does NOT prune tagged images — that would
-# delete $PREVIOUS_IMAGE_TAG, the rollback target for the *next* deploy.
-log "cleaning dangling images"
-docker image prune -f >/dev/null 2>&1 || true
+# Keeps exactly two images of this app: the one now running and $PREVIOUS_IMAGE_TAG, the rollback
+# target for the *next* deploy. Dangling layers are pruned only if they carry this repository's
+# OCI source label, so other apps' leftovers on the shared box are left alone.
+log "cleaning old images"
+remove_old_images "$TARGET_IMAGE" ${PREVIOUS_IMAGE_TAG:+"$PREVIOUS_IMAGE_TAG"}
+docker image prune -f --filter "label=org.opencontainers.image.source=https://github.com/Wyco68/CulpritWeb" >/dev/null 2>&1 || true
+log "disk: $(disk_free)"
 
 # ---- 10. Report -----------------------------------------------------------------------------
 log "status: OK"

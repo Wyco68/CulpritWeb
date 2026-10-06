@@ -63,9 +63,9 @@ daily read.
 - **Promotion takes no code change.** To make Neon primary, set `DATABASE_URL` (Neon's pooled
   string) and `DIRECT_URL` (direct) in Vercel and Doppler, then disable the workflow. The
   `standby` schema can stay or be dropped.
-- A run that starts after a migration merges but before CI's `migrate` job reaches Supabase fails
-  on a schema mismatch. The next run succeeds. Supabase was still read, so the keep-alive still
-  worked.
+- A run that starts after a migration merges but before CI's `migrate` job reaches Supabase
+  skips the copy. It sees the migration in the checkout that Supabase hasn't applied yet. The next
+  run catches up. Supabase was still read, so the keep-alive still worked.
 - If GitHub disables the sync after 60 quiet days, re-enable it from the Actions tab. The Vercel
   cron keeps Supabase awake in the meantime.
 - `CRON_SECRET` is set by hand in Vercel's production environment. Cron jobs only run on a
