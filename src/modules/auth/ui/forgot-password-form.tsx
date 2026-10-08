@@ -134,7 +134,7 @@ function RequestCodeStep({
   const waiting = needsCheck && !captchaToken;
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {formError && <FormAlert>{formError}</FormAlert>}
 
       <p id={explanationId} className="text-pretty text-sm leading-relaxed text-muted-foreground">
@@ -270,7 +270,12 @@ function ResetPasswordStep({ maskedEmail, turnstileSiteKey }: StepProps) {
   const busy = isSubmitting || done;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
+    <form
+      method="post"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="flex flex-col gap-5"
+    >
       {formError && <FormAlert>{formError}</FormAlert>}
       <FormNotice message={notice} />
 
