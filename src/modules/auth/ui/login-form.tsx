@@ -26,6 +26,10 @@ import { TwoFactorChallenge } from './two-factor-challenge';
 // step in place, without a page load. A password step that answers anything else is unexpected and
 // shown as a failure: the server never signs in on a password alone, so this form never treats one
 // as a sign-in.
+//
+// Every auth form that takes a secret is `method="post"`. Once hydrated, `handleSubmit` prevents
+// the native submit; before that (slow network, a script error, a fast typist), the browser would
+// otherwise send a GET with the password or code in the URL — and so in history and proxy logs.
 
 export interface LoginFormProps {
   /**
@@ -115,7 +119,12 @@ export function LoginForm({ maskedEmail }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
+    <form
+      method="post"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="flex flex-col gap-5"
+    >
       {formError && <FormAlert>{formError}</FormAlert>}
 
       <FormField label="Email" htmlFor="email" error={errors.email?.message} required>
