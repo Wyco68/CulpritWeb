@@ -20,7 +20,6 @@ export { DEFAULT_LAB_NAME };
 // "Make Appointment" is not in this list: it is the visitor's main action (AppointmentAction),
 // shown in the header on desktop and at the foot of the menu sheet on mobile.
 const TABS: readonly NavItem[] = [
-  { href: '/', label: 'About', exact: true },
   { href: '/research', label: 'Research' },
   { href: '/publications', label: 'Publications' },
   { href: '/team', label: 'Team' },
@@ -47,7 +46,7 @@ export function SiteHeader({ profile }: { profile: Profile | null }) {
       {/* A fixed top padding on desktop rather than vertical centring: the name must stay put while
           the band's height animates, and only the appointment button re-centres. */}
       <div className="flex items-start justify-between gap-6 px-6 py-6 sm:px-8 lg:h-full lg:pb-0 lg:pt-9">
-        <Link href="/" className="focus-ring min-w-0 rounded-sm lg:mr-56">
+        <Link href="/research" className="focus-ring min-w-0 rounded-sm lg:mr-56">
           {/* Capped a step smaller while pinned, and at two lines, so a long name always fits the
               band's full height; `title` gives the full name back if it is ever clipped. */}
           <h1

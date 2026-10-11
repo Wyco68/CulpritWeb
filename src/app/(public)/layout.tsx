@@ -1,8 +1,8 @@
 import { getProfileCached } from '@/modules/profile';
 import { PublicShell } from './_components/public-shell';
 
-// Shared shell for every public tab (About, Research, Publications, Team, Events,
-// Make Appointment): the sidebar / top bar render once here, so each page below
+// Shared shell for every public tab (Research, Publications, Team, Events, Make
+// Appointment): the sidebar / top bar render once here, so each page below
 // only supplies its own tab content. Server Component — reads the profile directly through the
 // service layer (no internal HTTP round-trip) per the "public read pages fetch through services"
 // architecture rule.

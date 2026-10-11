@@ -24,6 +24,11 @@ export default async function TeamPage() {
   ]);
 
   const members = membersResult.ok ? membersResult.data : [];
+  // The director's card carries their external links as pills (the list rows don't include links).
+  // A failed read just drops the pills; the card and its Profile pill still render.
+  const director = members.find((member) => member.isDirector);
+  const directorLinksResult = director ? await getTeamMemberService().listLinks(director.id) : null;
+  const directorLinks = directorLinksResult?.ok ? directorLinksResult.data : [];
   const intro = profileResult.ok ? profileResult.data?.teamIntro : null;
 
   return (
@@ -38,7 +43,7 @@ export default async function TeamPage() {
         ) : members.length === 0 ? (
           <EmptyState title="No team members listed yet" />
         ) : (
-          <TeamMembersView members={members} />
+          <TeamMembersView members={members} directorLinks={directorLinks} />
         )}
       </div>
     </div>

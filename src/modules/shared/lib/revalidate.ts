@@ -43,15 +43,7 @@ const AREA_PATHS = {
    * route handler does not have, so the per-member API mirror relies on its own 3600s `revalidate`
    * ceiling alone. Accepted gap: the profile PAGE, which is what visitors see, is purged.
    */
-  team: [
-    '/',
-    '/team',
-    '/team/[id]',
-    '/teaching',
-    '/research',
-    '/publications',
-    '/api/team-members',
-  ],
+  team: ['/team', '/team/[id]', '/teaching', '/research', '/publications', '/api/team-members'],
   /** The Events tab — both halves (upcoming and past) come from the same list. */
   events: ['/events', '/api/events'],
   /**
@@ -65,11 +57,6 @@ const AREA_PATHS = {
    * show them. The member id is not known here, so every profile page is purged.
    */
   projects: ['/team/[id]'],
-  /**
-   * The About tab alone. Separate from `'profile'`, which drops the whole layout subtree because
-   * the lab's name and tagline render in the site header on every page.
-   */
-  about: ['/'],
   /**
    * The Make Appointment tab (Calendly embed only). No matching public API route, and nothing
    * server-side writes to it — kept because the page exists and the area name is part of this
@@ -95,7 +82,7 @@ const edgePurgeable = (paths: readonly string[]) => paths.filter((path) => !isTe
  *
  * Use `'profile'` for profile edits: the lab's name and tagline render in the site
  * header, which lives in the public *layout* and therefore appears on every tab — so a profile
- * save has to drop the whole subtree, not just the About page. `/api/profile` is purged alongside it.
+ * save has to drop the whole subtree, not just one tab. `/api/profile` is purged alongside it.
  */
 export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
   const purgePaths: string[] = [];
@@ -103,7 +90,7 @@ export function revalidatePublic(...areas: (PublicArea | 'profile')[]): void {
   for (const area of areas) {
     if (area === 'profile') {
       // Next's own invalidation: `('/', 'layout')` drops the root layout and every page nested
-      // under it, so all seven public tabs are covered at the origin by this one call.
+      // under it, so every public tab is covered at the origin by this one call.
       revalidatePath('/', 'layout');
       revalidatePath('/api/profile');
       // The profile row feeds every public page — the header's name and tagline on all of them,

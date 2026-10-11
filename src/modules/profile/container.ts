@@ -16,8 +16,8 @@ export function getProfileService(): ProfileService {
 /**
  * Request-scoped read of the singleton profile, for Server Components only.
  *
- * The public layout renders the profile in the site header and the About page renders the same
- * row again in its body — two components that legitimately don't know about each other, each
+ * The public layout renders the profile in the site header and each tab renders the same row
+ * again for its intro — two components that legitimately don't know about each other, each
  * issuing an identical query, which on a remote Postgres costs a second full round trip for a row
  * already in hand. React's `cache()` memoizes per request, so the layout and the page share one
  * query and still see identical data. Deliberately NOT a cross-request cache: an admin save is

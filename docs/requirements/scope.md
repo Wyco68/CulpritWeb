@@ -13,8 +13,9 @@ related_decisions: [ADR-004, ADR-005, ADR-006]
 
 ## In scope (current)
 
-- Public site: **About**, **Research**, **Publications**, **Teaching**, **Team Members**,
-  **Events**, **Make Appointment** — 7 tabs, flat routes under `src/app/(public)/`.
+- Public site: **Research**, **Publications**, **Team**, **Events**, **Make Appointment** — 5
+  tabs, flat routes under `src/app/(public)/`. `/` redirects to Research (About removed,
+  [ADR-025](../decisions/ADR-025-remove-about-tab.md)).
 - Teaching: courses grouped by level, plus teaching roles and awards. CV content is `cv_entry`
   rows, not Json on the profile — see
   [ADR-012](../decisions/ADR-012-cv-entries-and-courses.md).

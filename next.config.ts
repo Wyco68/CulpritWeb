@@ -160,6 +160,13 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 828, 1200, 1920],
     qualities: [75],
   },
+  // There is no About tab (removed 2026-10-11 — the director's card and links live on the Team
+  // tab), so the site opens on Research, the first tab. Temporary (307), not permanent: a browser
+  // caches a 308 indefinitely, which would pin `/` to Research even if a home page came back.
+  // Resolved by the router before any page renders, so it costs no function run.
+  async redirects() {
+    return [{ source: '/', destination: '/research', permanent: false }];
+  },
   async headers() {
     return [
       // The site icon changed on 2026-09-06 (the .ico was a solid teal square unrelated to the

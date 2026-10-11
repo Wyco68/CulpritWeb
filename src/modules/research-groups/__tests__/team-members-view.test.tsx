@@ -45,12 +45,12 @@ describe('TeamMembersView', () => {
     // Deliberately out of order: the display order comes from the teams' positions.
     render(<TeamMembersView members={[...everyone].reverse()} />);
 
-    const lead = screen.getByRole('region', { name: 'Lab director' });
-    expect(within(lead).getByText('Lab Director')).toBeInTheDocument();
-    expect(within(lead).getByRole('link')).toHaveAttribute('href', '/team/d1');
-    expect(within(lead).getByText('Works on privacy by design.')).toBeInTheDocument();
+    const lead = screen.getByRole('region', { name: 'Jutarat Jaimunk' });
+    expect(within(lead).getByText('Lab Director · Professor')).toBeInTheDocument();
+    expect(within(lead).getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/team/d1');
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Jutarat Jaimunk',
       'Professors',
       'Research Team',
       'Development Team',
@@ -61,17 +61,33 @@ describe('TeamMembersView', () => {
     ).toHaveAttribute('href', '/team/e1');
   });
 
-  it('gives the director the same portrait as everyone else', () => {
-    render(<TeamMembersView members={everyone} />);
-    const director = screen.getByRole('img', { name: 'Portrait of Jutarat Jaimunk' });
-    const other = screen.getByRole('img', { name: 'Portrait of Kai Tanaka' });
-    expect(director.className).toBe(other.className);
+  it("puts the director's external links on their card, opening in a new tab", () => {
+    render(
+      <TeamMembersView
+        members={everyone}
+        directorLinks={[
+          {
+            id: 'l1',
+            label: 'Google Scholar',
+            url: 'https://scholar.google.com/citations?user=x',
+            sortOrder: 0,
+          },
+        ]}
+      />,
+    );
+
+    const lead = screen.getByRole('region', { name: 'Jutarat Jaimunk' });
+    const scholar = within(lead).getByRole('link', { name: /Google Scholar/ });
+    expect(scholar).toHaveAttribute('href', 'https://scholar.google.com/citations?user=x');
+    expect(scholar).toHaveAttribute('target', '_blank');
+    expect(scholar).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('drops teams with nobody in them', () => {
     render(<TeamMembersView members={[director, everyone[3]!]} />);
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Jutarat Jaimunk',
       'Development Team',
     ]);
   });

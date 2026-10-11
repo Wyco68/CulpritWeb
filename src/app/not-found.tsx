@@ -31,10 +31,10 @@ export default async function NotFound() {
 
       <p className="mt-10">
         <Link
-          href="/"
+          href="/research"
           className="group inline-flex h-11 items-center gap-2.5 rounded-sm bg-accent px-6 text-sm font-medium tracking-tight text-accent-foreground transition-[background-color,scale] duration-300 ease-[var(--ease-out-expo)] hover:bg-accent/90 active:scale-[0.98] focus-ring"
         >
-          Back to About
+          Back to Research
           <span
             aria-hidden="true"
             className="transition-[translate] duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-0.5"

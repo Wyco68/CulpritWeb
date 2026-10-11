@@ -1,7 +1,7 @@
 ---
 status: current
 source_of_truth: true
-last_updated: 2026-10-06
+last_updated: 2026-10-11
 related_modules: [shared]
 related_decisions: [ADR-001, ADR-013, ADR-021]
 ---
@@ -70,6 +70,10 @@ daily read.
   cron keeps Supabase awake in the meantime.
 - `CRON_SECRET` is set by hand in Vercel's production environment. Cron jobs only run on a
   production deployment, so the keep-alive starts with the first manual deploy after the merge.
+- Vercel functions run in `bom1` (Mumbai, `regions` in `vercel.json`), the same region as
+  Supabase (`ap-south-1`). Before 2026-10-11 they ran in Vercel's default `iad1` (Washington), so
+  every query crossed the world. A manual run of the cron took 1.62 s there. Hobby allows choosing
+  one region.
 - Vercel cost: Hobby allows only daily crons. That is about 30 calls a month, each a single read
   capped at 10 seconds (`maxDuration`), out of the plan's included function usage.
 - Costs: about 310 rows a run. Neon wakes for each run and sleeps again after 5 minutes, which is
