@@ -86,7 +86,7 @@ global visibility flag it held has no successor, because every event is public.
 
 ```
 src/app/
-├── (public)/    # About, research, publications, teaching, team, events, appointment — flat paths
+├── (public)/    # research, publications, team, events, appointment — flat paths (`/` → /research)
 ├── (admin)/     # admin/{dashboard,profile,research,publications,groups,team-members,teaching,events}, login
 └── api/         # route handlers — see architecture/backend.md
 ```

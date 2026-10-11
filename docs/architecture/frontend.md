@@ -59,11 +59,12 @@ client on the server and a cached singleton in the browser.
   schema validates client-side (UX) and server-side (source of truth) — see
   [development/coding-conventions.md](../development/coding-conventions.md).
 
-## Public tabs (7)
+## Public tabs (5)
 
-Routed as real pages under `src/app/(public)/`: About (`/`), Research (`/research`), Publications
-(`/publications`), Teaching (`/teaching` — courses grouped by level, then teaching roles and
-awards), Team Members (`/team`), Events (`/events` — Upcoming and Past, split by date at
+Routed as real pages under `src/app/(public)/`: Research (`/research`, where `/` redirects —
+[ADR-025](../decisions/ADR-025-remove-about-tab.md)), Publications (`/publications`), Team
+(`/team` — the director on the shared `MemberCard` with link pills, then members by team; each
+member's profile at `/team/[id]`; `/teaching` redirects to the director's profile), Events (`/events` — Upcoming and Past, split by date at
 render time; every event is public), Make Appointment (`/appointment`, Turnstile-gated Calendly
 embed only).
 
