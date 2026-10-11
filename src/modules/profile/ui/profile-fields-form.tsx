@@ -22,8 +22,9 @@ import { patchProfileSchema, type PatchProfileInput } from '../profile.schema';
 // The one profile editor, shared by every admin screen.
 //
 // The admin IA gives each public tab its own admin screen, and the profile singleton is spread
-// across all of them: About owns the lab identity and overview, Research owns the research
-// statement, Publications/Team/Events own their standfirst, Appointment owns the Calendly link.
+// across all of them: Identity owns the lab name, tagline and affiliation, Research owns the
+// research statement, Publications/Team/Events own their standfirst, Appointment owns the Calendly
+// link.
 // Each screen mounts this component with the field keys it owns and PATCHes only those — the
 // route's "key absent means column untouched" contract is what stops five screens from
 // clobbering each other's slice of one row.
@@ -36,7 +37,6 @@ export const PROFILE_FIELD_KEYS = [
   'labName',
   'labTagline',
   'positionAffiliation',
-  'labOverview',
   'researchStatement',
   'calendlyUrl',
   'publicationsIntro',
@@ -82,12 +82,6 @@ const FIELD_META: Record<ProfileFieldKey, FieldMeta> = {
     kind: 'textarea',
     rows: 2,
     description: 'One line, e.g. the host department and university. Shown in the site header.',
-  },
-  labOverview: {
-    label: 'Lab overview',
-    kind: 'textarea',
-    rows: 6,
-    description: 'The opening prose of the public About tab.',
   },
   researchStatement: {
     label: 'Research statement',

@@ -12,10 +12,11 @@ import { MobileMenu, NavSidebar, type NavItem } from '@/modules/shared/ui/site-n
 // own.
 
 // Each entry mirrors one public tab, so the admin edits a page by going to the screen of the same
-// name — except the last, Security, which is about the admin's own sign-in, not the site.
+// name — except Identity (the site header every tab shares) and Security, which is about the
+// admin's own sign-in, not the site.
 const TABS: readonly NavItem[] = [
   { href: '/admin', label: 'Dashboard', exact: true },
-  { href: '/admin/about', label: 'About' },
+  { href: '/admin/identity', label: 'Identity' },
   { href: '/admin/research', label: 'Research' },
   { href: '/admin/publications', label: 'Publications' },
   { href: '/admin/team', label: 'Team' },

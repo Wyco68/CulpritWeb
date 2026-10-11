@@ -6,10 +6,10 @@ import { cn } from '@/modules/shared/lib/utils';
 
 // A jump list for the merged admin screens.
 //
-// Since each admin screen now mirrors one public tab, the long ones (About carries the identity,
-// the bio, the links and four CV lists) are a single scrolling document rather than four
-// destinations. That is the right model — the admin edits "the About tab", not "the education
-// table" — but a document that long needs a table of contents, otherwise the price of merging is
+// Since each admin screen now mirrors one public tab, the long ones (a member's profile carries
+// the bio, the links and several CV lists) are a single scrolling document rather than several
+// destinations. That is the right model — the admin edits "this member's profile", not "the
+// education table" — but a document that long needs a table of contents, otherwise the price of merging is
 // scrolling.
 //
 // The active section is mirrored into the URL fragment so a position is linkable and survives a
