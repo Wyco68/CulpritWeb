@@ -3,15 +3,26 @@ import { IntentLink as Link } from '@/modules/shared/ui/intent-link';
 import { ArrowUpRight, GraduationCap } from 'lucide-react';
 import { Avatar } from '@/modules/shared/ui/avatar';
 import { linkPillClassName } from '@/modules/shared/ui/card';
-import { memberInitials } from './team-members-view';
 import type { MemberLink, TeamMember } from '../team-member.types';
 
 // A member's identity card: portrait, one eyebrow line, name, affiliation and their links as pills.
-// The one treatment for a person at the head of a page — the About tab's director card and the top
-// of every member profile — so the two never drift into separate designs. Every value comes from
-// the member row and its `member_link` rows; nothing here is hardcoded.
+// The one treatment for a person at the head of a page — the director's card on the Team tab and
+// the top of every member profile — so the two never drift into separate designs. Every value
+// comes from the member row and its `member_link` rows; nothing here is hardcoded.
 
 const pillClassName = linkPillClassName;
+
+/** Up to two initials for a portrait placeholder. */
+export function memberInitials(name: string): string {
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || '?'
+  );
+}
 
 export function MemberCard({
   member,

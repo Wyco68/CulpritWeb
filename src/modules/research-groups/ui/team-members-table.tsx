@@ -13,7 +13,7 @@ import { RecordIdentity, RecordTable } from '@/modules/shared/ui/record-table';
 import type { MemberLink, TeamMember } from '../team-member.types';
 import type { TeamRef } from '../team.types';
 import { TeamMemberFormDialog } from './team-member-form-dialog';
-import { memberInitials } from './team-members-view';
+import { memberInitials } from './member-card';
 
 /** Where a member sits on the Team tab: the director on their own, else their team, else none. */
 const DIRECTOR = 'director';
