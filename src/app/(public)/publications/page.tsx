@@ -41,7 +41,7 @@ export default async function PublicationsPage() {
       <PageHeading title="Publications" />
 
       <div className="mt-12 space-y-10">
-        {/* Same standfirst treatment as the About bio and the Research statement — one editable
+        {/* Same standfirst treatment as the Research statement — one editable
             paragraph of the professor's own framing, or nothing at all. No placeholder, no empty
             node: an unfilled intro leaves the list sitting directly under the heading exactly as
             it did before the column existed. */}

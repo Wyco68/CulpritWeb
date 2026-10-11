@@ -36,8 +36,8 @@ describe('revalidatePublic', () => {
   it('revalidates the team page, every profile page, and the byline pages for team edits', () => {
     revalidatePublic('team');
 
-    // The About page renders the director's card.
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/');
+    // `/` is a redirect to Research, not a page — nothing to purge there.
+    expect(mockedRevalidatePath).not.toHaveBeenCalledWith('/');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/team');
     // A template path needs the `page` type, or it matches nothing.
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/team/[id]', 'page');

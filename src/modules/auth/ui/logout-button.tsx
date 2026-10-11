@@ -19,7 +19,7 @@ export function LogoutButton({ surface = 'band' }: { surface?: 'band' | 'sheet' 
       // The public site, not /login. Signing out is "I'm done here", not "let me back in" — and
       // bouncing to the sign-in form makes it look as though the sign-out failed and it is asking
       // for credentials again.
-      router.push('/');
+      router.push('/research');
       router.refresh();
     } catch {
       toast.error('Could not log out. Please try again.');

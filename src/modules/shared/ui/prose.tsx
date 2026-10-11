@@ -5,7 +5,7 @@ import { cn } from '@/modules/shared/lib/utils';
 // serif intro paragraph under a page heading (five copies) and the heading of a section within a
 // page (five copies). One definition each, so the whole site's reading voice is tuned here.
 
-/** The serif standfirst: a tab's intro, the About overview, a member's biography. */
+/** The serif standfirst: a tab's intro, a member's biography. */
 export function Standfirst({
   children,
   preserveLines = false,
